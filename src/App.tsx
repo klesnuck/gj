@@ -20,7 +20,7 @@ import { OrdersList } from './components/admin/OrdersList'
 import { CustomersList } from './components/admin/CustomersList'
 import { DiscountsView } from './components/admin/DiscountsView'
 
-import { fetchProducts, createProduct } from './lib/supabase'
+import { fetchProducts, createProduct, deleteProduct } from './lib/supabase'
 import { INITIAL_ORDERS, INITIAL_CUSTOMERS, INITIAL_COUPONS } from './lib/mockData'
 import type { Product, CartItem, Order, Customer, Coupon } from './types/database.types'
 
@@ -30,6 +30,7 @@ export function App() {
   })
   const [adminTab, setAdminTab] = useState<string>('resumen')
   const [isCreatingProduct, setIsCreatingProduct] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
   // Store data
   const [products, setProducts] = useState<Product[]>([])
@@ -132,9 +133,22 @@ export function App() {
     if (res.success) {
       await reloadProducts()
       setIsCreatingProduct(false)
+      setEditingProduct(null)
       return true
     }
     return false
+  }
+
+  const handleDeleteProduct = async (productId: string) => {
+    const res = await deleteProduct(productId)
+    if (res.success) {
+      setProducts((prev) => prev.filter((p) => p.id !== productId))
+      setCartItems((prev) => prev.filter((item) => item.product.id !== productId))
+      if (editingProduct?.id === productId) {
+        setEditingProduct(null)
+        setIsCreatingProduct(false)
+      }
+    }
   }
 
   const handleUpdateOrderStatus = (orderId: string, newStatus: Order['status']) => {
@@ -228,6 +242,7 @@ export function App() {
         onTabChange={(tab) => {
           setAdminTab(tab)
           setIsCreatingProduct(false)
+          setEditingProduct(null)
         }}
         onBackToStore={() => {
           window.location.hash = ''
@@ -242,9 +257,11 @@ export function App() {
             onNavigateToTab={(tab) => {
               setAdminTab(tab)
               setIsCreatingProduct(false)
+              setEditingProduct(null)
             }}
             onAddNewProduct={() => {
               setAdminTab('productos')
+              setEditingProduct(null)
               setIsCreatingProduct(true)
             }}
           />
@@ -255,13 +272,26 @@ export function App() {
           <>
             {isCreatingProduct ? (
               <ProductForm
+                initialProduct={editingProduct}
                 onSaveProduct={handleSaveProduct}
-                onCancel={() => setIsCreatingProduct(false)}
+                onCancel={() => {
+                  setIsCreatingProduct(false)
+                  setEditingProduct(null)
+                }}
+                onDeleteProduct={handleDeleteProduct}
               />
             ) : (
               <ProductList
                 products={products}
-                onAddNew={() => setIsCreatingProduct(true)}
+                onAddNew={() => {
+                  setEditingProduct(null)
+                  setIsCreatingProduct(true)
+                }}
+                onEditProduct={(prod) => {
+                  setEditingProduct(prod)
+                  setIsCreatingProduct(true)
+                }}
+                onDeleteProduct={handleDeleteProduct}
                 onViewProductInStore={(prod) => {
                   window.location.hash = ''
                   setCurrentView('store')

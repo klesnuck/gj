@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Upload,
   Trash2,
@@ -8,12 +8,17 @@ import {
   Save,
   ArrowUpRight,
   Check,
+  Package,
+  Layers,
+  Sparkles,
 } from 'lucide-react'
 import type { Product } from '../../types/database.types'
 
 interface ProductFormProps {
   onSaveProduct: (productData: Partial<Product>) => Promise<boolean>
   onCancel: () => void
+  initialProduct?: Product | null
+  onDeleteProduct?: (productId: string) => void
 }
 
 interface VariantRow {
@@ -23,34 +28,110 @@ interface VariantRow {
   price: number
 }
 
-export const ProductForm = ({ onSaveProduct, onCancel }: ProductFormProps) => {
-  // Form State initialized with values from screenshot
-  const [title, setTitle] = useState('Hoodie No Signal')
+export const ProductForm = ({
+  onSaveProduct,
+  onCancel,
+  initialProduct,
+  onDeleteProduct,
+}: ProductFormProps) => {
+  const isEditing = Boolean(initialProduct)
+
+  // Form State initialized with initialProduct or default values
+  const [title, setTitle] = useState(initialProduct?.title || 'Hoodie No Signal')
   const [description, setDescription] = useState(
-    'Hoodie de algodón pesado de 450 g, corte relaxed fit y acabado negro. Bordado frontal No Signal. Hecho para la calle, sin pedir permiso.'
+    initialProduct?.description ||
+      'Hoodie de algodón pesado de 450 g, corte relaxed fit y acabado negro. Bordado frontal No Signal. Hecho para la calle, sin pedir permiso.'
   )
-  const [category, setCategory] = useState<'gorras' | 'playeras' | 'hoodies' | 'accesorios'>('hoodies')
-  const [price, setPrice] = useState<number>(1499)
-  const [tag, setTag] = useState('NUEVO')
-  const [tagType, setTagType] = useState<'white' | 'lime'>('lime')
+  const [category, setCategory] = useState<'gorras' | 'playeras' | 'hoodies' | 'accesorios'>(
+    (initialProduct?.category as any) || 'hoodies'
+  )
+  const [price, setPrice] = useState<number>(initialProduct?.price || 1499)
+  const [tag, setTag] = useState(initialProduct?.tag || 'NUEVO')
+  const [tagType, setTagType] = useState<'white' | 'lime'>(
+    (initialProduct?.tag_type as any) || 'lime'
+  )
   const [collection, setCollection] = useState('Drop 004')
-  const [status, setStatus] = useState<'borrador' | 'publicado'>('borrador')
+  const [status, setStatus] = useState<'borrador' | 'publicado'>('publicado')
   const [inOnlineStore, setInOnlineStore] = useState(true)
-  const [imageUrl, setImageUrl] = useState('/images/product-hoodie.jpg')
+  const [imageUrl, setImageUrl] = useState(
+    initialProduct?.image_url || '/images/product-hoodie.jpg'
+  )
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
 
-  // Color & Variants State
-  const [colorName] = useState('Negro')
-  const [colorHex] = useState('#171717')
+  // Unitalla vs Tallas State
+  const isCap = category === 'gorras'
+
+  // Cap Unitalla Stock & SKU
+  const [capStock, setCapStock] = useState<number>(initialProduct?.stock || 24)
+  const [capSku, setCapSku] = useState<string>(
+    initialProduct ? `GJ-CAP-${initialProduct.id.slice(-4).toUpperCase()}` : 'GJ-CAP-001'
+  )
+
+  // Clothing Variants (for hoodies, playeras, etc.)
+  const [colorName, setColorName] = useState('Negro')
+  const [colorHex, setColorHex] = useState(
+    initialProduct?.colors?.[0] || '#171717'
+  )
   const [variants, setVariants] = useState<VariantRow[]>([
-    { size: 'S', sku: 'GJ-NS-BLK-S', stock: 8, price: 1499 },
-    { size: 'M', sku: 'GJ-NS-BLK-M', stock: 12, price: 1499 },
-    { size: 'L', sku: 'GJ-NS-BLK-L', stock: 16, price: 1499 },
-    { size: 'XL', sku: 'GJ-NS-BLK-XL', stock: 8, price: 1499 },
+    { size: 'S', sku: 'GJ-NS-BLK-S', stock: 8, price: price },
+    { size: 'M', sku: 'GJ-NS-BLK-M', stock: 12, price: price },
+    { size: 'L', sku: 'GJ-NS-BLK-L', stock: 16, price: price },
+    { size: 'XL', sku: 'GJ-NS-BLK-XL', stock: 8, price: price },
   ])
 
-  const totalStock = variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0)
+  // Sync price changes to variants
+  useEffect(() => {
+    if (!isCap) {
+      setVariants((prev) => prev.map((v) => ({ ...v, price })))
+    }
+  }, [price, isCap])
+
+  // When switching category to gorras, adapt image and title if default
+  const handleCategoryChange = (newCat: 'gorras' | 'playeras' | 'hoodies' | 'accesorios') => {
+    setCategory(newCat)
+    if (!isEditing) {
+      if (newCat === 'gorras') {
+        if (imageUrl === '/images/product-hoodie.jpg') {
+          setImageUrl('/images/product-cap-black.jpg')
+        }
+        if (title === 'Hoodie No Signal') {
+          setTitle('Gorra GJ Signature')
+          setDescription(
+            'Silueta insignia de gabardina de alto gramaje, corona estructurada y bordado 3D frontal "gj". Broche metálico grabado ajustable.'
+          )
+          setPrice(699)
+        }
+      } else if (newCat === 'hoodies') {
+        if (imageUrl === '/images/product-cap-black.jpg') {
+          setImageUrl('/images/product-hoodie.jpg')
+        }
+        if (title === 'Gorra GJ Signature') {
+          setTitle('Hoodie No Signal')
+          setDescription(
+            'Hoodie de algodón pesado de 450 g, corte relaxed fit y acabado negro. Bordado frontal No Signal. Hecho para la calle, sin pedir permiso.'
+          )
+          setPrice(1499)
+        }
+      } else if (newCat === 'playeras') {
+        if (imageUrl === '/images/product-cap-black.jpg' || imageUrl === '/images/product-hoodie.jpg') {
+          setImageUrl('/images/product-tshirt.jpg')
+        }
+        if (title === 'Hoodie No Signal' || title === 'Gorra GJ Signature') {
+          setTitle('Playera Heavyweight')
+          setDescription(
+            'Playera oversized de corte boxy confeccionada en algodón peinado 280 GSM. Lavado mineral vintage y bordado tonal minimalista.'
+          )
+          setPrice(899)
+        }
+      }
+    }
+  }
+
+  // Stock calculation: If gorra, takes capStock directly; if clothes, sums variants
+  const totalStock = isCap
+    ? Math.max(0, Number(capStock) || 0)
+    : variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0)
 
   const handleVariantChange = (index: number, field: keyof VariantRow, value: string | number) => {
     setVariants((prev) => {
@@ -65,11 +146,16 @@ export const ProductForm = ({ onSaveProduct, onCancel }: ProductFormProps) => {
       ...prev,
       {
         size: 'XXL',
-        sku: `GJ-NS-BLK-${prev.length + 1}`,
-        stock: 5,
+        sku: `GJ-ITEM-${prev.length + 1}`,
+        stock: 6,
         price: price,
       },
     ])
+  }
+
+  const handleRemoveVariant = (index: number) => {
+    if (variants.length <= 1) return
+    setVariants((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,20 +168,28 @@ export const ProductForm = ({ onSaveProduct, onCancel }: ProductFormProps) => {
 
   const handlePublish = async (newStatus: 'borrador' | 'publicado' = 'publicado') => {
     setIsSubmitting(true)
+    const specsComputed = isCap
+      ? `${colorName} / Bordado 3D / Unitalla Ajustable`
+      : `${colorName} / Relaxed fit / ${price > 1000 ? '450 g' : '280 g'}`
+
     const productPayload: Partial<Product> = {
+      id: initialProduct?.id,
       title,
-      slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+      slug:
+        initialProduct?.slug ||
+        title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
       category,
       price,
       currency: 'MXN',
       tag: tag || null,
       tag_type: tagType,
       description,
-      specs: `${colorName} / Relaxed fit / 450 g`,
+      specs: specsComputed,
       colors: [colorHex],
       image_url: imageUrl,
       stock: totalStock,
       is_featured: true,
+      created_at: initialProduct?.created_at,
     }
 
     const ok = await onSaveProduct(productPayload)
@@ -108,25 +202,42 @@ export const ProductForm = ({ onSaveProduct, onCancel }: ProductFormProps) => {
   }
 
   return (
-    <div className="w-full text-white space-y-8">
+    <div className="w-full text-white space-y-8 animate-in fade-in duration-200">
       
       {/* Top Breadcrumb & Page Title Bar */}
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <div className="text-xs font-mono text-gray-500 tracking-widest uppercase mb-1">
-              CATÁLOGO / NUEVA PIEZA
+              CATÁLOGO / {isEditing ? 'EDITAR PRODUCTO' : 'NUEVA PIEZA'}
             </div>
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-white font-extrabold leading-none">
-              NUEVO PRODUCTO
+              {isEditing ? 'EDITAR PRODUCTO' : 'NUEVO PRODUCTO'}
             </h1>
             <p className="text-xs sm:text-sm font-sans text-gray-400 mt-2">
-              Prepara la ficha, revisa las variantes y dale salida al siguiente drop.
+              {isCap
+                ? 'Prenda de categoría Gorras (Unitalla con broche ajustable). Gestiona stock directo y precio.'
+                : 'Prepara la ficha, revisa las tallas disponibles y dale salida al siguiente drop.'}
             </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center space-x-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            {isEditing && initialProduct && onDeleteProduct && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm(`¿Seguro que deseas eliminar el producto "${title}"?`)) {
+                    onDeleteProduct(initialProduct.id)
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-4 py-3 bg-[#1a1111] hover:bg-red-950/60 text-red-400 border border-red-900/40 hover:border-red-500 font-mono text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>ELIMINAR</span>
+              </button>
+            )}
+
             <button
               onClick={() => handlePublish('borrador')}
               disabled={isSubmitting}
@@ -143,12 +254,12 @@ export const ProductForm = ({ onSaveProduct, onCancel }: ProductFormProps) => {
             >
               {savedSuccess ? (
                 <>
-                  <span>¡PUBLICADO!</span>
+                  <span>¡GUARDADO CON ÉXITO!</span>
                   <Check className="w-4 h-4 stroke-[3]" />
                 </>
               ) : (
                 <>
-                  <span>PUBLICAR PRODUCTO</span>
+                  <span>{isEditing ? 'ACTUALIZAR PRODUCTO' : 'PUBLICAR PRODUCTO'}</span>
                   <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
                 </>
               )}
@@ -157,9 +268,25 @@ export const ProductForm = ({ onSaveProduct, onCancel }: ProductFormProps) => {
         </div>
 
         {/* Small Status indicator */}
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-between pt-1 border-t border-[#181818]">
+          <div className="flex items-center gap-2">
+            {isCap && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#D4FF00]/10 border border-[#D4FF00]/30 text-[#D4FF00] font-mono text-[10px] font-bold uppercase tracking-wider">
+                <Sparkles className="w-3 h-3" />
+                UNITALLA / AJUSTABLE
+              </span>
+            )}
+            <span className="text-[11px] font-mono text-gray-400">
+              Stock total: <strong className="text-white">{totalStock} piezas</strong>
+            </span>
+          </div>
+
           <span className="text-[11px] font-mono text-gray-500 uppercase flex items-center gap-1.5">
-            <span className={`w-1.5 h-1.5 rounded-full ${status === 'publicado' ? 'bg-[#D4FF00]' : 'bg-gray-500'}`} />
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                status === 'publicado' ? 'bg-[#D4FF00]' : 'bg-gray-500'
+              }`}
+            />
             {status === 'publicado' ? 'PUBLICADO EN TIENDA' : 'BORRADOR · SIN PUBLICAR'}
           </span>
         </div>
@@ -196,9 +323,14 @@ export const ProductForm = ({ onSaveProduct, onCancel }: ProductFormProps) => {
                   className="w-full h-full object-cover object-center"
                 />
                 <button
-                  onClick={() => setImageUrl('/images/product-tshirt.jpg')}
-                  className="absolute bottom-2 right-2 p-1.5 bg-black/80 hover:bg-red-500 text-gray-400 hover:text-white transition-colors"
-                  title="Cambiar imagen"
+                  type="button"
+                  onClick={() =>
+                    setImageUrl(
+                      isCap ? '/images/product-cap-stone.jpg' : '/images/product-tshirt.jpg'
+                    )
+                  }
+                  className="absolute bottom-2 right-2 p-1.5 bg-black/80 hover:bg-[#D4FF00] hover:text-black text-gray-400 transition-colors"
+                  title="Cambiar imagen de muestra"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -254,7 +386,7 @@ export const ProductForm = ({ onSaveProduct, onCancel }: ProductFormProps) => {
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ej. Hoodie No Signal"
+                placeholder="Ej. Gorra GJ Signature o Hoodie No Signal"
                 className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-sans text-white focus:outline-none transition-colors"
               />
             </div>
@@ -290,17 +422,22 @@ export const ProductForm = ({ onSaveProduct, onCancel }: ProductFormProps) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
               
               <div className="space-y-1.5">
-                <label className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
-                  Categoría *
+                <label className="text-xs font-mono text-gray-400 uppercase tracking-wider flex items-center justify-between">
+                  <span>Categoría *</span>
+                  {isCap && (
+                    <span className="text-[#D4FF00] text-[10px] font-bold">
+                      MODO GORRA: UNITALLA
+                    </span>
+                  )}
                 </label>
                 <select
                   value={category}
-                  onChange={(e) => setCategory(e.target.value as any)}
+                  onChange={(e) => handleCategoryChange(e.target.value as any)}
                   className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-sans text-white focus:outline-none cursor-pointer"
                 >
-                  <option value="hoodies">Hoodies</option>
-                  <option value="playeras">Playeras</option>
-                  <option value="gorras">Gorras</option>
+                  <option value="hoodies">Hoodies (Con tallas S, M, L, XL)</option>
+                  <option value="playeras">Playeras (Con tallas S, M, L, XL)</option>
+                  <option value="gorras">Gorras (Unitalla · Sin tallas)</option>
                   <option value="accesorios">Accesorios</option>
                 </select>
               </div>
@@ -360,85 +497,247 @@ export const ProductForm = ({ onSaveProduct, onCancel }: ProductFormProps) => {
 
           </div>
 
-          {/* Section 03: Variantes y existencias */}
+          {/* Section 03: Existencias (Condicional: Si es Gorra = Unitalla directa; si es otra = Tabla de tallas) */}
           <div className="bg-[#101010] border border-[#202020] p-6 space-y-4">
+            
+            {/* Header of Section 03 */}
             <div className="flex items-center justify-between pb-3 border-b border-[#1c1c1c]">
               <div className="flex items-center space-x-2">
                 <span className="text-xs font-mono font-bold text-[#D4FF00]">03</span>
                 <h3 className="font-sans text-sm font-semibold text-white tracking-wide">
-                  Variantes y existencias
+                  {isCap ? 'Existencias (Unitalla)' : 'Variantes y existencias por talla'}
                 </h3>
               </div>
-              <span className="text-xs font-mono text-gray-500">
-                {variants.length} variantes / {totalStock} unidades
+              <span className="text-xs font-mono text-gray-400 font-bold">
+                {isCap ? 'Prenda Unitalla' : `${variants.length} tallas`} ·{' '}
+                <span className="text-[#D4FF00]">{totalStock} unidades</span>
               </span>
             </div>
 
-            {/* Color selection line */}
-            <div className="flex items-center space-x-3 text-xs font-mono">
-              <span className="text-gray-400">Color:</span>
-              <div className="flex items-center space-x-1.5">
-                <span
-                  className="w-3.5 h-3.5 rounded-full inline-block border border-white/20"
-                  style={{ backgroundColor: colorHex }}
-                />
-                <span className="text-white font-semibold">{colorName}</span>
+            {/* CASO 1: ES GORRA -> NO SE MUESTRAN TALLAS, SOLO EXISTENCIAS */}
+            {isCap ? (
+              <div className="space-y-5 pt-1">
+                
+                {/* Banner Informativo Unitalla */}
+                <div className="p-3.5 bg-[#141414] border border-[#282828] flex items-start gap-3">
+                  <div className="p-2 bg-[#D4FF00]/10 border border-[#D4FF00]/30 text-[#D4FF00] shrink-0 mt-0.5">
+                    <Package className="w-4 h-4" />
+                  </div>
+                  <div className="text-xs font-mono space-y-1">
+                    <div className="text-white font-bold uppercase tracking-wider flex items-center gap-2">
+                      <span>TALLA ÚNICA AJUSTABLE</span>
+                      <span className="text-[10px] px-1.5 py-0.2 bg-[#D4FF00] text-black font-extrabold">
+                        ONE SIZE
+                      </span>
+                    </div>
+                    <p className="text-gray-400 font-sans leading-relaxed text-[11px]">
+                      Las gorras cuentan con broche metálico / velcro ajustable universal, por lo que{' '}
+                      <strong className="text-gray-200">no requieren selección de tallas (S, M, L, XL)</strong>. Ingresa únicamente cuántas piezas tienes en stock para este modelo.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Grid de Existencias y SKU Unitalla */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end bg-[#131313] p-4 border border-[#222222]">
+                  
+                  {/* Campo de Existencias Totales */}
+                  <div className="sm:col-span-6 space-y-2">
+                    <label className="text-xs font-mono text-gray-300 uppercase tracking-wider font-bold block">
+                      Existencias disponibles (Stock) *
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="number"
+                        min="0"
+                        value={capStock}
+                        onChange={(e) => setCapStock(Math.max(0, Number(e.target.value)))}
+                        className="w-full bg-[#181818] border border-[#303030] focus:border-[#D4FF00] px-4 py-2.5 text-base font-mono font-bold text-[#D4FF00] focus:outline-none"
+                      />
+                      <span className="text-xs font-mono text-gray-400 shrink-0">unidades</span>
+                    </div>
+
+                    {/* Botones de ajuste rápido */}
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <span className="text-[10px] font-mono text-gray-500 mr-1">Rápido:</span>
+                      {[
+                        { label: '-5', delta: -5 },
+                        { label: '-1', delta: -1 },
+                        { label: '+1', delta: 1 },
+                        { label: '+5', delta: 5 },
+                        { label: '+10', delta: 10 },
+                      ].map((btn) => (
+                        <button
+                          key={btn.label}
+                          type="button"
+                          onClick={() => setCapStock((prev) => Math.max(0, prev + btn.delta))}
+                          className="px-2 py-0.5 bg-[#1f1f1f] hover:bg-[#2a2a2a] hover:text-[#D4FF00] text-gray-300 font-mono text-[10px] border border-[#333] transition-colors cursor-pointer"
+                        >
+                          {btn.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* SKU de la Gorra */}
+                  <div className="sm:col-span-6 space-y-2">
+                    <label className="text-xs font-mono text-gray-300 uppercase tracking-wider block">
+                      SKU del producto
+                    </label>
+                    <input
+                      type="text"
+                      value={capSku}
+                      onChange={(e) => setCapSku(e.target.value)}
+                      placeholder="GJ-CAP-001"
+                      className="w-full bg-[#181818] border border-[#303030] focus:border-[#D4FF00] px-4 py-2.5 text-xs font-mono text-white focus:outline-none"
+                    />
+                    <span className="text-[10px] font-mono text-gray-500 block">
+                      Identificador de inventario único
+                    </span>
+                  </div>
+
+                </div>
+
+                {/* Color de la Gorra */}
+                <div className="flex flex-wrap items-center gap-3 pt-1 text-xs font-mono">
+                  <span className="text-gray-400">Color principal:</span>
+                  <div className="flex items-center space-x-2">
+                    <span
+                      className="w-4 h-4 rounded-full inline-block border border-white/20"
+                      style={{ backgroundColor: colorHex }}
+                    />
+                    <input
+                      type="text"
+                      value={colorName}
+                      onChange={(e) => setColorName(e.target.value)}
+                      placeholder="Negro"
+                      className="bg-[#141414] border border-[#2b2b2b] px-2.5 py-1 text-xs text-white w-28 focus:outline-none focus:border-[#D4FF00]"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    {['#111111', '#C4B69F', '#4A5243', '#1e293b'].map((hex) => (
+                      <button
+                        key={hex}
+                        type="button"
+                        onClick={() => {
+                          setColorHex(hex)
+                          if (hex === '#111111') setColorName('Negro')
+                          if (hex === '#C4B69F') setColorName('Stone')
+                          if (hex === '#4A5243') setColorName('Verde Olivo')
+                          if (hex === '#1e293b') setColorName('Navy')
+                        }}
+                        className={`w-5 h-5 rounded-full border transition-transform ${
+                          colorHex === hex ? 'border-[#D4FF00] scale-110' : 'border-white/20'
+                        }`}
+                        style={{ backgroundColor: hex }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
               </div>
-              <button
-                type="button"
-                className="text-[#D4FF00] hover:underline cursor-pointer ml-2"
-              >
-                + Añadir color
-              </button>
-            </div>
+            ) : (
+              /* CASO 2: NO ES GORRA (HOODIES, PLAYERAS, ETC) -> TABLA DE TALLAS S, M, L, XL */
+              <div className="space-y-4">
+                
+                {/* Color selection line */}
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-gray-400">Color:</span>
+                    <div className="flex items-center space-x-1.5">
+                      <span
+                        className="w-3.5 h-3.5 rounded-full inline-block border border-white/20"
+                        style={{ backgroundColor: colorHex }}
+                      />
+                      <input
+                        type="text"
+                        value={colorName}
+                        onChange={(e) => setColorName(e.target.value)}
+                        className="bg-transparent border-b border-[#2b2b2b] text-white font-semibold w-24 py-0.5 focus:outline-none focus:border-[#D4FF00]"
+                      />
+                    </div>
+                  </div>
 
-            {/* Variants Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-mono">
-                <thead>
-                  <tr className="border-b border-[#222222] text-gray-500 uppercase tracking-wider">
-                    <th className="py-2.5 px-3">TALLA</th>
-                    <th className="py-2.5 px-3">SKU</th>
-                    <th className="py-2.5 px-3 text-center">EXISTENCIAS</th>
-                    <th className="py-2.5 px-3 text-right">PRECIO</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#1b1b1b]">
-                  {variants.map((v, i) => (
-                    <tr key={i} className="hover:bg-[#141414]">
-                      <td className="py-2.5 px-3 font-bold text-white">{v.size}</td>
-                      <td className="py-2.5 px-3 text-gray-400">
-                        <input
-                          type="text"
-                          value={v.sku}
-                          onChange={(e) => handleVariantChange(i, 'sku', e.target.value)}
-                          className="bg-transparent border-b border-[#2b2b2b] focus:border-[#D4FF00] focus:outline-none py-0.5 text-xs text-gray-300 w-32"
-                        />
-                      </td>
-                      <td className="py-2.5 px-3 text-center">
-                        <input
-                          type="number"
-                          value={v.stock}
-                          onChange={(e) => handleVariantChange(i, 'stock', Number(e.target.value))}
-                          className="bg-[#161616] border border-[#2b2b2b] focus:border-[#D4FF00] focus:outline-none py-1 px-2 text-xs text-center text-white w-16"
-                        />
-                      </td>
-                      <td className="py-2.5 px-3 text-right text-[#D4FF00] font-semibold">
-                        ${v.price.toLocaleString('es-MX')}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  <span className="text-gray-500 text-[11px]">
+                    Desglose de tallas estándar
+                  </span>
+                </div>
 
-            <button
-              type="button"
-              onClick={handleAddVariant}
-              className="text-xs font-mono text-[#D4FF00] hover:underline cursor-pointer block pt-2"
-            >
-              + Añadir variante
-            </button>
+                {/* Variants Table */}
+                <div className="overflow-x-auto border border-[#222222]">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead>
+                      <tr className="border-b border-[#222222] bg-[#141414] text-gray-500 uppercase tracking-wider">
+                        <th className="py-2.5 px-3">TALLA</th>
+                        <th className="py-2.5 px-3">SKU</th>
+                        <th className="py-2.5 px-3 text-center">EXISTENCIAS</th>
+                        <th className="py-2.5 px-3 text-right">PRECIO</th>
+                        <th className="py-2.5 px-3 text-right">ACCIONES</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#1b1b1b]">
+                      {variants.map((v, i) => (
+                        <tr key={i} className="hover:bg-[#141414]">
+                          <td className="py-2.5 px-3 font-bold text-white">
+                            <input
+                              type="text"
+                              value={v.size}
+                              onChange={(e) => handleVariantChange(i, 'size', e.target.value)}
+                              className="bg-transparent border-b border-transparent hover:border-[#333] focus:border-[#D4FF00] focus:outline-none py-0.5 text-xs text-white font-bold w-12"
+                            />
+                          </td>
+                          <td className="py-2.5 px-3 text-gray-400">
+                            <input
+                              type="text"
+                              value={v.sku}
+                              onChange={(e) => handleVariantChange(i, 'sku', e.target.value)}
+                              className="bg-transparent border-b border-[#2b2b2b] focus:border-[#D4FF00] focus:outline-none py-0.5 text-xs text-gray-300 w-32"
+                            />
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            <input
+                              type="number"
+                              min="0"
+                              value={v.stock}
+                              onChange={(e) =>
+                                handleVariantChange(i, 'stock', Math.max(0, Number(e.target.value)))
+                              }
+                              className="bg-[#161616] border border-[#2b2b2b] focus:border-[#D4FF00] focus:outline-none py-1 px-2 text-xs text-center text-white w-16"
+                            />
+                          </td>
+                          <td className="py-2.5 px-3 text-right text-[#D4FF00] font-semibold">
+                            ${v.price.toLocaleString('es-MX')}
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            {variants.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveVariant(i)}
+                                className="text-gray-500 hover:text-red-400 transition-colors p-1"
+                                title="Eliminar talla"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddVariant}
+                  className="inline-flex items-center gap-1.5 text-xs font-mono text-[#D4FF00] hover:underline cursor-pointer pt-1"
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>+ Añadir otra talla (ej. XXL, XS)</span>
+                </button>
+
+              </div>
+            )}
+
           </div>
 
         </div>
@@ -447,13 +746,18 @@ export const ProductForm = ({ onSaveProduct, onCancel }: ProductFormProps) => {
         <div className="lg:col-span-4 space-y-6">
           
           {/* Card: VISTA PREVIA EN TIENDA */}
-          <div className="bg-[#101010] border border-[#202020] p-6 space-y-4">
-            <h4 className="text-xs font-mono font-bold tracking-widest text-gray-400 uppercase">
-              VISTA PREVIA EN TIENDA
-            </h4>
+          <div className="bg-[#101010] border border-[#202020] p-6 space-y-4 sticky top-6">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-mono font-bold tracking-widest text-gray-400 uppercase">
+                VISTA PREVIA EN TIENDA
+              </h4>
+              <span className="text-[10px] font-mono text-[#D4FF00] uppercase font-bold">
+                {isCap ? 'UNITALLA' : 'CON TALLAS'}
+              </span>
+            </div>
 
             {/* Live Product Card Mockup */}
-            <div className="bg-[#151515] border border-[#262626] p-3 space-y-3">
+            <div className="bg-[#151515] border border-[#262626] p-3 space-y-3 shadow-lg">
               <div className="relative aspect-square bg-[#0f0f0f] overflow-hidden">
                 {tag && (
                   <span
@@ -474,78 +778,81 @@ export const ProductForm = ({ onSaveProduct, onCancel }: ProductFormProps) => {
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-sm font-semibold text-white">
                   <span className="truncate mr-2 font-sans">{title || 'Sin nombre'}</span>
-                  <span className="font-mono text-sm whitespace-nowrap">
+                  <span className="font-mono text-sm whitespace-nowrap text-[#D4FF00]">
                     ${price.toLocaleString('es-MX')}
                   </span>
                 </div>
                 <div className="text-[11px] font-sans text-gray-400">
-                  {colorName} / Relaxed fit / 450 g
+                  {isCap
+                    ? `${colorName} / Unitalla Ajustable`
+                    : `${colorName} / Relaxed fit / 450 g`}
                 </div>
-                <div className="pt-1">
+                <div className="pt-1 flex items-center justify-between">
                   <span
-                    className="w-3 h-3 rounded-full inline-block border border-white/20"
+                    className="w-3.5 h-3.5 rounded-full inline-block border border-white/20"
                     style={{ backgroundColor: colorHex }}
                   />
+                  <span className="text-[10px] font-mono text-gray-500">
+                    {totalStock} en existencia
+                  </span>
                 </div>
               </div>
             </div>
 
-            <p className="text-[11px] font-mono text-gray-500 leading-relaxed">
-              Así se verá tu producto en el catálogo. No será visible hasta publicarlo.
-            </p>
-          </div>
+            {/* Card: Publicación */}
+            <div className="pt-3 border-t border-[#1c1c1c] space-y-4">
+              <h4 className="text-xs font-mono font-bold tracking-widest text-gray-300 uppercase">
+                Publicación
+              </h4>
 
-          {/* Card: Publicación */}
-          <div className="bg-[#101010] border border-[#202020] p-6 space-y-4">
-            <h4 className="text-xs font-mono font-bold tracking-widest text-gray-300 uppercase">
-              Publicación
-            </h4>
+              {/* State selector */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
+                  Estado
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as any)}
+                  className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-xs font-mono text-white focus:outline-none cursor-pointer"
+                >
+                  <option value="publicado">Publicado (Visible en tienda)</option>
+                  <option value="borrador">Borrador (Oculto)</option>
+                </select>
+              </div>
 
-            {/* State selector */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
-                Estado
-              </label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as any)}
-                className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-xs font-mono text-white focus:outline-none cursor-pointer"
-              >
-                <option value="borrador">Borrador</option>
-                <option value="publicado">Publicado</option>
-              </select>
-            </div>
+              {/* Collection selector */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
+                  Colección
+                </label>
+                <select
+                  value={collection}
+                  onChange={(e) => setCollection(e.target.value)}
+                  className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-xs font-mono text-white focus:outline-none cursor-pointer"
+                >
+                  <option value="Drop 004">Drop 004 (Actual)</option>
+                  <option value="Drop 003">Drop 003</option>
+                  <option value="Underground Basics">Underground Basics</option>
+                </select>
+              </div>
 
-            {/* Collection selector */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
-                Colección
-              </label>
-              <select
-                value={collection}
-                onChange={(e) => setCollection(e.target.value)}
-                className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-xs font-mono text-white focus:outline-none cursor-pointer"
-              >
-                <option value="Drop 004">Drop 004</option>
-                <option value="Drop 003">Drop 003</option>
-                <option value="Underground Basics">Underground Basics</option>
-              </select>
-            </div>
+              {/* Store checkbox */}
+              <div className="pt-2">
+                <label className="flex items-center space-x-2.5 cursor-pointer text-xs font-mono text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={inOnlineStore}
+                    onChange={(e) => setInOnlineStore(e.target.checked)}
+                    className="w-4 h-4 rounded bg-[#181818] border-[#333] text-[#D4FF00] focus:ring-0 focus:ring-offset-0 cursor-pointer accent-[#D4FF00]"
+                  />
+                  <span>Disponible para compra en línea</span>
+                </label>
+                <p className="text-[10px] font-mono text-gray-500 mt-2">
+                  Al publicar, las <strong className="text-white">{totalStock} piezas</strong>{' '}
+                  {isCap ? 'unitalla' : 'en todas las tallas'} estarán disponibles de inmediato.
+                </p>
+              </div>
 
-            {/* Store checkbox */}
-            <div className="pt-2">
-              <label className="flex items-center space-x-2.5 cursor-pointer text-xs font-mono text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={inOnlineStore}
-                  onChange={(e) => setInOnlineStore(e.target.checked)}
-                  className="w-4 h-4 rounded bg-[#181818] border-[#333] text-[#D4FF00] focus:ring-0 focus:ring-offset-0 cursor-pointer accent-[#D4FF00]"
-                />
-                <span>Tienda en línea</span>
-              </label>
-              <p className="text-[10px] font-mono text-gray-500 mt-2">
-                Al publicar, las {totalStock} unidades estarán disponibles para comprar.
-              </p>
             </div>
 
           </div>
@@ -555,17 +862,31 @@ export const ProductForm = ({ onSaveProduct, onCancel }: ProductFormProps) => {
       </div>
 
       {/* Sticky Bottom Summary Bar */}
-      <div className="sticky bottom-0 z-30 w-full bg-[#0d0d0d] border-t border-[#1e1e1e] py-3.5 px-6 flex items-center justify-between text-xs font-mono shadow-2xl">
-        <span className="text-gray-400">
-          Revisa imágenes, precio y existencias antes de publicar.
+      <div className="sticky bottom-0 z-30 w-full bg-[#0d0d0d] border-t border-[#1e1e1e] py-3.5 px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono shadow-2xl">
+        <span className="text-gray-400 text-center sm:text-left">
+          {isCap
+            ? '✓ Gorra configurada como Unitalla. Revisa existencias antes de guardar.'
+            : '✓ Revisa imágenes, precio y variantes de talla antes de publicar.'}
         </span>
 
-        <button
-          onClick={onCancel}
-          className="text-gray-400 hover:text-white underline cursor-pointer"
-        >
-          Descartar cambios
-        </button>
+        <div className="flex items-center space-x-4">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-gray-400 hover:text-white underline cursor-pointer"
+          >
+            Descartar cambios / Volver
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handlePublish('publicado')}
+            disabled={isSubmitting}
+            className="px-5 py-2 bg-[#D4FF00] hover:bg-[#bfe600] text-black font-bold uppercase tracking-wider text-xs transition-colors cursor-pointer"
+          >
+            {isEditing ? 'Guardar Cambios' : 'Publicar Ahora'}
+          </button>
+        </div>
       </div>
 
     </div>

@@ -120,7 +120,15 @@ export async function fetchProducts(category?: string): Promise<Product[]> {
     }
   })()
 
-  const allProducts = [...customProducts, ...MOCK_PRODUCTS]
+  const deletedIds: string[] = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('gj_deleted_product_ids') || '[]')
+    } catch {
+      return []
+    }
+  })()
+
+  const allProducts = [...customProducts, ...MOCK_PRODUCTS].filter(p => !deletedIds.includes(p.id))
 
   if (!category || category === 'todos') {
     return allProducts
@@ -129,11 +137,14 @@ export async function fetchProducts(category?: string): Promise<Product[]> {
 }
 
 /**
- * Create/publish product to Supabase (with localStorage fallback)
+ * Create/publish or update product in Supabase (with localStorage fallback)
  */
 export async function createProduct(productData: Partial<Product>): Promise<{ success: boolean; data?: Product; message?: string }> {
+  const isUpdate = Boolean(productData.id)
+  const id = productData.id || `prod-${Date.now()}`
+  
   const newProduct: Product = {
-    id: `prod-${Date.now()}`,
+    id,
     slug: productData.slug || `producto-${Date.now()}`,
     title: productData.title || 'Nuevo Producto',
     category: productData.category || 'hoodies',
@@ -147,32 +158,79 @@ export async function createProduct(productData: Partial<Product>): Promise<{ su
     image_url: productData.image_url || '/images/product-hoodie.jpg',
     stock: productData.stock || 10,
     is_featured: productData.is_featured ?? true,
-    created_at: new Date().toISOString()
+    created_at: productData.created_at || new Date().toISOString()
   }
 
   if (isSupabaseConfigured && supabase) {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .insert([newProduct])
-        .select()
-        .single()
-
-      if (error) throw error
-      return { success: true, data: data as Product }
+      if (isUpdate) {
+        const { data, error } = await supabase
+          .from('products')
+          .update(newProduct)
+          .eq('id', id)
+          .select()
+          .single()
+        if (error) throw error
+        return { success: true, data: data as Product }
+      } else {
+        const { data, error } = await supabase
+          .from('products')
+          .insert([newProduct])
+          .select()
+          .single()
+        if (error) throw error
+        return { success: true, data: data as Product }
+      }
     } catch (err: any) {
-      console.warn('Error inserting to Supabase, saving to local store:', err)
+      console.warn('Error inserting/updating in Supabase, saving to local store:', err)
     }
   }
 
   // Persist to local storage
   try {
-    const existing = JSON.parse(localStorage.getItem('gj_custom_products') || '[]')
-    existing.unshift(newProduct)
+    const existing: Product[] = JSON.parse(localStorage.getItem('gj_custom_products') || '[]')
+    const index = existing.findIndex(p => p.id === id)
+    if (index > -1) {
+      existing[index] = newProduct
+    } else {
+      existing.unshift(newProduct)
+    }
     localStorage.setItem('gj_custom_products', JSON.stringify(existing))
     return { success: true, data: newProduct }
   } catch (err) {
     return { success: false, message: 'No se pudo guardar el producto localmente.' }
+  }
+}
+
+/**
+ * Delete product from Supabase & local storage
+ */
+export async function deleteProduct(productId: string): Promise<{ success: boolean; message?: string }> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase.from('products').delete().eq('id', productId)
+      if (error) throw error
+    } catch (err: any) {
+      console.warn('Error deleting product from Supabase:', err)
+    }
+  }
+
+  try {
+    // Remove from custom products
+    const custom: Product[] = JSON.parse(localStorage.getItem('gj_custom_products') || '[]')
+    const filtered = custom.filter(p => p.id !== productId)
+    localStorage.setItem('gj_custom_products', JSON.stringify(filtered))
+
+    // Track deleted IDs so mock products don't reappear on reload
+    const deletedIds: string[] = JSON.parse(localStorage.getItem('gj_deleted_product_ids') || '[]')
+    if (!deletedIds.includes(productId)) {
+      deletedIds.push(productId)
+      localStorage.setItem('gj_deleted_product_ids', JSON.stringify(deletedIds))
+    }
+
+    return { success: true }
+  } catch (err) {
+    return { success: false, message: 'No se pudo eliminar el producto localmente.' }
   }
 }
 
