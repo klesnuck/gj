@@ -388,6 +388,7 @@ export function App() {
         items={cartItems}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
+        coupons={coupons}
       />
 
       {/* Quick View Product Modal */}
