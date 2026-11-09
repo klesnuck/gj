@@ -8,7 +8,6 @@ import {
   Save,
   ArrowUpRight,
   Check,
-  Package,
 } from 'lucide-react'
 import type { Product } from '../../types/database.types'
 

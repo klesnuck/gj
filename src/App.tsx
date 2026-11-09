@@ -10,10 +10,15 @@ import { Newsletter } from './components/Newsletter'
 import { Footer } from './components/Footer'
 import { CartDrawer } from './components/CartDrawer'
 import { QuickViewModal } from './components/QuickViewModal'
-import { fetchProducts } from './lib/supabase'
+import { AdminLayout } from './components/admin/AdminLayout'
+import { ProductForm } from './components/admin/ProductForm'
+import { fetchProducts, createProduct } from './lib/supabase'
 import type { Product, CartItem } from './types/database.types'
 
 export function App() {
+  const [currentView, setCurrentView] = useState<'store' | 'admin'>(() => {
+    return window.location.hash === '#admin' ? 'admin' : 'store'
+  })
   const [products, setProducts] = useState<Product[]>([])
   const [activeCategory, setActiveCategory] = useState<string>('todos')
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -27,6 +32,19 @@ export function App() {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
+  // Listen to hash changes (#admin <-> #)
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#admin') {
+        setCurrentView('admin')
+      } else if (currentView === 'admin') {
+        setCurrentView('store')
+      }
+    }
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [currentView])
+
   // Save cart to localStorage
   useEffect(() => {
     try {
@@ -35,6 +53,12 @@ export function App() {
       console.warn('Could not save cart to localStorage', e)
     }
   }, [cartItems])
+
+  // Load products
+  const reloadProducts = async () => {
+    const data = await fetchProducts(activeCategory)
+    setProducts(data)
+  }
 
   // Fetch products when category changes
   useEffect(() => {
@@ -50,6 +74,16 @@ export function App() {
       isMounted = false
     }
   }, [activeCategory])
+
+  // Admin save product handler
+  const handleSaveProduct = async (productData: Partial<Product>): Promise<boolean> => {
+    const res = await createProduct(productData)
+    if (res.success) {
+      await reloadProducts()
+      return true
+    }
+    return false
+  }
 
   // Cart operations
   const handleAddToCart = (product: Product, selectedColor?: string, selectedSize?: string) => {
@@ -110,12 +144,33 @@ export function App() {
     if (el) el.scrollIntoView({ behavior: 'smooth' })
   }
 
+  // Render Admin View
+  if (currentView === 'admin') {
+    return (
+      <AdminLayout
+        onBackToStore={() => {
+          window.location.hash = ''
+          setCurrentView('store')
+        }}
+      >
+        <ProductForm
+          onSaveProduct={handleSaveProduct}
+          onCancel={() => {
+            window.location.hash = ''
+            setCurrentView('store')
+          }}
+        />
+      </AdminLayout>
+    )
+  }
+
+  // Render Public Storefront View
   return (
     <div className="min-h-screen bg-[#090909] text-white flex flex-col selection:bg-[#D4FF00] selection:text-black">
       {/* 1. Announcement Bar */}
       <AnnouncementBar />
 
-      {/* 2. Main Navigation Bar */}
+      {/* 2. Main Navigation Bar with Admin shortcut */}
       <Navbar
         cartCount={totalCartCount}
         onOpenCart={() => setIsCartOpen(true)}
@@ -124,10 +179,14 @@ export function App() {
           const el = document.getElementById('catalogo')
           if (el) el.scrollIntoView({ behavior: 'smooth' })
         }}
+        onOpenAdmin={() => {
+          window.location.hash = 'admin'
+          setCurrentView('admin')
+        }}
       />
 
       <main className="flex-1">
-        {/* 3. Hero Section (Drop 004 / Underground Essentials) */}
+        {/* 3. Hero Section (Drop 004 / Underground Essentials + Mascot) */}
         <Hero
           onShopDrop={handleShopDrop}
           onExploreCaps={handleExploreCaps}
@@ -172,6 +231,19 @@ export function App() {
         }}
       />
 
+      {/* Floating Discreet Admin Quick Access Pill */}
+      <div className="fixed bottom-4 right-4 z-40 hidden sm:block">
+        <button
+          onClick={() => {
+            window.location.hash = 'admin'
+            setCurrentView('admin')
+          }}
+          className="px-3 py-1.5 bg-[#141414]/90 hover:bg-[#D4FF00] text-gray-400 hover:text-black border border-[#262626] hover:border-[#D4FF00] rounded-full text-[10px] font-mono uppercase tracking-widest backdrop-blur-sm transition-all duration-200 shadow-xl"
+        >
+          ⚙ Panel Admin
+        </button>
+      </div>
+
       {/* Cart Drawer */}
       <CartDrawer
         isOpen={isCartOpen}
@@ -192,4 +264,3 @@ export function App() {
 }
 
 export default App
-

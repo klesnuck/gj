@@ -11,32 +11,32 @@ export const Hero: React.FC<HeroProps> = ({ onShopDrop, onExploreCaps }) => {
     <section className="relative w-full bg-[#090909] overflow-hidden pt-8 pb-16 lg:pt-14 lg:pb-24 border-b border-[#1c1c1c]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
-          
+
           {/* Left Hero Content */}
           <div className="lg:col-span-7 flex flex-col justify-center space-y-6 lg:pr-4">
-            
+
             {/* Drop Indicator Tag */}
             <div className="inline-flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#D4FF00] animate-pulse"></span>
               <span className="text-xs sm:text-sm font-mono tracking-widest text-[#D4FF00] font-semibold uppercase">
-                DROP 004 / UNDERGROUND ESSENTIALS
+                SLW
               </span>
             </div>
 
             {/* Giant Title + Mascot Standing Next to It */}
             <div className="flex items-end gap-4 sm:gap-6">
-              
+
               {/* Massive Headline */}
               <h1 className="font-display text-5xl sm:text-7xl lg:text-[84px] xl:text-[92px] leading-[0.88] font-black uppercase tracking-tight text-white select-none shrink-0">
-                TU CALLE.<br />
-                <span className="text-white">TUS REGLAS.</span>
+                REVIVIENDO.<br />
+                <span className="text-white">EL HYPE.</span>
               </h1>
 
               {/* Streetwear Mascot standing right next to the title */}
               <div className="relative shrink-0 group mb-1">
                 {/* Subtle Ambient Lime Glow */}
                 <div className="absolute inset-0 bg-[#D4FF00]/20 blur-xl rounded-full scale-90 group-hover:bg-[#D4FF00]/30 transition-all duration-300 pointer-events-none" />
-                
+
                 {/* Mascot Image */}
                 <div className="relative w-16 sm:w-24 md:w-28 lg:w-32 h-36 sm:h-52 md:h-60 lg:h-64 flex items-end">
                   <img
@@ -55,7 +55,7 @@ export const Hero: React.FC<HeroProps> = ({ onShopDrop, onExploreCaps }) => {
 
             {/* Subtitle */}
             <p className="text-gray-400 text-base sm:text-lg max-w-lg font-sans leading-relaxed">
-              No seguimos el hype. Lo llevamos puesto. Ropa y gorras para quienes marcan su propio ritmo.
+              No seguimos el hype. Lo llevamos puesto.
             </p>
 
             {/* Action Buttons */}
@@ -64,7 +64,7 @@ export const Hero: React.FC<HeroProps> = ({ onShopDrop, onExploreCaps }) => {
                 onClick={onShopDrop}
                 className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 bg-[#D4FF00] hover:bg-[#bfe600] text-black font-mono font-bold text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 transform hover:-translate-y-0.5 shadow-[0_0_20px_rgba(212,255,0,0.25)]"
               >
-                <span>COMPRAR EL DROP</span>
+                <span>VER LO MAS VENDIDO</span>
                 <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
               </button>
 
@@ -89,7 +89,7 @@ export const Hero: React.FC<HeroProps> = ({ onShopDrop, onExploreCaps }) => {
           {/* Right Hero Visual Banner */}
           <div className="lg:col-span-5 relative">
             <div className="relative w-full aspect-[4/3] sm:aspect-[16/11] lg:aspect-[5/4] bg-[#121212] overflow-hidden border border-[#222222] group">
-              
+
               {/* Top Tag: NUEVA COLECCIÓN */}
               <div className="absolute top-4 left-4 z-20">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#D4FF00] text-black text-[11px] font-mono font-bold tracking-wider uppercase">

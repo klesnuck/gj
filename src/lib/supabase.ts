@@ -111,11 +111,69 @@ export async function fetchProducts(category?: string): Promise<Product[]> {
     }
   }
 
-  // Fallback to local catalog
+  // Fallback to local catalog (including locally added products)
+  const customProducts: Product[] = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('gj_custom_products') || '[]')
+    } catch {
+      return []
+    }
+  })()
+
+  const allProducts = [...customProducts, ...MOCK_PRODUCTS]
+
   if (!category || category === 'todos') {
-    return MOCK_PRODUCTS
+    return allProducts
   }
-  return MOCK_PRODUCTS.filter(p => p.category.toLowerCase() === category.toLowerCase())
+  return allProducts.filter(p => p.category.toLowerCase() === category.toLowerCase())
+}
+
+/**
+ * Create/publish product to Supabase (with localStorage fallback)
+ */
+export async function createProduct(productData: Partial<Product>): Promise<{ success: boolean; data?: Product; message?: string }> {
+  const newProduct: Product = {
+    id: `prod-${Date.now()}`,
+    slug: productData.slug || `producto-${Date.now()}`,
+    title: productData.title || 'Nuevo Producto',
+    category: productData.category || 'hoodies',
+    price: productData.price || 999,
+    currency: productData.currency || 'MXN',
+    tag: productData.tag || null,
+    tag_type: productData.tag_type || 'lime',
+    specs: productData.specs || '',
+    description: productData.description || '',
+    colors: productData.colors || ['#111111'],
+    image_url: productData.image_url || '/images/product-hoodie.jpg',
+    stock: productData.stock || 10,
+    is_featured: productData.is_featured ?? true,
+    created_at: new Date().toISOString()
+  }
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .insert([newProduct])
+        .select()
+        .single()
+
+      if (error) throw error
+      return { success: true, data: data as Product }
+    } catch (err: any) {
+      console.warn('Error inserting to Supabase, saving to local store:', err)
+    }
+  }
+
+  // Persist to local storage
+  try {
+    const existing = JSON.parse(localStorage.getItem('gj_custom_products') || '[]')
+    existing.unshift(newProduct)
+    localStorage.setItem('gj_custom_products', JSON.stringify(existing))
+    return { success: true, data: newProduct }
+  } catch (err) {
+    return { success: false, message: 'No se pudo guardar el producto localmente.' }
+  }
 }
 
 /**

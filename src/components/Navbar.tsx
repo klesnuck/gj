@@ -5,9 +5,10 @@ interface NavbarProps {
   cartCount: number
   onOpenCart: () => void
   onSelectCategory?: (category: string) => void
+  onOpenAdmin?: () => void
 }
 
-export const Navbar = ({ cartCount, onOpenCart, onSelectCategory }: NavbarProps) => {
+export const Navbar = ({ cartCount, onOpenCart, onSelectCategory, onOpenAdmin }: NavbarProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -109,14 +110,18 @@ export const Navbar = ({ cartCount, onOpenCart, onSelectCategory }: NavbarProps)
               )}
             </div>
 
-            {/* Account Icon */}
-            <a
-              href="#cuenta"
-              aria-label="Mi Cuenta"
-              className="p-1 hover:text-[#D4FF00] transition-colors hidden sm:block"
+            {/* Account / Admin Button */}
+            <button
+              onClick={onOpenAdmin}
+              aria-label="Panel de Administración"
+              title="Panel de Administración"
+              className="p-1 hover:text-[#D4FF00] transition-colors hidden sm:flex items-center gap-1.5 group cursor-pointer"
             >
               <User className="w-5 h-5 stroke-[1.75]" />
-            </a>
+              <span className="hidden lg:inline text-[10px] font-mono tracking-wider text-gray-400 group-hover:text-[#D4FF00] uppercase font-bold">
+                ADMIN
+              </span>
+            </button>
 
             {/* Cart Icon with Counter */}
             <button
@@ -175,6 +180,15 @@ export const Navbar = ({ cartCount, onOpenCart, onSelectCategory }: NavbarProps)
             >
               Universo GJ
             </a>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false)
+                onOpenAdmin?.()
+              }}
+              className="text-left text-[#D4FF00] font-bold py-1 border-t border-[#222] pt-2"
+            >
+              ⚙ Panel de Administración
+            </button>
           </div>
           <div className="pt-4 border-t border-[#222] flex items-center justify-between text-xs font-mono text-gray-400">
             <span>DROP 004 DISPONIBLE</span>
