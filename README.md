@@ -1,4 +1,4 @@
-# gj. CLOTHING AND CAPS — Tienda Oficial (Drop 004)
+# gj. CLOTHING AND CAPS — Tienda 
 
 Proyecto e-commerce streetwear desarrollado con **React**, **Vite**, **TypeScript**, **Tailwind CSS** y base de datos en **Supabase**.
 
@@ -7,9 +7,8 @@ Proyecto e-commerce streetwear desarrollado con **React**, **Vite**, **TypeScrip
 ## ⚡ Características
 
 - **Diseño Fiel a la Identidad Visual**:
-  - Banner superior neón con aviso de envío gratis ($1,999 MXN) y Drop 004.
   - Navbar con logo brutalista `gj. CLOTHING AND CAPS`, navegación por categorías, buscador y bolsa interactiva.
-  - Sección Hero con tipografía condensada de alto impacto (`TU CALLE. TUS REGLAS.`), tag de nueva colección y badges.
+  - Sección Hero con tipografía condensada de alto impacto , tag de nueva colección y badges.
   - Ticker infinito animado (`SIN PERMISO ✱ SIN COPIAS ✱ SOLO IDENTIDAD ✱ GJ CLOTHING AND CAPS`).
   - Catálogo interactivo (`01 / LOS MÁS BUSCADOS`) con filtrado en tiempo real, selector de color, botón quick-add `+` y modal detallado de producto.
   - Bloques editoriales de categorías (`02 / ELIGE TU CÓDIGO - CLOTHING & CAPS`).
