@@ -77,7 +77,7 @@ export const Navbar = ({ cartCount, onOpenCart, onSelectCategory, onOpenAdmin }:
               href="#manifiesto"
               className="text-gray-300 hover:text-[#D4FF00] transition-colors"
             >
-              Universo GJ
+              GJ
             </a>
           </nav>
 

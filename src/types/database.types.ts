@@ -48,3 +48,50 @@ export interface NewsletterSubscriber {
   created_at?: string
 }
 
+export interface OrderItem {
+  title: string
+  size?: string
+  color?: string
+  quantity: number
+  price: number
+}
+
+export interface Order {
+  id: string
+  orderNumber: string
+  customerName: string
+  customerPhone: string
+  customerEmail: string
+  shippingType: 'saltillo_local' | 'paqueteria_nacional'
+  shippingAddress: string
+  items: OrderItem[]
+  total: number
+  status: 'pendiente' | 'en_camino' | 'entregado'
+  paymentMethod: string
+  createdAt: string
+}
+
+export interface Customer {
+  id: string
+  name: string
+  phone: string
+  email: string
+  city: string
+  ordersCount: number
+  totalSpent: number
+  registeredAt: string
+  lastOrderDate: string
+}
+
+export interface Coupon {
+  id: string
+  code: string
+  discountType: 'percentage' | 'fixed'
+  discountValue: number
+  durationLabel: string
+  expiresAt: string
+  isActive: boolean
+  minPurchase: number
+  usesCount: number
+  createdAt: string
+}

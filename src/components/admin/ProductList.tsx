@@ -197,3 +197,4 @@ export const ProductList = ({
     </div>
   )
 }
+
