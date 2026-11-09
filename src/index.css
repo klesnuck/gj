@@ -8,6 +8,7 @@
     background-color: #090909;
     color: #F4F4F4;
     color-scheme: dark;
+    overflow-x: hidden;
   }
 
   /* Custom subtle scrollbar */
@@ -37,3 +38,20 @@
   scrollbar-width: none;
 }
 
+/* GPU-Accelerated Hardware Smooth Float Animation */
+@keyframes smoothFloat {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -9px, 0);
+  }
+}
+
+.animate-smooth-float {
+  animation: smoothFloat 4.5s ease-in-out infinite;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
