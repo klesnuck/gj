@@ -21,18 +21,29 @@ interface AdminLayoutProps {
 export const AdminLayout = ({
   children,
   onBackToStore,
-  activeTab = 'productos',
+  activeTab = 'resumen',
   onTabChange,
 }: AdminLayoutProps) => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   const navItems = [
     { id: 'resumen', label: 'Resumen', icon: LayoutDashboard },
-    { id: 'productos', label: 'Productos', icon: Package, active: true },
+    { id: 'productos', label: 'Productos', icon: Package },
     { id: 'pedidos', label: 'Pedidos', icon: ShoppingBag, badge: '08' },
     { id: 'clientes', label: 'Clientes', icon: Users },
     { id: 'descuentos', label: 'Descuentos', icon: Tag },
   ]
+
+  const breadcrumbMap: Record<string, { parent: string; current: string }> = {
+    resumen: { parent: 'Panel General', current: 'Resumen y Métricas' },
+    productos: { parent: 'Catálogo', current: 'Productos' },
+    pedidos: { parent: 'Logística', current: 'Pedidos y Envíos' },
+    clientes: { parent: 'Audiencia', current: 'Clientes y Teléfonos' },
+    descuentos: { parent: 'Marketing', current: 'Cupones Temporales' },
+  }
+
+  const currentBreadcrumb =
+    breadcrumbMap[activeTab] || { parent: 'Administración', current: activeTab }
 
   return (
     <div className="min-h-screen bg-[#070707] text-white flex flex-col md:flex-row antialiased selection:bg-[#D4FF00] selection:text-black">
@@ -41,7 +52,7 @@ export const AdminLayout = ({
       <div className="md:hidden flex items-center justify-between p-4 bg-[#0d0d0d] border-b border-[#1c1c1c]">
         <div className="flex items-center space-x-2">
           <span className="font-display text-2xl font-black text-white">gj.</span>
-          <span className="text-[10px] font-mono uppercase text-gray-400">ADMIN</span>
+          <span className="text-[10px] font-mono uppercase text-[#D4FF00] font-bold">ADMIN</span>
         </div>
         <button
           onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
@@ -79,7 +90,7 @@ export const AdminLayout = ({
             <nav className="space-y-1">
               {navItems.map((item) => {
                 const Icon = item.icon
-                const isActive = activeTab === item.id || item.active
+                const isActive = activeTab === item.id
                 return (
                   <button
                     key={item.id}
@@ -87,7 +98,7 @@ export const AdminLayout = ({
                       onTabChange?.(item.id)
                       setMobileSidebarOpen(false)
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-sm text-xs font-mono uppercase tracking-wider transition-all duration-150 ${
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-sm text-xs font-mono uppercase tracking-wider transition-all duration-150 cursor-pointer ${
                       isActive
                         ? 'bg-[#182109] text-[#D4FF00] border-l-2 border-[#D4FF00] font-bold'
                         : 'text-gray-400 hover:text-white hover:bg-[#121212]'
@@ -112,7 +123,7 @@ export const AdminLayout = ({
           <div className="pt-4 border-t border-[#181818] space-y-1">
             <button
               onClick={onBackToStore}
-              className="w-full flex items-center justify-between px-3 py-2 text-xs font-mono text-gray-400 hover:text-[#D4FF00] uppercase tracking-wider transition-colors"
+              className="w-full flex items-center justify-between px-3 py-2 text-xs font-mono text-gray-400 hover:text-[#D4FF00] uppercase tracking-wider transition-colors cursor-pointer"
             >
               <div className="flex items-center space-x-3">
                 <ArrowUpRight className="w-4 h-4" />
@@ -121,7 +132,7 @@ export const AdminLayout = ({
             </button>
 
             <button
-              className="w-full flex items-center justify-between px-3 py-2 text-xs font-mono text-gray-400 hover:text-white uppercase tracking-wider transition-colors"
+              className="w-full flex items-center justify-between px-3 py-2 text-xs font-mono text-gray-400 hover:text-white uppercase tracking-wider transition-colors cursor-pointer"
             >
               <div className="flex items-center space-x-3">
                 <Sliders className="w-4 h-4" />
@@ -153,7 +164,8 @@ export const AdminLayout = ({
         {/* Top Bar */}
         <header className="h-16 bg-[#0a0a0a] border-b border-[#181818] px-6 flex items-center justify-between">
           <div className="text-xs font-mono text-gray-400">
-            Productos <span className="text-gray-600">/</span> <span className="text-white">Nuevo producto</span>
+            {currentBreadcrumb.parent} <span className="text-gray-600">/</span>{' '}
+            <span className="text-white font-semibold">{currentBreadcrumb.current}</span>
           </div>
 
           {/* Admin Avatar Badge */}
@@ -177,4 +189,3 @@ export const AdminLayout = ({
     </div>
   )
 }
-

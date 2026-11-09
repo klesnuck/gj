@@ -277,3 +277,4 @@ export const INITIAL_COUPONS: Coupon[] = [
     createdAt: '01 Nov 2026',
   },
 ]
+

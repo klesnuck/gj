@@ -10,15 +10,28 @@ import { Newsletter } from './components/Newsletter'
 import { Footer } from './components/Footer'
 import { CartDrawer } from './components/CartDrawer'
 import { QuickViewModal } from './components/QuickViewModal'
+
+// Admin Components
 import { AdminLayout } from './components/admin/AdminLayout'
+import { DashboardOverview } from './components/admin/DashboardOverview'
+import { ProductList } from './components/admin/ProductList'
 import { ProductForm } from './components/admin/ProductForm'
+import { OrdersList } from './components/admin/OrdersList'
+import { CustomersList } from './components/admin/CustomersList'
+import { DiscountsView } from './components/admin/DiscountsView'
+
 import { fetchProducts, createProduct } from './lib/supabase'
-import type { Product, CartItem } from './types/database.types'
+import { INITIAL_ORDERS, INITIAL_CUSTOMERS, INITIAL_COUPONS } from './lib/mockData'
+import type { Product, CartItem, Order, Customer, Coupon } from './types/database.types'
 
 export function App() {
   const [currentView, setCurrentView] = useState<'store' | 'admin'>(() => {
-    return window.location.hash === '#admin' ? 'admin' : 'store'
+    return window.location.hash.startsWith('#admin') ? 'admin' : 'store'
   })
+  const [adminTab, setAdminTab] = useState<string>('resumen')
+  const [isCreatingProduct, setIsCreatingProduct] = useState(false)
+
+  // Store data
   const [products, setProducts] = useState<Product[]>([])
   const [activeCategory, setActiveCategory] = useState<string>('todos')
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -32,10 +45,38 @@ export function App() {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
-  // Listen to hash changes (#admin <-> #)
+  // Admin Data with localStorage persistence
+  const [orders, setOrders] = useState<Order[]>(() => {
+    try {
+      const saved = localStorage.getItem('gj_admin_orders')
+      return saved ? JSON.parse(saved) : INITIAL_ORDERS
+    } catch {
+      return INITIAL_ORDERS
+    }
+  })
+
+  const [customers, setCustomers] = useState<Customer[]>(() => {
+    try {
+      const saved = localStorage.getItem('gj_admin_customers')
+      return saved ? JSON.parse(saved) : INITIAL_CUSTOMERS
+    } catch {
+      return INITIAL_CUSTOMERS
+    }
+  })
+
+  const [coupons, setCoupons] = useState<Coupon[]>(() => {
+    try {
+      const saved = localStorage.getItem('gj_admin_coupons')
+      return saved ? JSON.parse(saved) : INITIAL_COUPONS
+    } catch {
+      return INITIAL_COUPONS
+    }
+  })
+
+  // Hash management
   useEffect(() => {
     const handleHashChange = () => {
-      if (window.location.hash === '#admin') {
+      if (window.location.hash.startsWith('#admin')) {
         setCurrentView('admin')
       } else if (currentView === 'admin') {
         setCurrentView('store')
@@ -50,9 +91,20 @@ export function App() {
     try {
       localStorage.setItem('gj_cart', JSON.stringify(cartItems))
     } catch (e) {
-      console.warn('Could not save cart to localStorage', e)
+      console.warn('Could not save cart', e)
     }
   }, [cartItems])
+
+  // Save admin orders, customers & coupons
+  useEffect(() => {
+    try {
+      localStorage.setItem('gj_admin_orders', JSON.stringify(orders))
+      localStorage.setItem('gj_admin_customers', JSON.stringify(customers))
+      localStorage.setItem('gj_admin_coupons', JSON.stringify(coupons))
+    } catch (e) {
+      console.warn('Could not save admin datasets', e)
+    }
+  }, [orders, customers, coupons])
 
   // Load products
   const reloadProducts = async () => {
@@ -60,7 +112,6 @@ export function App() {
     setProducts(data)
   }
 
-  // Fetch products when category changes
   useEffect(() => {
     let isMounted = true
     const load = async () => {
@@ -75,14 +126,39 @@ export function App() {
     }
   }, [activeCategory])
 
-  // Admin save product handler
+  // Admin Handlers
   const handleSaveProduct = async (productData: Partial<Product>): Promise<boolean> => {
     const res = await createProduct(productData)
     if (res.success) {
       await reloadProducts()
+      setIsCreatingProduct(false)
       return true
     }
     return false
+  }
+
+  const handleUpdateOrderStatus = (orderId: string, newStatus: Order['status']) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+    )
+  }
+
+  const handleAddCustomer = (newCustomer: Customer) => {
+    setCustomers((prev) => [newCustomer, ...prev])
+  }
+
+  const handleAddCoupon = (newCoupon: Coupon) => {
+    setCoupons((prev) => [newCoupon, ...prev])
+  }
+
+  const handleToggleCoupon = (couponId: string) => {
+    setCoupons((prev) =>
+      prev.map((c) => (c.id === couponId ? { ...c, isActive: !c.isActive } : c))
+    )
+  }
+
+  const handleDeleteCoupon = (couponId: string) => {
+    setCoupons((prev) => prev.filter((c) => c.id !== couponId))
   }
 
   // Cart operations
@@ -144,27 +220,88 @@ export function App() {
     if (el) el.scrollIntoView({ behavior: 'smooth' })
   }
 
-  // Render Admin View
+  // RENDER ADMIN VIEW
   if (currentView === 'admin') {
     return (
       <AdminLayout
+        activeTab={adminTab}
+        onTabChange={(tab) => {
+          setAdminTab(tab)
+          setIsCreatingProduct(false)
+        }}
         onBackToStore={() => {
           window.location.hash = ''
           setCurrentView('store')
         }}
       >
-        <ProductForm
-          onSaveProduct={handleSaveProduct}
-          onCancel={() => {
-            window.location.hash = ''
-            setCurrentView('store')
-          }}
-        />
+        {/* 1. Resumen Tab */}
+        {adminTab === 'resumen' && (
+          <DashboardOverview
+            products={products}
+            orders={orders}
+            onNavigateToTab={(tab) => {
+              setAdminTab(tab)
+              setIsCreatingProduct(false)
+            }}
+            onAddNewProduct={() => {
+              setAdminTab('productos')
+              setIsCreatingProduct(true)
+            }}
+          />
+        )}
+
+        {/* 2. Productos Tab */}
+        {adminTab === 'productos' && (
+          <>
+            {isCreatingProduct ? (
+              <ProductForm
+                onSaveProduct={handleSaveProduct}
+                onCancel={() => setIsCreatingProduct(false)}
+              />
+            ) : (
+              <ProductList
+                products={products}
+                onAddNew={() => setIsCreatingProduct(true)}
+                onViewProductInStore={(prod) => {
+                  window.location.hash = ''
+                  setCurrentView('store')
+                  setSelectedProduct(prod)
+                }}
+              />
+            )}
+          </>
+        )}
+
+        {/* 3. Pedidos Tab (Saltillo Local vs Paquetería) */}
+        {adminTab === 'pedidos' && (
+          <OrdersList
+            orders={orders}
+            onUpdateOrderStatus={handleUpdateOrderStatus}
+          />
+        )}
+
+        {/* 4. Clientes Tab (Clientes registrados con teléfonos) */}
+        {adminTab === 'clientes' && (
+          <CustomersList
+            customers={customers}
+            onAddCustomer={handleAddCustomer}
+          />
+        )}
+
+        {/* 5. Descuentos Tab (Cupones por tiempo seleccionado) */}
+        {adminTab === 'descuentos' && (
+          <DiscountsView
+            coupons={coupons}
+            onAddCoupon={handleAddCoupon}
+            onToggleCoupon={handleToggleCoupon}
+            onDeleteCoupon={handleDeleteCoupon}
+          />
+        )}
       </AdminLayout>
     )
   }
 
-  // Render Public Storefront View
+  // RENDER PUBLIC STOREFRONT VIEW
   return (
     <div className="min-h-screen bg-[#090909] text-white flex flex-col selection:bg-[#D4FF00] selection:text-black">
       {/* 1. Announcement Bar */}
@@ -238,7 +375,7 @@ export function App() {
             window.location.hash = 'admin'
             setCurrentView('admin')
           }}
-          className="px-3 py-1.5 bg-[#141414]/90 hover:bg-[#D4FF00] text-gray-400 hover:text-black border border-[#262626] hover:border-[#D4FF00] rounded-full text-[10px] font-mono uppercase tracking-widest backdrop-blur-sm transition-all duration-200 shadow-xl"
+          className="px-3 py-1.5 bg-[#141414]/90 hover:bg-[#D4FF00] text-gray-400 hover:text-black border border-[#262626] hover:border-[#D4FF00] rounded-full text-[10px] font-mono uppercase tracking-widest backdrop-blur-sm transition-all duration-200 shadow-xl cursor-pointer"
         >
           ⚙ Panel Admin
         </button>
