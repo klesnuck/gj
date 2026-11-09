@@ -53,9 +53,19 @@ export const ProductForm = ({
   const [collection, setCollection] = useState('Drop 004')
   const [status, setStatus] = useState<'borrador' | 'publicado'>('publicado')
   const [inOnlineStore, setInOnlineStore] = useState(true)
-  const [imageUrl, setImageUrl] = useState(
-    initialProduct?.image_url || '/images/product-hoodie.jpg'
-  )
+
+  // Multi-Image Gallery State (Up to 6 images)
+  const [images, setImages] = useState<string[]>(() => {
+    if (initialProduct?.images && initialProduct.images.length > 0) {
+      return initialProduct.images
+    }
+    if (initialProduct?.image_url) {
+      return [initialProduct.image_url]
+    }
+    return ['/images/product-hoodie.jpg']
+  })
+  const [coverIndex, setCoverIndex] = useState<number>(0)
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
 
@@ -92,8 +102,9 @@ export const ProductForm = ({
     setCategory(newCat)
     if (!isEditing) {
       if (newCat === 'gorras') {
-        if (imageUrl === '/images/product-hoodie.jpg') {
-          setImageUrl('/images/product-cap-black.jpg')
+        if (images.length === 1 && images[0] === '/images/product-hoodie.jpg') {
+          setImages(['/images/product-cap-black.jpg', '/images/product-cap-stone.jpg'])
+          setCoverIndex(0)
         }
         if (title === 'Hoodie No Signal') {
           setTitle('Gorra GJ Signature')
@@ -103,8 +114,9 @@ export const ProductForm = ({
           setPrice(699)
         }
       } else if (newCat === 'hoodies') {
-        if (imageUrl === '/images/product-cap-black.jpg') {
-          setImageUrl('/images/product-hoodie.jpg')
+        if (images.length >= 1 && images[0].includes('product-cap')) {
+          setImages(['/images/product-hoodie.jpg'])
+          setCoverIndex(0)
         }
         if (title === 'Gorra GJ Signature') {
           setTitle('Hoodie No Signal')
@@ -114,8 +126,9 @@ export const ProductForm = ({
           setPrice(1499)
         }
       } else if (newCat === 'playeras') {
-        if (imageUrl === '/images/product-cap-black.jpg' || imageUrl === '/images/product-hoodie.jpg') {
-          setImageUrl('/images/product-tshirt.jpg')
+        if (images.length >= 1 && (images[0].includes('cap') || images[0].includes('hoodie'))) {
+          setImages(['/images/product-tshirt.jpg'])
+          setCoverIndex(0)
         }
         if (title === 'Hoodie No Signal' || title === 'Gorra GJ Signature') {
           setTitle('Playera Heavyweight')
@@ -158,12 +171,41 @@ export const ProductForm = ({
     setVariants((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const tempUrl = URL.createObjectURL(file)
-      setImageUrl(tempUrl)
+  // Multi-file upload handler: reads up to 6 images as Data URLs so they persist forever
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files
+    if (!fileList || fileList.length === 0) return
+
+    const filesArray = Array.from(fileList)
+    const availableSlots = 6 - images.length
+    if (availableSlots <= 0) return
+
+    const filesToRead = filesArray.slice(0, availableSlots)
+    const readPromises = filesToRead.map((file) => {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.readAsDataURL(file)
+      })
+    })
+
+    const newBase64Images = await Promise.all(readPromises)
+    setImages((prev) => [...prev, ...newBase64Images].slice(0, 6))
+    e.target.value = ''
+  }
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    if (images.length <= 1) return
+    setImages((prev) => prev.filter((_, idx) => idx !== indexToRemove))
+    if (coverIndex === indexToRemove) {
+      setCoverIndex(0)
+    } else if (coverIndex > indexToRemove) {
+      setCoverIndex((prev) => prev - 1)
     }
+  }
+
+  const handleSetCover = (index: number) => {
+    setCoverIndex(index)
   }
 
   const handlePublish = async (newStatus: 'borrador' | 'publicado' = 'publicado') => {
@@ -171,6 +213,8 @@ export const ProductForm = ({
     const specsComputed = isCap
       ? `${colorName} / Bordado 3D / Unitalla Ajustable`
       : `${colorName} / Relaxed fit / ${price > 1000 ? '450 g' : '280 g'}`
+
+    const currentCover = images[coverIndex] || images[0] || '/images/product-hoodie.jpg'
 
     const productPayload: Partial<Product> = {
       id: initialProduct?.id,
@@ -186,7 +230,8 @@ export const ProductForm = ({
       description,
       specs: specsComputed,
       colors: [colorHex],
-      image_url: imageUrl,
+      image_url: currentCover,
+      images: images,
       stock: totalStock,
       is_featured: true,
       created_at: initialProduct?.created_at,
@@ -298,8 +343,8 @@ export const ProductForm = ({
         {/* Left Column (Forms) - 8 Cols */}
         <div className="lg:col-span-8 space-y-6">
           
-          {/* Section 01: Imágenes del producto */}
-          <div className="bg-[#101010] border border-[#202020] p-6 space-y-4">
+          {/* Section 01: Imágenes del producto (Galería de hasta 6 imágenes) */}
+          <div className="bg-[#101010] border border-[#202020] p-6 space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-[#1c1c1c]">
               <div className="flex items-center space-x-2">
                 <span className="text-xs font-mono font-bold text-[#D4FF00]">01</span>
@@ -307,40 +352,85 @@ export const ProductForm = ({
                   Imágenes del producto
                 </h3>
               </div>
-              <span className="text-xs font-mono text-gray-500">1 de 6 imágenes</span>
+              <span className="text-xs font-mono font-bold text-[#D4FF00]">
+                {images.length} de 6 imágenes
+              </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
-              
-              {/* Main Uploaded Thumbnail */}
-              <div className="sm:col-span-4 relative aspect-[4/5] bg-[#161616] border border-[#262626] overflow-hidden group">
-                <span className="absolute top-2 left-2 z-10 px-2 py-0.5 bg-white text-black text-[9px] font-mono font-bold tracking-wider uppercase">
-                  PRINCIPAL
-                </span>
-                <img
-                  src={imageUrl}
-                  alt="Vista previa carga"
-                  className="w-full h-full object-cover object-center"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setImageUrl(
-                      isCap ? '/images/product-cap-stone.jpg' : '/images/product-tshirt.jpg'
-                    )
-                  }
-                  className="absolute bottom-2 right-2 p-1.5 bg-black/80 hover:bg-[#D4FF00] hover:text-black text-gray-400 transition-colors"
-                  title="Cambiar imagen de muestra"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
+            {/* Gallery Grid (Shows all up to 6 images) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+              {images.map((img, idx) => {
+                const isCover = idx === coverIndex
+                return (
+                  <div
+                    key={idx}
+                    className={`relative aspect-[4/5] bg-[#161616] border transition-all group overflow-hidden ${
+                      isCover
+                        ? 'border-[#D4FF00] shadow-[0_0_15px_rgba(212,255,0,0.25)] ring-1 ring-[#D4FF00]'
+                        : 'border-[#262626] hover:border-gray-500'
+                    }`}
+                  >
+                    {/* Badge / Button: Portada */}
+                    {isCover ? (
+                      <span className="absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 bg-[#D4FF00] text-black text-[8px] font-mono font-black tracking-wider uppercase shadow-md">
+                        PORTADA
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleSetCover(idx)}
+                        className="absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 bg-black/85 hover:bg-[#D4FF00] hover:text-black text-gray-300 text-[8px] font-mono uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border border-white/20"
+                        title="Seleccionar como imagen de portada"
+                      >
+                        Hacer Portada
+                      </button>
+                    )}
 
-              {/* Drag & Drop Zone */}
-              <div className="sm:col-span-8 border-2 border-dashed border-[#262626] hover:border-[#D4FF00]/50 bg-[#121212] p-8 flex flex-col items-center justify-center text-center transition-colors group relative cursor-pointer">
+                    {/* Image Element */}
+                    <img
+                      src={img}
+                      alt={`Foto producto ${idx + 1}`}
+                      className="w-full h-full object-cover object-center"
+                    />
+
+                    {/* Delete Photo Button */}
+                    {images.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(idx)}
+                        className="absolute bottom-1.5 right-1.5 p-1 bg-black/80 hover:bg-red-600 text-gray-400 hover:text-white transition-colors cursor-pointer rounded-sm"
+                        title="Quitar esta imagen"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+
+                    {/* Image Slot Counter */}
+                    <span className="absolute bottom-1.5 left-1.5 text-[9px] font-mono text-gray-400 bg-black/70 px-1 rounded-sm">
+                      #{idx + 1}
+                    </span>
+                  </div>
+                )
+              })}
+
+              {/* Empty placeholder slots up to 6 */}
+              {Array.from({ length: Math.max(0, 6 - images.length) }).map((_, emptyIdx) => (
+                <div
+                  key={`empty-${emptyIdx}`}
+                  className="hidden sm:flex relative aspect-[4/5] bg-[#121212]/40 border border-dashed border-[#222222] items-center justify-center text-gray-600 text-[10px] font-mono select-none"
+                >
+                  <span>Slot {images.length + emptyIdx + 1}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Drag & Drop Zone (Permite subir múltiples fotos hasta completar 6) */}
+            {images.length < 6 ? (
+              <div className="border-2 border-dashed border-[#262626] hover:border-[#D4FF00]/50 bg-[#121212] p-6 sm:p-8 flex flex-col items-center justify-center text-center transition-colors group relative cursor-pointer">
                 <input
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleImageUpload}
                   className="absolute inset-0 opacity-0 cursor-pointer z-10"
                 />
@@ -348,20 +438,28 @@ export const ProductForm = ({
                   <Upload className="w-5 h-5 stroke-[2]" />
                 </div>
                 <p className="text-xs font-mono font-medium text-white mb-1">
-                  Arrastra tus imágenes aquí
+                  Arrastra tus imágenes aquí o haz clic para seleccionar
                 </p>
                 <p className="text-xs font-mono text-[#D4FF00] underline mb-2">
-                  o selecciona archivos
+                  Puedes seleccionar varias imágenes a la vez ({6 - images.length} disponibles)
                 </p>
                 <p className="text-[10px] font-mono text-gray-500">
-                  JPG, PNG o WEBP · Máx. 10 MB
+                  JPG, PNG o WEBP · Hasta 6 imágenes en total
                 </p>
               </div>
-
-            </div>
+            ) : (
+              <div className="p-3.5 bg-[#141414] border border-[#262626] flex items-center justify-between text-xs font-mono">
+                <span className="text-[#D4FF00] font-bold">
+                  ✓ Límite de 6 imágenes alcanzado.
+                </span>
+                <span className="text-gray-400 text-[11px]">
+                  Elimina alguna imagen con el icono de papelera si deseas subir otra.
+                </span>
+              </div>
+            )}
 
             <p className="text-[11px] font-mono text-gray-500 pt-1">
-              Recomendado: 1600 × 1800 px. La primera imagen será la portada.
+              La imagen marcada con <strong>PORTADA</strong> será la que se muestre en el catálogo y Hero. Puedes cambiar la portada con un clic.
             </p>
           </div>
 
@@ -769,11 +867,31 @@ export const ProductForm = ({
                   </span>
                 )}
                 <img
-                  src={imageUrl}
+                  src={images[coverIndex] || images[0] || '/images/product-hoodie.jpg'}
                   alt={title}
-                  className="w-full h-full object-cover object-center"
+                  className="w-full h-full object-cover object-center transition-all duration-200"
                 />
               </div>
+
+              {/* Mini thumbnails strip in preview */}
+              {images.length > 1 && (
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {images.map((img, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setCoverIndex(idx)}
+                      className={`w-9 h-9 rounded-sm overflow-hidden border transition-all shrink-0 cursor-pointer ${
+                        idx === coverIndex
+                          ? 'border-[#D4FF00] scale-105'
+                          : 'border-[#333] opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-sm font-semibold text-white">
@@ -793,7 +911,7 @@ export const ProductForm = ({
                     style={{ backgroundColor: colorHex }}
                   />
                   <span className="text-[10px] font-mono text-gray-500">
-                    {totalStock} en existencia
+                    {totalStock} en existencia ({images.length} fotos)
                   </span>
                 </div>
               </div>

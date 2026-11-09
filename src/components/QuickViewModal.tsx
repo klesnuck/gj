@@ -23,6 +23,12 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   const [selectedSize, setSelectedSize] = useState<string>(sizes[0])
   const [added, setAdded] = useState(false)
 
+  // Multi-image gallery in QuickView
+  const productImages =
+    product.images && product.images.length > 0 ? product.images : [product.image_url]
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const currentImage = productImages[activeImageIndex] || product.image_url
+
   const handleAdd = () => {
     onAddToCart(product, selectedColor, selectedSize)
     setAdded(true)
@@ -46,33 +52,55 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-black/80 hover:bg-[#D4FF00] hover:text-black border border-white/20 flex items-center justify-center text-gray-300 transition-colors"
+          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-black/80 hover:bg-[#D4FF00] hover:text-black border border-white/20 flex items-center justify-center text-gray-300 transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
 
         <div className="grid grid-cols-1 md:grid-cols-2">
           
-          {/* Left: Product Image */}
-          <div className="relative aspect-square bg-[#141414] border-b md:border-b-0 md:border-r border-[#222222] overflow-hidden flex items-center justify-center">
-            {product.tag && (
-              <div className="absolute top-4 left-4 z-10">
-                <span
-                  className={`inline-block px-3 py-1 text-[11px] font-mono font-bold tracking-widest uppercase ${
-                    product.tag_type === 'lime'
-                      ? 'bg-[#D4FF00] text-black'
-                      : 'bg-white text-black'
-                  }`}
-                >
-                  {product.tag}
-                </span>
+          {/* Left: Product Image & Multi-Image Strip */}
+          <div className="flex flex-col border-b md:border-b-0 md:border-r border-[#222222] bg-[#141414]">
+            <div className="relative aspect-square overflow-hidden flex items-center justify-center">
+              {product.tag && (
+                <div className="absolute top-4 left-4 z-10">
+                  <span
+                    className={`inline-block px-3 py-1 text-[11px] font-mono font-bold tracking-widest uppercase ${
+                      product.tag_type === 'lime'
+                        ? 'bg-[#D4FF00] text-black'
+                        : 'bg-white text-black'
+                    }`}
+                  >
+                    {product.tag}
+                  </span>
+                </div>
+              )}
+              <img
+                src={currentImage}
+                alt={product.title}
+                className="w-full h-full object-cover object-center transition-all duration-300"
+              />
+            </div>
+
+            {/* Thumbnail Navigation Strip if product has multiple images */}
+            {productImages.length > 1 && (
+              <div className="flex items-center gap-2 p-3 bg-[#0c0c0c] border-t border-[#1c1c1c] overflow-x-auto scrollbar-none">
+                {productImages.map((img, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setActiveImageIndex(i)}
+                    className={`w-12 h-12 rounded-sm overflow-hidden border transition-all cursor-pointer shrink-0 ${
+                      i === activeImageIndex
+                        ? 'border-[#D4FF00] scale-105 shadow-md shadow-[#D4FF00]/20'
+                        : 'border-[#262626] opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
               </div>
             )}
-            <img
-              src={product.image_url}
-              alt={product.title}
-              className="w-full h-full object-cover object-center"
-            />
           </div>
 
           {/* Right: Product Details & Purchase Form */}

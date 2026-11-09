@@ -155,7 +155,8 @@ export async function createProduct(productData: Partial<Product>): Promise<{ su
     specs: productData.specs || '',
     description: productData.description || '',
     colors: productData.colors || ['#111111'],
-    image_url: productData.image_url || '/images/product-hoodie.jpg',
+    image_url: productData.image_url || (productData.images && productData.images[0]) || '/images/product-hoodie.jpg',
+    images: productData.images && productData.images.length > 0 ? productData.images : [productData.image_url || '/images/product-hoodie.jpg'],
     stock: productData.stock || 10,
     is_featured: productData.is_featured ?? true,
     created_at: productData.created_at || new Date().toISOString()

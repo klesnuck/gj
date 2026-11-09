@@ -19,6 +19,7 @@ export interface Product {
   specs?: string | null
   colors?: string[]
   image_url: string
+  images?: string[]
   stock?: number
   is_featured?: boolean
   created_at?: string
