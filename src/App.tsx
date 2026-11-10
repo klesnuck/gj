@@ -78,6 +78,17 @@ export function App() {
   const [orders, setOrders] = useState<Order[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
 
+  // Limpieza de datos mock antiguos almacenados en el localStorage del teléfono o navegador
+  useEffect(() => {
+    try {
+      localStorage.removeItem('gj_admin_orders')
+      localStorage.removeItem('gj_admin_customers')
+      localStorage.removeItem('gj_custom_products')
+    } catch {
+      // Ignorar si el navegador tiene bloqueado localStorage
+    }
+  }, [])
+
   const [coupons, setCoupons] = useState<Coupon[]>(() => {
     try {
       const saved = localStorage.getItem('gj_admin_coupons')

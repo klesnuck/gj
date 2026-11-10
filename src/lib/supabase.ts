@@ -59,16 +59,7 @@ export async function fetchProducts(category?: string): Promise<Product[]> {
         }))
       }
     } catch (err) {
-      console.warn('Supabase fetchProducts error, usando respaldo local:', err)
-    }
-  }
-
-  // Si Supabase aún no tiene productos o está fuera de línea, usar los guardados localmente
-  if (productsList.length === 0) {
-    try {
-      productsList = JSON.parse(localStorage.getItem('gj_custom_products') || '[]')
-    } catch {
-      productsList = []
+      console.warn('Supabase fetchProducts error:', err)
     }
   }
 
@@ -259,11 +250,7 @@ export async function fetchOrders(): Promise<Order[]> {
     }
   }
 
-  try {
-    return JSON.parse(localStorage.getItem('gj_admin_orders') || '[]')
-  } catch {
-    return []
-  }
+  return []
 }
 
 export async function createOrder(orderPayload: {
@@ -365,11 +352,7 @@ export async function fetchCustomers(): Promise<Customer[]> {
     }
   }
 
-  try {
-    return JSON.parse(localStorage.getItem('gj_admin_customers') || '[]')
-  } catch {
-    return []
-  }
+  return []
 }
 
 export async function saveCustomer(customer: Customer): Promise<boolean> {
