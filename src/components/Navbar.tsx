@@ -29,22 +29,11 @@ export const Navbar = ({ cartCount, onOpenCart, onSelectCategory, onOpenAdmin }:
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
 
-          {/* Brand Logo with Mascot */}
-          <a href="#" className="flex items-center gap-3 group">
-            <div className="relative w-11 h-11 rounded-full bg-[#141414] border border-[#2b2b2b] group-hover:border-[#D4FF00] flex items-center justify-center overflow-hidden transition-all duration-300 shadow-inner shrink-0">
-              <img
-                src="/images/gj-mascot-avatar.png"
-                alt="gj. mascot"
-                className="w-full h-full object-cover object-top scale-125 translate-y-1 group-hover:scale-135 transition-transform duration-300"
-              />
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#D4FF00] rounded-full border border-black"></span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="font-display text-4xl sm:text-5xl tracking-tighter font-extrabold text-white group-hover:text-[#D4FF00] transition-colors leading-none">
-                gj.
-              </span>
-
-            </div>
+          {/* Brand Logo */}
+          <a href="#" className="flex items-center group">
+            <span className="font-display text-4xl sm:text-5xl tracking-tighter font-extrabold text-white group-hover:text-[#D4FF00] transition-colors leading-none">
+              gj.
+            </span>
           </a>
 
           {/* Desktop Navigation Links */}

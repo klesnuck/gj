@@ -15,14 +15,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory }) => {
           
           {/* Col 1: Brand & Identity (spans 2 cols on lg) */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#141414] border border-[#2b2b2b] overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
-                <img
-                  src="/images/gj-mascot-avatar.png"
-                  alt="gj. mascot"
-                  className="w-full h-full object-cover scale-125 translate-y-0.5"
-                />
-              </div>
+            <div className="flex items-center">
               <span className="font-display text-4xl sm:text-5xl tracking-tighter font-extrabold text-white">
                 gj.
               </span>
