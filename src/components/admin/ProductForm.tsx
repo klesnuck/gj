@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import type { Product } from '../../types/database.types'
 import { getColorHexFromName } from '../../lib/colors'
+import { parseSizeStocks } from '../../lib/stock'
 
 interface ProductFormProps {
   onSaveProduct: (productData: Partial<Product>) => Promise<boolean>
@@ -77,8 +78,14 @@ export const ProductForm = ({
     initialProduct?.slug || ''
   )
 
-  // Clothing Variants (all stock starts strictly from 0)
-  const [colorName, setColorName] = useState('Negro')
+  // Clothing Variants (all stock starts strictly from 0 or loads from specs)
+  const [colorName, setColorName] = useState(() => {
+    if (initialProduct?.specs) {
+      const first = initialProduct.specs.split('/')[0].trim()
+      if (first) return first
+    }
+    return 'Negro'
+  })
   const [colorHex, setColorHex] = useState(
     initialProduct?.colors?.[0] || '#171717'
   )
@@ -90,12 +97,25 @@ export const ProductForm = ({
       setColorHex(matched)
     }
   }
-  const [variants, setVariants] = useState<VariantRow[]>([
-    { size: 'S', sku: '', stock: 0, price: price },
-    { size: 'M', sku: '', stock: 0, price: price },
-    { size: 'L', sku: '', stock: 0, price: price },
-    { size: 'XL', sku: '', stock: 0, price: price },
-  ])
+  const [variants, setVariants] = useState<VariantRow[]>(() => {
+    if (initialProduct?.specs) {
+      const parsed = parseSizeStocks(initialProduct.specs, initialProduct.stock)
+      if (Object.keys(parsed).length > 0) {
+        return ['S', 'M', 'L', 'XL'].map((s) => ({
+          size: s,
+          sku: '',
+          stock: parsed[s] ?? 0,
+          price: initialProduct.price || 0,
+        }))
+      }
+    }
+    return [
+      { size: 'S', sku: '', stock: 0, price: price },
+      { size: 'M', sku: '', stock: 0, price: price },
+      { size: 'L', sku: '', stock: 0, price: price },
+      { size: 'XL', sku: '', stock: 0, price: price },
+    ]
+  })
 
   // Sync price changes to variants
   useEffect(() => {
@@ -215,7 +235,9 @@ export const ProductForm = ({
     setIsSubmitting(true)
     const specsComputed = isCap
       ? `${colorName} / Unitalla Ajustable`
-      : `${colorName} / Tallas: ${variants.filter(v => v.stock > 0).map(v => v.size).join(', ') || 'S, M, L, XL'}`
+      : `${colorName} / Tallas: ${variants
+          .map((v) => `${v.size} (${Math.max(0, Number(v.stock) || 0)})`)
+          .join(', ')}`
 
     const currentCover = images[coverIndex] || images[0] || ''
 

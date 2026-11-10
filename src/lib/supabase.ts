@@ -220,6 +220,21 @@ export async function toggleProductFeatured(productId: string): Promise<boolean>
   return false
 }
 
+export async function updateProductStock(productId: string, newStock: number, newSpecs: string): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ stock: newStock, specs: newSpecs })
+        .eq('id', productId)
+      if (!error) return true
+    } catch (err) {
+      console.warn('Error actualizando stock de producto en Supabase:', err)
+    }
+  }
+  return false
+}
+
 // ============================================================
 // PEDIDOS (ORDERS)
 // ============================================================

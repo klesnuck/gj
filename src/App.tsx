@@ -30,6 +30,7 @@ import {
   createProduct,
   deleteProduct,
   toggleProductFeatured,
+  updateProductStock,
   fetchOrders,
   createOrder,
   updateOrderStatus,
@@ -40,6 +41,7 @@ import {
   toggleCoupon,
   deleteCoupon,
 } from './lib/supabase'
+import { decrementProductStock, parseSizeStocks } from './lib/stock'
 import type { Product, CartItem, Order, Customer, Coupon, OrderItem } from './types/database.types'
 
 export function App() {
@@ -362,6 +364,26 @@ export function App() {
       lastOrderDate: new Date().toISOString().split('T')[0],
     }).catch(console.warn)
 
+    // Descontar inventario real por talla comprada
+    for (const item of cartItems) {
+      const prod = products.find((p) => p.id === item.product.id)
+      if (prod) {
+        const { newStock, newSpecs } = decrementProductStock(
+          prod,
+          item.selectedSize || 'S',
+          item.quantity
+        )
+
+        // Actualizar el estado local de productos de inmediato
+        setProducts((prev) =>
+          prev.map((p) => (p.id === prod.id ? { ...p, stock: newStock, specs: newSpecs } : p))
+        )
+
+        // Actualizar en Supabase
+        updateProductStock(prod.id, newStock, newSpecs).catch(console.warn)
+      }
+    }
+
     // Reset Cart and display Step 03 Confirmation
     setCartItems([])
     setCompletedOrder(newOrder)
@@ -373,15 +395,31 @@ export function App() {
 
   // Cart operations
   const handleAddToCart = (product: Product, selectedColor?: string, selectedSize?: string) => {
+    const size = selectedSize || (product.category === 'gorras' ? 'Unitalla' : 'S')
+    const sizeStocks = parseSizeStocks(product.specs, product.stock ?? 0)
+    const maxAvailable = product.category === 'gorras'
+      ? (product.stock ?? 0)
+      : (sizeStocks[size.toUpperCase()] ?? (product.stock ?? 0))
+
+    if (maxAvailable <= 0) {
+      alert(`La talla ${size} de "${product.title}" está agotada.`)
+      return
+    }
+
     setCartItems((prev) => {
       const existingIndex = prev.findIndex(
         (item) =>
           item.product.id === product.id &&
           item.selectedColor === selectedColor &&
-          item.selectedSize === selectedSize
+          item.selectedSize === size
       )
 
       if (existingIndex > -1) {
+        const currentQty = prev[existingIndex].quantity
+        if (currentQty >= maxAvailable) {
+          alert(`Ya alcanzaste el máximo disponible (${maxAvailable} piezas) para la talla ${size}.`)
+          return prev
+        }
         const next = [...prev]
         next[existingIndex].quantity += 1
         return next
@@ -392,7 +430,7 @@ export function App() {
             product,
             quantity: 1,
             selectedColor: selectedColor || (product.colors && product.colors[0]),
-            selectedSize: selectedSize || 'Standard',
+            selectedSize: size,
           },
         ]
       }
@@ -406,9 +444,22 @@ export function App() {
       return
     }
     setCartItems((prev) =>
-      prev.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item
-      )
+      prev.map((item) => {
+        if (item.product.id === productId) {
+          const size = item.selectedSize || (item.product.category === 'gorras' ? 'Unitalla' : 'S')
+          const sizeStocks = parseSizeStocks(item.product.specs, item.product.stock ?? 0)
+          const maxAvailable = item.product.category === 'gorras'
+            ? (item.product.stock ?? 0)
+            : (sizeStocks[size.toUpperCase()] ?? (item.product.stock ?? 0))
+
+          if (quantity > maxAvailable) {
+            alert(`Solo hay ${maxAvailable} piezas disponibles para la talla ${size}.`)
+            return { ...item, quantity: maxAvailable }
+          }
+          return { ...item, quantity }
+        }
+        return item
+      })
     )
   }
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { X, Check, ShoppingBag, ArrowUpRight } from 'lucide-react'
 import type { Product } from '../types/database.types'
 import { resolveColorHex } from '../lib/colors'
+import { parseSizeStocks } from '../lib/stock'
 
 interface QuickViewModalProps {
   product: Product | null
@@ -18,25 +19,21 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
   const isClothing = product.category === 'playeras' || product.category === 'hoodies'
   const allSizes = isClothing ? ['S', 'M', 'L', 'XL'] : ['UNITALLA / AJUSTABLE']
+  const sizeStocks = parseSizeStocks(product.specs, product.stock ?? 0)
 
-  // Parse available sizes from product.specs (e.g. "Gris / Tallas: S, M")
-  const availableSizes = new Set<string>()
-  if (isClothing) {
-    if (product.specs && product.specs.includes('Tallas:')) {
-      const parts = product.specs.split('Tallas:')[1]?.split(',') || []
-      parts.map((p) => p.trim().toUpperCase()).filter(Boolean).forEach((s) => availableSizes.add(s))
-    } else if ((product.stock ?? 0) > 0) {
-      allSizes.forEach((s) => availableSizes.add(s))
-    }
-  } else {
-    if ((product.stock ?? 0) > 0) {
-      availableSizes.add('UNITALLA / AJUSTABLE')
-    }
+  const getStockForSize = (s: string): number => {
+    if (!isClothing) return product.stock ?? 0
+    return sizeStocks[s.toUpperCase()] ?? 0
   }
 
-  const firstAvailable = allSizes.find((s) => availableSizes.has(s)) || allSizes[0]
+  const isSizeAvailable = (s: string): boolean => {
+    return getStockForSize(s) > 0
+  }
+
+  const availableSizes = allSizes.filter(isSizeAvailable)
+  const firstAvailable = availableSizes[0] || allSizes[0]
   const [selectedSize, setSelectedSize] = useState<string>(firstAvailable)
-  const isOutOfStock = availableSizes.size === 0 || (product.stock ?? 0) === 0
+  const isOutOfStock = availableSizes.length === 0 || (product.stock ?? 0) === 0
 
   const [selectedColor, setSelectedColor] = useState<string>(
     product.colors && product.colors[0] ? product.colors[0] : '#111111'
@@ -50,6 +47,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   const currentImage = productImages[activeImageIndex] || product.image_url
 
   const handleAdd = () => {
+    if (isOutOfStock || !isSizeAvailable(selectedSize)) return
     onAddToCart(product, selectedColor, selectedSize)
     setAdded(true)
     setTimeout(() => {
@@ -188,7 +186,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {allSizes.map((s) => {
-                    const isAvailable = availableSizes.has(s)
+                    const stock = getStockForSize(s)
+                    const isAvailable = stock > 0
                     const isSelected = selectedSize === s && isAvailable
                     return (
                       <button
@@ -196,8 +195,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                         type="button"
                         disabled={!isAvailable}
                         onClick={() => setSelectedSize(s)}
-                        title={isAvailable ? `Talla ${s} disponible` : `Talla ${s} agotada`}
-                        className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wider border transition-all ${
+                        title={isAvailable ? `Talla ${s} (${stock} piezas disponibles)` : `Talla ${s} agotada`}
+                        className={`px-3.5 py-1.5 text-xs font-mono uppercase tracking-wider border transition-all ${
                           !isAvailable
                             ? 'opacity-30 border-[#222222] bg-[#0e0e0e] text-gray-600 line-through cursor-not-allowed'
                             : isSelected
@@ -205,8 +204,10 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                             : 'border-[#2a2a2a] bg-[#141414] text-gray-300 hover:border-gray-500 hover:text-white cursor-pointer'
                         }`}
                       >
-                        {s}
-                        {!isAvailable && <span className="text-[9px] ml-1 text-gray-600 no-underline">(0)</span>}
+                        <span>{s}</span>
+                        <span className={`text-[10px] ml-1.5 ${!isAvailable ? 'text-gray-600 no-underline' : 'text-gray-400 font-normal'}`}>
+                          ({stock})
+                        </span>
                       </button>
                     )
                   })}

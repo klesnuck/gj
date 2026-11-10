@@ -62,3 +62,4 @@ export function getColorHexFromName(name: string): string | null {
   }
   return null
 }
+
