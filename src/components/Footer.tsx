@@ -3,9 +3,10 @@ import { ArrowUpRight, Instagram } from 'lucide-react'
 
 interface FooterProps {
   onSelectCategory?: (category: string) => void
+  onOpenAdmin?: () => void
 }
 
-export const Footer: React.FC<FooterProps> = ({ onSelectCategory }) => {
+export const Footer: React.FC<FooterProps> = ({ onSelectCategory, onOpenAdmin }) => {
   return (
     <footer className="w-full bg-[#070707] text-white pt-16 sm:pt-20 pb-12 border-t border-[#1a1a1a] select-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -151,6 +152,16 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory }) => {
               <li className="pt-2 text-xs font-mono text-gray-500">
                 México / MXN $
               </li>
+              {onOpenAdmin && (
+                <li className="pt-2 border-t border-[#1c1c1c]">
+                  <button
+                    onClick={onOpenAdmin}
+                    className="hover:text-[#D4FF00] text-gray-500 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-mono uppercase"
+                  >
+                    <span>⚙ Panel de Administración</span>
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
 
@@ -162,13 +173,22 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory }) => {
             © 2026 GJ CLOTHING AND CAPS. TODOS LOS DERECHOS RESERVADOS.
           </div>
 
-          <div className="flex items-center space-x-6">
+          <div className="flex flex-wrap items-center gap-6">
             <a href="#privacidad" className="hover:text-gray-300 transition-colors">
               Aviso de privacidad
             </a>
             <a href="#terminos" className="hover:text-gray-300 transition-colors">
               Términos y condiciones
             </a>
+            {onOpenAdmin && (
+              <button
+                onClick={onOpenAdmin}
+                className="text-gray-500 hover:text-[#D4FF00] transition-colors cursor-pointer font-bold tracking-wider uppercase text-[11px]"
+                title="Acceso Administración GJ"
+              >
+                [PANEL ADMIN]
+              </button>
+            )}
           </div>
 
           <div className="text-gray-400 font-semibold tracking-wider">

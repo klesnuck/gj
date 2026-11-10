@@ -81,7 +81,6 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
         cartCount={cartCount}
         onOpenCart={onOpenCart}
         onSelectCategory={onSelectCategory}
-        onOpenAdmin={onOpenAdmin}
       />
 
       {/* Main Collection Container */}
@@ -339,7 +338,10 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
       </main>
 
       {/* Footer */}
-      <Footer onSelectCategory={onSelectCategory} />
+      <Footer
+        onSelectCategory={onSelectCategory}
+        onOpenAdmin={onOpenAdmin}
+      />
 
     </div>
   )

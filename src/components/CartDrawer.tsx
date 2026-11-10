@@ -91,7 +91,7 @@ export const CartDrawer = ({
       {/* Drawer Panel */}
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
         <div className="w-screen max-w-md bg-[#0e0e0e] border-l border-[#202020] text-white flex flex-col shadow-2xl">
-          
+
           {/* Drawer Header */}
           <div className="p-6 border-b border-[#1f1f1f] flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -145,7 +145,7 @@ export const CartDrawer = ({
                   TU BOLSA ESTÁ VACÍA
                 </p>
                 <p className="text-xs font-mono text-gray-400 max-w-xs">
-                  ¿Todavía sin prendas? Explora el Drop 004 antes de que se agote.
+                  ¿Todavía sin prendas? Explora la tienda antes de que todo se agote.
                 </p>
                 <button
                   onClick={onClose}
@@ -227,7 +227,7 @@ export const CartDrawer = ({
           {/* Drawer Footer */}
           {items.length > 0 && (
             <div className="p-6 border-t border-[#1f1f1f] bg-[#121212] space-y-4">
-              
+
               {/* Coupon Code Input */}
               <div className="space-y-1.5 pb-2 border-b border-[#1c1c1c]">
                 {appliedCoupon ? (

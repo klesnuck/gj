@@ -13,7 +13,6 @@ import {
   AlertCircle,
   HelpCircle,
   Search,
-  User,
   ShoppingBag,
 } from 'lucide-react'
 import type { CartItem, Coupon } from '../../types/database.types'
@@ -151,16 +150,6 @@ export const CartPage: React.FC<CartPageProps> = ({
               <Search className="w-4 h-4" />
             </button>
 
-            {onOpenAdmin && (
-              <button
-                onClick={onOpenAdmin}
-                title="Administración"
-                className="hover:text-[#D4FF00] transition-colors"
-              >
-                <User className="w-4 h-4" />
-              </button>
-            )}
-
             <div className="flex items-center space-x-1.5 text-[#D4FF00] font-mono text-xs font-bold">
               <ShoppingBag className="w-4 h-4" />
               <span>({totalItemCount.toString().padStart(2, '0')})</span>
@@ -254,7 +243,7 @@ export const CartPage: React.FC<CartPageProps> = ({
             </h3>
 
             <p className="text-xs sm:text-sm font-mono text-gray-400 max-w-sm mx-auto leading-relaxed">
-              ¿Todavía sin prendas? Explora el Drop 004 antes de que se agote.
+              ¿Todavía sin prendas? Explora la tienda antes de que todo se agote.
             </p>
 
             <button
@@ -525,8 +514,8 @@ export const CartPage: React.FC<CartPageProps> = ({
                       {couponFeedback && (
                         <div
                           className={`text-[11px] font-mono flex items-center gap-1.5 ${couponFeedback.type === 'success'
-                              ? 'text-[#D4FF00]'
-                              : 'text-red-400'
+                            ? 'text-[#D4FF00]'
+                            : 'text-red-400'
                             }`}
                         >
                           {couponFeedback.type === 'success' ? (
@@ -609,7 +598,7 @@ export const CartPage: React.FC<CartPageProps> = ({
           <div>
             © 2026 GJ CLOTHING AND CAPS.
           </div>
-          <div className="flex items-center space-x-6 text-[11px]">
+          <div className="flex flex-wrap items-center space-x-6 text-[11px]">
             <a href="#ayuda" className="hover:text-white transition-colors">
               Ayuda
             </a>
@@ -619,6 +608,15 @@ export const CartPage: React.FC<CartPageProps> = ({
             <a href="#terminos" className="hover:text-white transition-colors">
               Términos y condiciones
             </a>
+            {onOpenAdmin && (
+              <button
+                onClick={onOpenAdmin}
+                className="text-gray-500 hover:text-[#D4FF00] transition-colors cursor-pointer font-bold tracking-wider uppercase text-[10px]"
+                title="Acceso Administración"
+              >
+                [Panel Admin]
+              </button>
+            )}
           </div>
           <div className="text-[10px] tracking-widest text-gray-400">
             VISA / MASTERCARD / MERCADO PAGO

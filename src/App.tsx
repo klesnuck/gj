@@ -589,7 +589,7 @@ export function App() {
       {/* 1. Announcement Bar */}
       <AnnouncementBar />
 
-      {/* 2. Main Navigation Bar with Admin shortcut & Direct Cart Page */}
+      {/* 2. Main Navigation Bar & Direct Cart Page */}
       <Navbar
         cartCount={totalCartCount}
         onOpenCart={() => {
@@ -597,10 +597,6 @@ export function App() {
           setCurrentView('cart')
         }}
         onSelectCategory={handleOpenCategory}
-        onOpenAdmin={() => {
-          window.location.hash = 'admin'
-          setCurrentView('admin')
-        }}
       />
 
       <main className="flex-1">
@@ -638,20 +634,11 @@ export function App() {
       {/* 9. Comprehensive Streetwear Footer */}
       <Footer
         onSelectCategory={handleOpenCategory}
+        onOpenAdmin={() => {
+          window.location.hash = 'admin'
+          setCurrentView('admin')
+        }}
       />
-
-      {/* Floating Discreet Admin Quick Access Pill */}
-      <div className="fixed bottom-4 right-4 z-40 hidden sm:block">
-        <button
-          onClick={() => {
-            window.location.hash = 'admin'
-            setCurrentView('admin')
-          }}
-          className="px-3 py-1.5 bg-[#141414]/90 hover:bg-[#D4FF00] text-gray-400 hover:text-black border border-[#262626] hover:border-[#D4FF00] rounded-full text-[10px] font-mono uppercase tracking-widest backdrop-blur-sm transition-all duration-200 shadow-xl cursor-pointer"
-        >
-          ⚙ Panel Admin
-        </button>
-      </div>
 
       {/* Cart Drawer */}
       <CartDrawer
