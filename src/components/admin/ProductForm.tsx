@@ -45,6 +45,7 @@ export const ProductForm = ({
   const [category, setCategory] = useState<'gorras' | 'playeras' | 'hoodies' | 'accesorios'>(
     (initialProduct?.category as any) || 'hoodies'
   )
+  const [brand, setBrand] = useState(initialProduct?.brand || 'GJ')
   const [price, setPrice] = useState<number>(initialProduct?.price || 1499)
   const [tag, setTag] = useState(initialProduct?.tag || 'NUEVO')
   const [tagType, setTagType] = useState<'white' | 'lime'>(
@@ -223,6 +224,7 @@ export const ProductForm = ({
         initialProduct?.slug ||
         title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
       category,
+      brand,
       price,
       currency: 'MXN',
       tag: tag || null,
@@ -558,6 +560,41 @@ export const ProductForm = ({
                 </span>
               </div>
 
+            </div>
+
+            {/* Brand Row */}
+            <div className="space-y-1.5 pt-1">
+              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider flex items-center justify-between">
+                <span>Marca del Producto *</span>
+                <span className="text-[#D4FF00] text-[10px] font-bold">
+                  {isCap ? 'FILTRABLE POR MARCA EN GORRAS' : 'MARCA DE LA PRENDA'}
+                </span>
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <select
+                  value={['GJ', 'New Era', 'Mitchell & Ness', '47 Brand'].includes(brand) ? brand : 'otro'}
+                  onChange={(e) => {
+                    if (e.target.value !== 'otro') {
+                      setBrand(e.target.value)
+                    }
+                  }}
+                  className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-sans text-white focus:outline-none cursor-pointer"
+                >
+                  <option value="GJ">GJ Signature / Oficial</option>
+                  <option value="New Era">New Era</option>
+                  <option value="Mitchell & Ness">Mitchell & Ness</option>
+                  <option value="47 Brand">47 Brand</option>
+                  <option value="otro">Otra marca...</option>
+                </select>
+
+                <input
+                  type="text"
+                  value={brand}
+                  onChange={(e) => setBrand(e.target.value)}
+                  placeholder="Nombre de la marca..."
+                  className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-mono text-white focus:outline-none"
+                />
+              </div>
             </div>
 
             {/* Tag / Badge Configuration */}

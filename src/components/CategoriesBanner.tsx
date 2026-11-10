@@ -35,7 +35,7 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
           
           {/* Card 1: CLOTHING */}
           <div
-            onClick={() => onSelectCategory('playeras')}
+            onClick={() => onSelectCategory('ropa')}
             className="group relative h-[380px] sm:h-[420px] lg:h-[460px] bg-[#121212] border border-[#202020] overflow-hidden cursor-pointer"
           >
             {/* Top Index Tag */}

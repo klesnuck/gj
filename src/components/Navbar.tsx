@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, User, ShoppingBag, Menu, X } from 'lucide-react'
+import { Search, User, ShoppingBag, Menu, X, ChevronDown } from 'lucide-react'
 
 interface NavbarProps {
   cartCount: number
@@ -12,12 +12,15 @@ export const Navbar = ({ cartCount, onOpenCart, onSelectCategory, onOpenAdmin }:
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [capsDropdownOpen, setCapsDropdownOpen] = useState(false)
+  const [mobileCapsOpen, setMobileCapsOpen] = useState(false)
 
   const handleNavClick = (category: string) => {
     if (onSelectCategory) {
       onSelectCategory(category)
     }
     setMobileMenuOpen(false)
+    setCapsDropdownOpen(false)
     const element = document.getElementById('catalogo')
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' })
@@ -45,29 +48,78 @@ export const Navbar = ({ cartCount, onOpenCart, onSelectCategory, onOpenAdmin }:
               Novedades
             </button>
             <button
-              onClick={() => handleNavClick('playeras')}
+              onClick={() => handleNavClick('ropa')}
               className="text-gray-300 hover:text-[#D4FF00] transition-colors cursor-pointer"
             >
               Ropa
             </button>
-            <button
-              onClick={() => handleNavClick('gorras')}
-              className="text-gray-300 hover:text-[#D4FF00] transition-colors cursor-pointer"
+
+            {/* Gorras with Brand Submenu Dropdown */}
+            <div
+              className="relative"
+              onMouseEnter={() => setCapsDropdownOpen(true)}
+              onMouseLeave={() => setCapsDropdownOpen(false)}
             >
-              Gorras
-            </button>
+              <button
+                onClick={() => setCapsDropdownOpen((prev) => !prev)}
+                className="flex items-center gap-1.5 text-gray-300 hover:text-[#D4FF00] transition-colors cursor-pointer py-2"
+              >
+                <span>Gorras</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                    capsDropdownOpen ? 'rotate-180 text-[#D4FF00]' : ''
+                  }`}
+                />
+              </button>
+
+              {/* Dropdown Menu */}
+              {capsDropdownOpen && (
+                <div className="absolute top-full left-0 w-60 pt-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="bg-[#121212] border border-[#262626] shadow-2xl py-2 px-1 backdrop-blur-md rounded-none">
+                    <button
+                      onClick={() => handleNavClick('gorras')}
+                      className="w-full text-left px-3.5 py-2.5 text-xs font-mono font-bold uppercase tracking-wider text-white hover:text-black hover:bg-[#D4FF00] transition-colors flex items-center justify-between"
+                    >
+                      <span>TODAS LAS GORRAS</span>
+                      <span className="text-[10px] opacity-80 font-normal">VER TODO</span>
+                    </button>
+
+                    <div className="my-1.5 border-t border-[#222222] px-3.5 pt-2 pb-1">
+                      <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest font-semibold block">
+                        POR MARCA
+                      </span>
+                    </div>
+
+                    <div className="space-y-0.5">
+                      {[
+                        { id: 'gorras:gj', name: 'GJ Signature' },
+                        { id: 'gorras:new era', name: 'New Era' },
+                        { id: 'gorras:mitchell', name: 'Mitchell & Ness' },
+                        { id: 'gorras:47', name: '47 Brand' },
+                      ].map((brand) => (
+                        <button
+                          key={brand.id}
+                          onClick={() => handleNavClick(brand.id)}
+                          className="w-full text-left px-3.5 py-2 text-xs font-mono uppercase tracking-wider text-gray-300 hover:text-[#D4FF00] hover:bg-[#1a1a1a] transition-colors flex items-center justify-between group"
+                        >
+                          <span>{brand.name}</span>
+                          <span className="text-[10px] text-gray-400 group-hover:text-[#D4FF00] transition-colors">
+                            →
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={() => handleNavClick('accesorios')}
               className="text-gray-300 hover:text-[#D4FF00] transition-colors cursor-pointer"
             >
               Accesorios
             </button>
-            <a
-              href="#manifiesto"
-              className="text-gray-300 hover:text-[#D4FF00] transition-colors"
-            >
-              GJ
-            </a>
           </nav>
 
           {/* Right Action Icons */}
@@ -145,36 +197,68 @@ export const Navbar = ({ cartCount, onOpenCart, onSelectCategory, onOpenAdmin }:
               • Novedades
             </button>
             <button
-              onClick={() => handleNavClick('playeras')}
+              onClick={() => handleNavClick('ropa')}
               className="text-left text-gray-300 hover:text-[#D4FF00] py-1"
             >
-              Ropa
+              Ropa (Toda la colección)
             </button>
-            <button
-              onClick={() => handleNavClick('gorras')}
-              className="text-left text-gray-300 hover:text-[#D4FF00] py-1"
-            >
-              Gorras
-            </button>
+
+            {/* Mobile Gorras Accordion */}
+            <div>
+              <button
+                onClick={() => setMobileCapsOpen(!mobileCapsOpen)}
+                className="w-full flex items-center justify-between text-left text-gray-300 hover:text-[#D4FF00] py-1"
+              >
+                <span>Gorras</span>
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform duration-200 ${
+                    mobileCapsOpen ? 'rotate-180 text-[#D4FF00]' : ''
+                  }`}
+                />
+              </button>
+
+              {mobileCapsOpen && (
+                <div className="pl-4 py-2 space-y-2.5 border-l border-[#262626] my-1 ml-1 text-xs">
+                  <button
+                    onClick={() => handleNavClick('gorras')}
+                    className="block text-left text-white hover:text-[#D4FF00] font-bold"
+                  >
+                    • Ver todas las gorras
+                  </button>
+                  <div className="text-[10px] text-gray-400 uppercase tracking-widest pt-1 font-semibold">
+                    Por marca:
+                  </div>
+                  {[
+                    { id: 'gorras:gj', name: 'GJ Signature' },
+                    { id: 'gorras:new era', name: 'New Era' },
+                    { id: 'gorras:mitchell', name: 'Mitchell & Ness' },
+                    { id: 'gorras:47', name: '47 Brand' },
+                  ].map((brand) => (
+                    <button
+                      key={brand.id}
+                      onClick={() => handleNavClick(brand.id)}
+                      className="block text-left text-gray-400 hover:text-[#D4FF00] pl-2"
+                    >
+                      {brand.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <button
               onClick={() => handleNavClick('accesorios')}
               className="text-left text-gray-300 hover:text-[#D4FF00] py-1"
             >
               Accesorios
             </button>
-            <a
-              href="#manifiesto"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-left text-gray-300 hover:text-[#D4FF00] py-1"
-            >
-              Universo GJ
-            </a>
+
             <button
               onClick={() => {
                 setMobileMenuOpen(false)
                 onOpenAdmin?.()
               }}
-              className="text-left text-[#D4FF00] font-bold py-1 border-t border-[#222] pt-2"
+              className="text-left text-[#D4FF00] font-bold py-1 border-t border-[#222] pt-3"
             >
               ⚙ Panel de Administración
             </button>

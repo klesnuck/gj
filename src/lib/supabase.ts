@@ -22,6 +22,7 @@ export const MOCK_PRODUCTS: Product[] = [
     slug: 'gorra-gj-signature',
     title: 'Gorra GJ Signature',
     category: 'gorras',
+    brand: 'GJ',
     price: 699,
     currency: 'MXN',
     tag: 'BEST SELLER',
@@ -38,6 +39,7 @@ export const MOCK_PRODUCTS: Product[] = [
     slug: 'playera-heavyweight',
     title: 'Playera Heavyweight',
     category: 'playeras',
+    brand: 'GJ',
     price: 899,
     currency: 'MXN',
     tag: 'NUEVO',
@@ -54,6 +56,7 @@ export const MOCK_PRODUCTS: Product[] = [
     slug: 'gorra-script-club',
     title: 'Gorra Script Club',
     category: 'gorras',
+    brand: 'GJ',
     price: 749,
     currency: 'MXN',
     tag: 'EDICIÓN LIMITADA',
@@ -70,6 +73,7 @@ export const MOCK_PRODUCTS: Product[] = [
     slug: 'hoodie-no-signal',
     title: 'Hoodie No Signal',
     category: 'hoodies',
+    brand: 'GJ',
     price: 1499,
     currency: 'MXN',
     tag: 'NUEVO',
@@ -79,6 +83,91 @@ export const MOCK_PRODUCTS: Product[] = [
     image_url: '/images/product-hoodie.jpg',
     description: 'Sudadera pesada de 450 GSM con felpa francesa. Capucha de doble panel sin cordones para un perfil brutalista limpio. Bolsillo canguro reforzado.',
     stock: 8,
+    is_featured: true
+  },
+  {
+    id: 'prod-005',
+    slug: 'gorra-new-era-ny-yankees-59fifty',
+    title: 'Gorra New Era 59FIFTY NY Yankees',
+    category: 'gorras',
+    brand: 'New Era',
+    price: 1099,
+    currency: 'MXN',
+    tag: 'BEST SELLER',
+    tag_type: 'white',
+    specs: 'Navy / Corona alta estructurada / Fitted',
+    colors: ['#0A1128', '#111111'],
+    image_url: '/images/product-cap-black.jpg',
+    description: 'Clásica silueta 59FIFTY de New Era. Corona de 6 paneles estructurada y bordado frontal en relieve de los New York Yankees.',
+    stock: 12,
+    is_featured: true
+  },
+  {
+    id: 'prod-006',
+    slug: 'gorra-mitchell-ness-chicago-bulls',
+    title: 'Gorra Mitchell & Ness Chicago Bulls',
+    category: 'gorras',
+    brand: 'Mitchell & Ness',
+    price: 999,
+    currency: 'MXN',
+    tag: 'HARDWOOD',
+    tag_type: 'lime',
+    specs: 'Negro & Rojo / Snapback clásico / Retro',
+    colors: ['#111111', '#BA0C2F'],
+    image_url: '/images/product-cap-stone.jpg',
+    description: 'Línea Hardwood Classics de Mitchell & Ness. Confección en lana acrílica con bordado frontal del toro de Chicago y visera plana retro.',
+    stock: 9,
+    is_featured: true
+  },
+  {
+    id: 'prod-007',
+    slug: 'gorra-47-brand-la-dodgers-clean-up',
+    title: 'Gorra 47 Brand Clean Up LA Dodgers',
+    category: 'gorras',
+    brand: '47 Brand',
+    price: 849,
+    currency: 'MXN',
+    tag: 'ORIGINAL',
+    tag_type: 'white',
+    specs: 'Stone & Royal Blue / Corona suave / Ajustable',
+    colors: ['#C4B69F', '#005A9C'],
+    image_url: '/images/product-cap-stone.jpg',
+    description: 'La silueta Clean Up icónica de 47 Brand: relajada, lavada en prenda y con correa de tela ajustable para un estilo streetwear sin esfuerzo.',
+    stock: 15,
+    is_featured: true
+  },
+  {
+    id: 'prod-008',
+    slug: 'calcetines-gj-crew-socks',
+    title: 'Calcetines GJ Heavyweight Crew (Pack 2)',
+    category: 'accesorios',
+    brand: 'GJ',
+    price: 349,
+    currency: 'MXN',
+    tag: 'DROP 004',
+    tag_type: 'lime',
+    specs: 'Pack 2 pares / Algodón peinado / Unitalla',
+    colors: ['#FFFFFF', '#111111'],
+    image_url: '/images/product-tshirt.jpg',
+    description: 'Pack de calcetines crew con tejido de alta densidad, soporte en puente del pie y bordado GJ tejido al tobillo.',
+    stock: 25,
+    is_featured: true
+  },
+  {
+    id: 'prod-009',
+    slug: 'llavero-mosqueton-gj-tactical',
+    title: 'Mosquetón Táctico GJ Tactical Keychain',
+    category: 'accesorios',
+    brand: 'GJ',
+    price: 249,
+    currency: 'MXN',
+    tag: 'ESENCIAL',
+    tag_type: 'white',
+    specs: 'Negro mate / Cinta nylon / Grabado láser',
+    colors: ['#171717'],
+    image_url: '/images/product-cap-black.jpg',
+    description: 'Mosquetón táctico utilitario en aleación de zinc negro mate con cinta de nylon militar y grabado "BUILT FOR THE STREETS".',
+    stock: 30,
     is_featured: true
   }
 ]
@@ -100,7 +189,7 @@ export async function fetchProducts(category?: string): Promise<Product[]> {
   if (isSupabaseConfigured && supabase) {
     try {
       let query = supabase.from('products').select('*').order('created_at', { ascending: false })
-      if (category && category !== 'todos') {
+      if (category && category !== 'todos' && category !== 'ropa' && !category.includes(':')) {
         query = query.eq('category', category)
       }
       const { data, error } = await query
@@ -133,7 +222,40 @@ export async function fetchProducts(category?: string): Promise<Product[]> {
   if (!category || category === 'todos') {
     return allProducts
   }
-  return allProducts.filter(p => p.category.toLowerCase() === category.toLowerCase())
+
+  const catLower = category.toLowerCase()
+
+  // Case 1: "ropa" -> Shows all clothes (playeras, hoodies, ropa, etc.)
+  if (catLower === 'ropa') {
+    return allProducts.filter(p =>
+      p.category === 'playeras' ||
+      p.category === 'hoodies' ||
+      (p.category as string) === 'ropa'
+    )
+  }
+
+  // Case 2: Gorras with brand filter (e.g. "gorras:new-era", "gorras:mitchell", "gorras:47", "gorras:gj")
+  if (catLower.startsWith('gorras:')) {
+    const brandTerm = catLower.replace('gorras:', '').trim()
+    return allProducts.filter(p => {
+      if (p.category !== 'gorras') return false
+      const brandStr = (p.brand || '').toLowerCase()
+      const titleStr = p.title.toLowerCase()
+      return brandStr.includes(brandTerm) || titleStr.includes(brandTerm)
+    })
+  }
+
+  // Case 3: "gorras" -> All gorras
+  if (catLower === 'gorras') {
+    return allProducts.filter(p => p.category === 'gorras')
+  }
+
+  // Case 4: "accesorios" -> General accessories
+  if (catLower === 'accesorios') {
+    return allProducts.filter(p => p.category === 'accesorios')
+  }
+
+  return allProducts.filter(p => p.category.toLowerCase() === catLower)
 }
 
 /**

@@ -22,9 +22,9 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
 
   const categories = [
     { id: 'todos', label: 'Todos' },
+    { id: 'ropa', label: 'Ropa' },
     { id: 'gorras', label: 'Gorras' },
-    { id: 'playeras', label: 'Playeras' },
-    { id: 'hoodies', label: 'Hoodies' },
+    { id: 'accesorios', label: 'Accesorios' },
   ]
 
   const handleColorClick = (productId: string, color: string, e: React.MouseEvent) => {
@@ -72,17 +72,19 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
         </div>
 
         {/* Filter Tabs and Currency Note */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10 pb-4 border-b border-[#1a1a1a]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[#1a1a1a]">
           {/* Filter Pills */}
           <div className="flex items-center space-x-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-none">
             {categories.map((cat) => {
-              const isActive = activeCategory.toLowerCase() === cat.id.toLowerCase()
+              const isCatActive =
+                activeCategory.toLowerCase() === cat.id.toLowerCase() ||
+                (cat.id === 'gorras' && activeCategory.toLowerCase().startsWith('gorras'))
               return (
                 <button
                   key={cat.id}
                   onClick={() => onCategoryChange(cat.id)}
                   className={`px-5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-                    isActive
+                    isCatActive
                       ? 'bg-white text-black font-bold shadow-sm'
                       : 'bg-[#141414] text-gray-400 hover:text-white border border-[#242424] hover:border-[#383838]'
                   }`}
@@ -98,6 +100,37 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
             PRECIOS EN MXN / IVA INCLUIDO
           </div>
         </div>
+
+        {/* Brand Sub-filter for Gorras */}
+        {activeCategory.toLowerCase().startsWith('gorras') && (
+          <div className="flex items-center space-x-2 overflow-x-auto pb-3 mb-8 scrollbar-none animate-in fade-in duration-200">
+            <span className="text-[11px] font-mono text-[#D4FF00] uppercase font-bold tracking-wider shrink-0 mr-1">
+              MARCAS DE GORRAS:
+            </span>
+            {[
+              { id: 'gorras', label: 'Todas las gorras' },
+              { id: 'gorras:gj', label: 'GJ Signature' },
+              { id: 'gorras:new era', label: 'New Era' },
+              { id: 'gorras:mitchell', label: 'Mitchell & Ness' },
+              { id: 'gorras:47', label: '47 Brand' },
+            ].map((b) => {
+              const isBrandActive = activeCategory.toLowerCase() === b.id.toLowerCase()
+              return (
+                <button
+                  key={b.id}
+                  onClick={() => onCategoryChange(b.id)}
+                  className={`px-3.5 py-1.5 rounded-sm text-[11px] font-mono uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
+                    isBrandActive
+                      ? 'bg-[#D4FF00] text-black font-bold shadow-sm'
+                      : 'bg-[#151515] text-gray-400 hover:text-white border border-[#262626] hover:border-[#3a3a3a]'
+                  }`}
+                >
+                  {b.label}
+                </button>
+              )
+            })}
+          </div>
+        )}
 
         {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -139,12 +139,6 @@ export const CartPage: React.FC<CartPageProps> = ({
             >
               Accesorios
             </button>
-            <button
-              onClick={onContinueShopping}
-              className="text-gray-300 hover:text-white transition-colors cursor-pointer"
-            >
-              Universo GJ
-            </button>
           </nav>
 
           {/* Right Action Icons */}
