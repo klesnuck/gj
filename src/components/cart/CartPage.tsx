@@ -83,7 +83,7 @@ export const CartPage: React.FC<CartPageProps> = ({
 
   return (
     <div className="min-h-screen bg-[#070707] text-white flex flex-col font-sans selection:bg-[#D4FF00] selection:text-black">
-      
+
       {/* Top Electric Lime Announcement Bar */}
       <aside className="w-full bg-[#D4FF00] text-black py-1.5 px-4 text-[11px] font-mono font-bold tracking-wider uppercase select-none z-40 border-b border-black">
         <div className="max-w-7xl mx-auto flex items-center justify-center space-x-2 text-center">
@@ -98,7 +98,7 @@ export const CartPage: React.FC<CartPageProps> = ({
       {/* Main Header / Navbar */}
       <header className="w-full bg-[#090909]/95 backdrop-blur-md border-b border-[#1c1c1c] sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
-          
+
           {/* Brand Logo */}
           <button
             onClick={onContinueShopping}
@@ -178,7 +178,7 @@ export const CartPage: React.FC<CartPageProps> = ({
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 sm:space-y-12">
-        
+
         {/* Breadcrumb & Steps Header Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#181818]">
           <div className="text-xs font-mono text-gray-400">
@@ -238,7 +238,7 @@ export const CartPage: React.FC<CartPageProps> = ({
         {/* Main Grid: Products Table (Left 8 Cols) & Summary Card (Right 4 Cols) */}
         {items.length === 0 ? (
           <div className="bg-[#0f0f0f] border border-[#1f1f1f] p-12 sm:p-16 text-center flex flex-col items-center justify-center space-y-5">
-            
+
             {/* Friendly Rick Mascot with smooth floating animation */}
             <div className="relative flex flex-col items-center justify-center">
               <div className="absolute inset-0 bg-[#D4FF00]/10 blur-2xl rounded-full scale-90 pointer-events-none" />
@@ -273,13 +273,13 @@ export const CartPage: React.FC<CartPageProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
-            
+
             {/* Left 8 Cols: Products Table */}
             <div className="lg:col-span-8 space-y-8">
-              
+
               {/* Table Container */}
               <div className="border-t border-[#1f1f1f]">
-                
+
                 {/* Table Header Row */}
                 <div className="hidden sm:grid sm:grid-cols-12 py-3 border-b border-[#1f1f1f] text-[11px] font-mono text-gray-400 uppercase tracking-wider">
                   <div className="sm:col-span-7">PRODUCTO</div>
@@ -394,7 +394,7 @@ export const CartPage: React.FC<CartPageProps> = ({
             {/* Right 4 Cols: Purchase Summary Card */}
             <div className="lg:col-span-4 sticky top-24">
               <div className="bg-[#0e0e0e] border border-[#202020] p-6 sm:p-7 space-y-6 shadow-2xl">
-                
+
                 <h3 className="font-display text-2xl uppercase tracking-wider text-white font-extrabold leading-none pb-1">
                   RESUMEN DE COMPRA
                 </h3>
@@ -530,11 +530,10 @@ export const CartPage: React.FC<CartPageProps> = ({
 
                       {couponFeedback && (
                         <div
-                          className={`text-[11px] font-mono flex items-center gap-1.5 ${
-                            couponFeedback.type === 'success'
+                          className={`text-[11px] font-mono flex items-center gap-1.5 ${couponFeedback.type === 'success'
                               ? 'text-[#D4FF00]'
                               : 'text-red-400'
-                          }`}
+                            }`}
                         >
                           {couponFeedback.type === 'success' ? (
                             <Check className="w-3.5 h-3.5" />
@@ -563,7 +562,7 @@ export const CartPage: React.FC<CartPageProps> = ({
 
         {/* Bottom 3 Value Pillars */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-10 sm:pt-14 border-t border-[#181818]">
-          
+
           <div className="flex items-start space-x-3.5">
             <div className="w-9 h-9 rounded-sm bg-[#121212] border border-[#262626] flex items-center justify-center text-[#D4FF00] shrink-0 mt-0.5">
               <Truck className="w-4 h-4 stroke-[2]" />
