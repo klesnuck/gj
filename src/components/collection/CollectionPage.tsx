@@ -4,6 +4,7 @@ import { AnnouncementBar } from '../AnnouncementBar'
 import { Navbar } from '../Navbar'
 import { Footer } from '../Footer'
 import type { Product } from '../../types/database.types'
+import { resolveColorHex } from '../../lib/colors'
 
 interface CollectionPageProps {
   products: Product[]
@@ -313,19 +314,22 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
                     {/* Color Swatches */}
                     {product.colors && product.colors.length > 0 && (
                       <div className="flex items-center space-x-1.5 pt-2">
-                        {product.colors.map((color) => (
-                          <button
-                            key={color}
-                            onClick={(e) => handleColorClick(product.id, color, e)}
-                            className={`w-3.5 h-3.5 rounded-full border transition-all cursor-pointer ${
-                              currentColor === color
-                                ? 'border-[#D4FF00] scale-125'
-                                : 'border-[#333333] hover:border-white'
-                            }`}
-                            style={{ backgroundColor: color }}
-                            aria-label={`Color ${color}`}
-                          />
-                        ))}
+                        {product.colors.map((color) => {
+                          const displayHex = resolveColorHex(color, product.specs)
+                          return (
+                            <button
+                              key={color}
+                              onClick={(e) => handleColorClick(product.id, color, e)}
+                              className={`w-3.5 h-3.5 rounded-full border transition-all cursor-pointer ${
+                                currentColor === color
+                                  ? 'border-[#D4FF00] scale-125'
+                                  : 'border-[#333333] hover:border-white'
+                              }`}
+                              style={{ backgroundColor: displayHex }}
+                              aria-label={`Color ${color}`}
+                            />
+                          )
+                        })}
                       </div>
                     )}
                   </div>

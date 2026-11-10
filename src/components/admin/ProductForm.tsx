@@ -15,6 +15,7 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 import type { Product } from '../../types/database.types'
+import { getColorHexFromName } from '../../lib/colors'
 
 interface ProductFormProps {
   onSaveProduct: (productData: Partial<Product>) => Promise<boolean>
@@ -81,6 +82,14 @@ export const ProductForm = ({
   const [colorHex, setColorHex] = useState(
     initialProduct?.colors?.[0] || '#171717'
   )
+
+  const handleColorNameChange = (val: string) => {
+    setColorName(val)
+    const matched = getColorHexFromName(val)
+    if (matched) {
+      setColorHex(matched)
+    }
+  }
   const [variants, setVariants] = useState<VariantRow[]>([
     { size: 'S', sku: '', stock: 0, price: price },
     { size: 'M', sku: '', stock: 0, price: price },
@@ -757,27 +766,32 @@ export const ProductForm = ({
                     <input
                       type="text"
                       value={colorName}
-                      onChange={(e) => setColorName(e.target.value)}
-                      placeholder="Negro"
+                      onChange={(e) => handleColorNameChange(e.target.value)}
+                      placeholder="ej. Gris / Negro"
                       className="bg-[#141414] border border-[#2b2b2b] px-2.5 py-1 text-xs text-white w-28 focus:outline-none focus:border-[#D4FF00]"
                     />
                   </div>
 
                   <div className="flex items-center gap-1.5 ml-auto">
-                    {['#111111', '#C4B69F', '#4A5243', '#1e293b'].map((hex) => (
+                    {[
+                      { hex: '#111111', name: 'Negro' },
+                      { hex: '#8E8E93', name: 'Gris' },
+                      { hex: '#F3F4F6', name: 'Blanco' },
+                      { hex: '#C4B69F', name: 'Stone' },
+                      { hex: '#4A5243', name: 'Verde Olivo' },
+                      { hex: '#0F172A', name: 'Navy' },
+                    ].map((c) => (
                       <button
-                        key={hex}
+                        key={c.hex}
                         type="button"
                         onClick={() => {
-                          setColorHex(hex)
-                          if (hex === '#111111') setColorName('Negro')
-                          if (hex === '#C4B69F') setColorName('Stone')
-                          if (hex === '#4A5243') setColorName('Verde Olivo')
-                          if (hex === '#1e293b') setColorName('Navy')
+                          setColorHex(c.hex)
+                          setColorName(c.name)
                         }}
-                        className={`w-5 h-5 rounded-full border transition-transform ${colorHex === hex ? 'border-[#D4FF00] scale-110' : 'border-white/20'
+                        title={c.name}
+                        className={`w-5 h-5 rounded-full border transition-transform ${colorHex === c.hex ? 'border-[#D4FF00] scale-110' : 'border-white/20'
                           }`}
-                        style={{ backgroundColor: hex }}
+                        style={{ backgroundColor: c.hex }}
                       />
                     ))}
                   </div>
@@ -789,7 +803,7 @@ export const ProductForm = ({
               <div className="space-y-4">
 
                 {/* Color selection line */}
-                <div className="flex items-center justify-between text-xs font-mono">
+                <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
                   <div className="flex items-center space-x-3">
                     <span className="text-gray-400">Color:</span>
                     <div className="flex items-center space-x-1.5">
@@ -800,15 +814,36 @@ export const ProductForm = ({
                       <input
                         type="text"
                         value={colorName}
-                        onChange={(e) => setColorName(e.target.value)}
+                        onChange={(e) => handleColorNameChange(e.target.value)}
+                        placeholder="ej. Gris"
                         className="bg-transparent border-b border-[#2b2b2b] text-white font-semibold w-24 py-0.5 focus:outline-none focus:border-[#D4FF00]"
                       />
                     </div>
                   </div>
 
-                  <span className="text-gray-500 text-[11px]">
-                    Desglose de tallas estándar
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {[
+                      { hex: '#111111', name: 'Negro' },
+                      { hex: '#8E8E93', name: 'Gris' },
+                      { hex: '#F3F4F6', name: 'Blanco' },
+                      { hex: '#C4B69F', name: 'Stone' },
+                      { hex: '#4A5243', name: 'Verde Olivo' },
+                      { hex: '#0F172A', name: 'Navy' },
+                    ].map((c) => (
+                      <button
+                        key={c.hex}
+                        type="button"
+                        onClick={() => {
+                          setColorHex(c.hex)
+                          setColorName(c.name)
+                        }}
+                        title={c.name}
+                        className={`w-4 h-4 rounded-full border transition-transform ${colorHex === c.hex ? 'border-[#D4FF00] scale-125' : 'border-white/20 hover:scale-110'
+                          }`}
+                        style={{ backgroundColor: c.hex }}
+                      />
+                    ))}
+                  </div>
                 </div>
 
                 {/* Variants Table */}

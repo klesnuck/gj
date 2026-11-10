@@ -37,28 +37,28 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   onBackToCart,
   onPlaceOrder,
 }) => {
-  // Form State initialized with realistic Mexican dummy defaults like in the screenshot
-  const [email, setEmail] = useState('alex.martinez@gmail.com')
-  const [phone, setPhone] = useState('55 1234 5678')
+  // Form State initialized completely empty
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
 
-  const [firstName, setFirstName] = useState('Alex')
-  const [lastName, setLastName] = useState('Martínez López')
-  const [street, setStreet] = useState('Colima 145')
-  const [interior, setInterior] = useState('Depto. 302')
-  const [colonia, setColonia] = useState('Roma Norte')
-  const [zipCode, setZipCode] = useState('06700')
-  const [city, setCity] = useState('Cuauhtémoc')
-  const [state, setState] = useState('Ciudad de México')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [street, setStreet] = useState('')
+  const [interior, setInterior] = useState('')
+  const [colonia, setColonia] = useState('')
+  const [zipCode, setZipCode] = useState('')
+  const [city, setCity] = useState('')
+  const [state, setState] = useState('Coahuila')
   const [country] = useState('México')
 
-  const [shippingMethod, setShippingMethod] = useState<'paqueteria_nacional' | 'saltillo_local'>('paqueteria_nacional')
+  const [shippingMethod, setShippingMethod] = useState<'paqueteria_nacional' | 'saltillo_local'>('saltillo_local')
   const [paymentMethod, setPaymentMethod] = useState<'tarjeta' | 'mercadopago'>('tarjeta')
 
   // Card details
-  const [cardHolder, setCardHolder] = useState('Alex Martínez López')
-  const [cardNumber, setCardNumber] = useState('•••• •••• •••• 4242')
-  const [cardExpiry, setCardExpiry] = useState('08 / 28')
-  const [cardCvv, setCardCvv] = useState('•••')
+  const [cardHolder, setCardHolder] = useState('')
+  const [cardNumber, setCardNumber] = useState('')
+  const [cardExpiry, setCardExpiry] = useState('')
+  const [cardCvv, setCardCvv] = useState('')
   const [useShippingForBilling, setUseShippingForBilling] = useState(true)
 
   // Coupon code state
@@ -289,7 +289,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="alex.martinez@gmail.com"
+                    placeholder="ejemplo@correo.com"
                     className="w-full bg-[#121212] border border-[#252525] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none transition-colors"
                   />
                 </div>
@@ -303,7 +303,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="55 1234 5678"
+                    placeholder="844 123 4567"
                     className="w-full bg-[#121212] border border-[#252525] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none transition-colors"
                   />
                 </div>
@@ -338,7 +338,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       required
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="Alex"
+                      placeholder="Tu nombre"
                       className="w-full bg-[#121212] border border-[#252525] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
                     />
                   </div>
@@ -352,7 +352,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       required
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      placeholder="Martínez López"
+                      placeholder="Tus apellidos"
                       className="w-full bg-[#121212] border border-[#252525] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
                     />
                   </div>
@@ -369,7 +369,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       required
                       value={street}
                       onChange={(e) => setStreet(e.target.value)}
-                      placeholder="Colima 145"
+                      placeholder="Calle y número exterior"
                       className="w-full bg-[#121212] border border-[#252525] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
                     />
                   </div>
@@ -382,7 +382,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       type="text"
                       value={interior}
                       onChange={(e) => setInterior(e.target.value)}
-                      placeholder="Depto. 302"
+                      placeholder="Depto / Interior"
                       className="w-full bg-[#121212] border border-[#252525] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
                     />
                   </div>
@@ -399,7 +399,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       required
                       value={colonia}
                       onChange={(e) => setColonia(e.target.value)}
-                      placeholder="Roma Norte"
+                      placeholder="Colonia / Fraccionamiento"
                       className="w-full bg-[#121212] border border-[#252525] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
                     />
                   </div>
@@ -413,7 +413,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       required
                       value={zipCode}
                       onChange={(e) => setZipCode(e.target.value)}
-                      placeholder="06700"
+                      placeholder="C.P. (5 dígitos)"
                       className="w-full bg-[#121212] border border-[#252525] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
                     />
                   </div>
@@ -430,7 +430,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       required
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
-                      placeholder="Cuauhtémoc"
+                      placeholder="Ciudad / Municipio"
                       className="w-full bg-[#121212] border border-[#252525] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
                     />
                   </div>
@@ -624,7 +624,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           required={paymentMethod === 'tarjeta'}
                           value={cardHolder}
                           onChange={(e) => setCardHolder(e.target.value)}
-                          placeholder="Alex Martínez López"
+                          placeholder="Nombre como aparece en la tarjeta"
                           className="w-full bg-[#161616] border border-[#2b2b2b] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
                         />
                       </div>
@@ -638,7 +638,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           required={paymentMethod === 'tarjeta'}
                           value={cardNumber}
                           onChange={(e) => setCardNumber(e.target.value)}
-                          placeholder="•••• •••• •••• 4242"
+                          placeholder="0000 0000 0000 0000"
                           className="w-full bg-[#161616] border border-[#2b2b2b] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
                         />
                       </div>
@@ -653,7 +653,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                             required={paymentMethod === 'tarjeta'}
                             value={cardExpiry}
                             onChange={(e) => setCardExpiry(e.target.value)}
-                            placeholder="08 / 28"
+                            placeholder="MM / AA"
                             className="w-full bg-[#161616] border border-[#2b2b2b] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
                           />
                         </div>
@@ -668,7 +668,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                             required={paymentMethod === 'tarjeta'}
                             value={cardCvv}
                             onChange={(e) => setCardCvv(e.target.value)}
-                            placeholder="•••"
+                            placeholder="CVV (3 o 4 dígitos)"
                             className="w-full bg-[#161616] border border-[#2b2b2b] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
                           />
                         </div>

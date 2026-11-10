@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { X, Check, ShoppingBag, ArrowUpRight } from 'lucide-react'
 import type { Product } from '../types/database.types'
+import { resolveColorHex } from '../lib/colors'
 
 interface QuickViewModalProps {
   product: Product | null
@@ -15,12 +16,31 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 }) => {
   if (!product) return null
 
+  const isClothing = product.category === 'playeras' || product.category === 'hoodies'
+  const allSizes = isClothing ? ['S', 'M', 'L', 'XL'] : ['UNITALLA / AJUSTABLE']
+
+  // Parse available sizes from product.specs (e.g. "Gris / Tallas: S, M")
+  const availableSizes = new Set<string>()
+  if (isClothing) {
+    if (product.specs && product.specs.includes('Tallas:')) {
+      const parts = product.specs.split('Tallas:')[1]?.split(',') || []
+      parts.map((p) => p.trim().toUpperCase()).filter(Boolean).forEach((s) => availableSizes.add(s))
+    } else if ((product.stock ?? 0) > 0) {
+      allSizes.forEach((s) => availableSizes.add(s))
+    }
+  } else {
+    if ((product.stock ?? 0) > 0) {
+      availableSizes.add('UNITALLA / AJUSTABLE')
+    }
+  }
+
+  const firstAvailable = allSizes.find((s) => availableSizes.has(s)) || allSizes[0]
+  const [selectedSize, setSelectedSize] = useState<string>(firstAvailable)
+  const isOutOfStock = availableSizes.size === 0 || (product.stock ?? 0) === 0
+
   const [selectedColor, setSelectedColor] = useState<string>(
     product.colors && product.colors[0] ? product.colors[0] : '#111111'
   )
-  const isClothing = product.category === 'playeras' || product.category === 'hoodies'
-  const sizes = isClothing ? ['S', 'M', 'L', 'XL'] : ['UNITALLA / AJUSTABLE']
-  const [selectedSize, setSelectedSize] = useState<string>(sizes[0])
   const [added, setAdded] = useState(false)
 
   // Multi-image gallery in QuickView
@@ -142,11 +162,12 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                     {product.colors.map((c, i) => (
                       <button
                         key={i}
+                        type="button"
                         onClick={() => setSelectedColor(c)}
                         className={`w-6 h-6 rounded-full border border-white/20 transition-all ${
                           selectedColor === c ? 'ring-2 ring-[#D4FF00] scale-110' : 'opacity-70 hover:opacity-100'
                         }`}
-                        style={{ backgroundColor: c }}
+                        style={{ backgroundColor: resolveColorHex(c, product.specs) }}
                       />
                     ))}
                   </div>
@@ -155,23 +176,40 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
               {/* Size Selector */}
               <div className="pt-3 space-y-2">
-                <span className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
-                  Talla:
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
+                    Talla:
+                  </span>
+                  {selectedSize && (
+                    <span className="text-xs font-mono text-gray-400">
+                      Seleccionada: <strong className="text-[#D4FF00]">{selectedSize}</strong>
+                    </span>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-2">
-                  {sizes.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setSelectedSize(s)}
-                      className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wider border transition-all ${
-                        selectedSize === s
-                          ? 'border-[#D4FF00] bg-[#D4FF00]/10 text-[#D4FF00] font-bold'
-                          : 'border-[#2a2a2a] bg-[#141414] text-gray-400 hover:text-white'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
+                  {allSizes.map((s) => {
+                    const isAvailable = availableSizes.has(s)
+                    const isSelected = selectedSize === s && isAvailable
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        disabled={!isAvailable}
+                        onClick={() => setSelectedSize(s)}
+                        title={isAvailable ? `Talla ${s} disponible` : `Talla ${s} agotada`}
+                        className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wider border transition-all ${
+                          !isAvailable
+                            ? 'opacity-30 border-[#222222] bg-[#0e0e0e] text-gray-600 line-through cursor-not-allowed'
+                            : isSelected
+                            ? 'border-[#D4FF00] bg-[#D4FF00]/10 text-[#D4FF00] font-bold shadow-sm shadow-[#D4FF00]/20'
+                            : 'border-[#2a2a2a] bg-[#141414] text-gray-300 hover:border-gray-500 hover:text-white cursor-pointer'
+                        }`}
+                      >
+                        {s}
+                        {!isAvailable && <span className="text-[9px] ml-1 text-gray-600 no-underline">(0)</span>}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </div>
@@ -179,14 +217,20 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
             {/* CTA Button */}
             <div className="pt-4">
               <button
+                type="button"
+                disabled={isOutOfStock}
                 onClick={handleAdd}
                 className={`w-full py-4 text-xs sm:text-sm font-mono font-bold uppercase tracking-wider flex items-center justify-center space-x-2 transition-all ${
-                  added
+                  isOutOfStock
+                    ? 'bg-[#181818] border border-[#262626] text-gray-500 cursor-not-allowed'
+                    : added
                     ? 'bg-[#D4FF00] text-black'
-                    : 'bg-[#D4FF00] hover:bg-[#bfe600] text-black shadow-lg shadow-[#D4FF00]/20'
+                    : 'bg-[#D4FF00] hover:bg-[#bfe600] text-black shadow-lg shadow-[#D4FF00]/20 cursor-pointer'
                 }`}
               >
-                {added ? (
+                {isOutOfStock ? (
+                  <span>PIEZA AGOTADA / SIN STOCK</span>
+                ) : added ? (
                   <>
                     <Check className="w-4 h-4 stroke-[3]" />
                     <span>¡AGREGADO A TU BOLSA!</span>
