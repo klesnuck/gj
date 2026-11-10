@@ -163,16 +163,6 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory }) => {
 
         </div>
 
-        {/* Giant Watermark Typography Banner */}
-        <div className="py-12 sm:py-16 flex items-center justify-between border-b border-[#1c1c1c] group cursor-default">
-          <h2 className="font-display text-5xl sm:text-7xl md:text-8xl lg:text-[115px] xl:text-[132px] tracking-tight uppercase font-black text-white leading-none whitespace-nowrap overflow-hidden text-ellipsis">
-            GJ CLOTHING AND CAPS
-          </h2>
-          <div className="text-[#D4FF00] group-hover:scale-110 transition-transform pl-4 shrink-0">
-            <ArrowUpRight className="w-8 h-8 sm:w-12 sm:h-12 lg:w-16 lg:h-16 stroke-[2.5]" />
-          </div>
-        </div>
-
         {/* Bottom Legal & Payment Row */}
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-mono text-gray-500">
           <div>

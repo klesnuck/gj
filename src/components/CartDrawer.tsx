@@ -9,6 +9,8 @@ interface CartDrawerProps {
   onUpdateQuantity: (productId: string, quantity: number) => void
   onRemoveItem: (productId: string) => void
   coupons?: Coupon[]
+  onOpenFullCart?: () => void
+  onProceedToCheckout?: () => void
 }
 
 export const CartDrawer = ({
@@ -18,6 +20,8 @@ export const CartDrawer = ({
   onUpdateQuantity,
   onRemoveItem,
   coupons = [],
+  onOpenFullCart,
+  onProceedToCheckout,
 }: CartDrawerProps) => {
   const [couponCodeInput, setCouponCodeInput] = useState('')
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null)
@@ -293,12 +297,17 @@ export const CartDrawer = ({
 
               <button
                 onClick={() => {
-                  alert(`¡Redirigiendo a pasarela de pagos segura por $${finalTotal.toLocaleString('es-MX')} MXN (Mercado Pago / Tarjeta)!`)
+                  onClose()
+                  if (onOpenFullCart) {
+                    onOpenFullCart()
+                  } else if (onProceedToCheckout) {
+                    onProceedToCheckout()
+                  }
                 }}
                 className="w-full py-4 bg-[#D4FF00] hover:bg-[#bfe600] text-black font-mono font-bold text-sm uppercase tracking-wider flex items-center justify-center space-x-2 transition-colors cursor-pointer"
               >
-                <span>PROCEDER AL PAGO</span>
-                <ArrowRight className="w-4 h-4" />
+                <span>VER MI BOLSA Y PAGAR</span>
+                <ArrowRight className="w-4 h-4 stroke-[2.5]" />
               </button>
 
               <p className="text-[10px] font-mono text-center text-gray-500 uppercase">

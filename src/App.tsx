@@ -20,17 +20,30 @@ import { OrdersList } from './components/admin/OrdersList'
 import { CustomersList } from './components/admin/CustomersList'
 import { DiscountsView } from './components/admin/DiscountsView'
 
+// Cart & Checkout Pages matching the design interfaces
+import { CartPage } from './components/cart/CartPage'
+import { CheckoutPage } from './components/checkout/CheckoutPage'
+import { OrderConfirmationView } from './components/checkout/OrderConfirmationView'
+
 import { fetchProducts, createProduct, deleteProduct } from './lib/supabase'
 import { INITIAL_ORDERS, INITIAL_CUSTOMERS, INITIAL_COUPONS } from './lib/mockData'
-import type { Product, CartItem, Order, Customer, Coupon } from './types/database.types'
+import type { Product, CartItem, Order, Customer, Coupon, OrderItem } from './types/database.types'
 
 export function App() {
-  const [currentView, setCurrentView] = useState<'store' | 'admin'>(() => {
-    return window.location.hash.startsWith('#admin') ? 'admin' : 'store'
+  const [currentView, setCurrentView] = useState<'store' | 'cart' | 'checkout' | 'admin' | 'order-success'>(() => {
+    const hash = window.location.hash
+    if (hash.startsWith('#admin')) return 'admin'
+    if (hash.startsWith('#checkout')) return 'checkout'
+    if (hash.startsWith('#cart')) return 'cart'
+    return 'store'
   })
   const [adminTab, setAdminTab] = useState<string>('resumen')
   const [isCreatingProduct, setIsCreatingProduct] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+
+  // Order Placement & Checkout State
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null)
+  const [completedOrder, setCompletedOrder] = useState<Order | null>(null)
 
   // Store data
   const [products, setProducts] = useState<Product[]>([])
@@ -74,17 +87,27 @@ export function App() {
     }
   })
 
-  // Hash management
+  // Hash management & View Synchronization
   useEffect(() => {
     const handleHashChange = () => {
-      if (window.location.hash.startsWith('#admin')) {
+      const hash = window.location.hash
+      if (hash.startsWith('#admin')) {
         setCurrentView('admin')
-      } else if (currentView === 'admin') {
+      } else if (hash.startsWith('#checkout')) {
+        setCurrentView('checkout')
+      } else if (hash.startsWith('#cart')) {
+        setCurrentView('cart')
+      } else if (currentView !== 'order-success') {
         setCurrentView('store')
       }
     }
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [currentView])
+
+  // Scroll to top on view changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
   }, [currentView])
 
   // Save cart to localStorage
@@ -173,6 +196,107 @@ export function App() {
 
   const handleDeleteCoupon = (couponId: string) => {
     setCoupons((prev) => prev.filter((c) => c.id !== couponId))
+  }
+
+  // Coupon handling for Cart & Checkout
+  const handleApplyCoupon = (code: string): { success: boolean; message: string } => {
+    const clean = code.trim().toUpperCase()
+    if (!clean) return { success: false, message: 'Ingresa un código de cupón.' }
+
+    const found = coupons.find((c) => c.code === clean)
+    if (!found) return { success: false, message: 'Cupón no encontrado.' }
+    if (!found.isActive) return { success: false, message: 'Este cupón está inactivo actualmente.' }
+    if (new Date(found.expiresAt).getTime() < Date.now()) {
+      return { success: false, message: 'Este cupón ha expirado.' }
+    }
+
+    setAppliedCoupon(found)
+    return {
+      success: true,
+      message: `¡Cupón ${found.code} aplicado! (${
+        found.discountType === 'percentage' ? `${found.discountValue}% OFF` : `$${found.discountValue} MXN`
+      })`,
+    }
+  }
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null)
+  }
+
+  // Checkout Placement Handler (Generates real Order & connects to Admin & Customers list)
+  const handlePlaceOrder = async (orderPayload: {
+    customerName: string
+    customerEmail: string
+    customerPhone: string
+    shippingType: 'saltillo_local' | 'paqueteria_nacional'
+    shippingAddress: string
+    paymentMethod: string
+    total: number
+  }): Promise<Order> => {
+    const newOrderNumber = Math.floor(1000 + Math.random() * 9000).toString()
+    const orderItems: OrderItem[] = cartItems.map((it) => ({
+      title: it.product.title,
+      color: it.selectedColor,
+      size: it.selectedSize,
+      quantity: it.quantity,
+      price: it.product.price,
+    }))
+
+    const newOrder: Order = {
+      id: `ord-${Date.now()}`,
+      orderNumber: newOrderNumber,
+      customerName: orderPayload.customerName,
+      customerEmail: orderPayload.customerEmail,
+      customerPhone: orderPayload.customerPhone,
+      shippingType: orderPayload.shippingType,
+      shippingAddress: orderPayload.shippingAddress,
+      paymentMethod: orderPayload.paymentMethod,
+      items: orderItems,
+      total: orderPayload.total,
+      status: 'pendiente',
+      createdAt: new Date().toISOString(),
+    }
+
+    // Add to Admin Orders State
+    setOrders((prev) => [newOrder, ...prev])
+
+    // Update / Register Customer in Admin Customers directory
+    setCustomers((prev) => {
+      const exists = prev.find((c) => c.email.toLowerCase() === orderPayload.customerEmail.toLowerCase())
+      if (exists) {
+        return prev.map((c) =>
+          c.id === exists.id
+            ? {
+                ...c,
+                ordersCount: (c.ordersCount || 1) + 1,
+                totalSpent: (c.totalSpent || 0) + orderPayload.total,
+                lastOrderDate: new Date().toISOString().split('T')[0],
+              }
+            : c
+        )
+      } else {
+        const newCustomer: Customer = {
+          id: `cust-${Date.now()}`,
+          name: orderPayload.customerName,
+          phone: orderPayload.customerPhone,
+          email: orderPayload.customerEmail,
+          city: orderPayload.shippingType === 'saltillo_local' ? 'Saltillo, Coah.' : 'Nacional',
+          ordersCount: 1,
+          totalSpent: orderPayload.total,
+          registeredAt: new Date().toISOString().split('T')[0],
+          lastOrderDate: new Date().toISOString().split('T')[0],
+        }
+        return [newCustomer, ...prev]
+      }
+    })
+
+    // Reset Cart and display Step 03 Confirmation
+    setCartItems([])
+    setCompletedOrder(newOrder)
+    setCurrentView('order-success')
+    window.location.hash = ''
+
+    return newOrder
   }
 
   // Cart operations
@@ -331,16 +455,76 @@ export function App() {
     )
   }
 
+  // RENDER CART VIEW (Image 1: TU BOLSA.)
+  if (currentView === 'cart') {
+    return (
+      <CartPage
+        items={cartItems}
+        onUpdateQuantity={handleUpdateQuantity}
+        onRemoveItem={handleRemoveItem}
+        onContinueShopping={() => {
+          window.location.hash = ''
+          setCurrentView('store')
+        }}
+        onProceedToCheckout={() => {
+          window.location.hash = 'checkout'
+          setCurrentView('checkout')
+        }}
+        appliedCoupon={appliedCoupon}
+        onApplyCoupon={handleApplyCoupon}
+        onRemoveCoupon={handleRemoveCoupon}
+        onOpenAdmin={() => {
+          window.location.hash = 'admin'
+          setCurrentView('admin')
+        }}
+      />
+    )
+  }
+
+  // RENDER CHECKOUT VIEW (Image 2: HAZLO TUYO.)
+  if (currentView === 'checkout') {
+    return (
+      <CheckoutPage
+        items={cartItems}
+        appliedCoupon={appliedCoupon}
+        onApplyCoupon={handleApplyCoupon}
+        onRemoveCoupon={handleRemoveCoupon}
+        onBackToCart={() => {
+          window.location.hash = 'cart'
+          setCurrentView('cart')
+        }}
+        onPlaceOrder={handlePlaceOrder}
+      />
+    )
+  }
+
+  // RENDER ORDER CONFIRMATION VIEW (Step 03: Confirmación)
+  if (currentView === 'order-success' && completedOrder) {
+    return (
+      <OrderConfirmationView
+        order={completedOrder}
+        onReturnToStore={() => {
+          setCompletedOrder(null)
+          window.location.hash = ''
+          setCurrentView('store')
+        }}
+      />
+    )
+  }
+
   // RENDER PUBLIC STOREFRONT VIEW
   return (
     <div className="min-h-screen bg-[#090909] text-white flex flex-col selection:bg-[#D4FF00] selection:text-black">
       {/* 1. Announcement Bar */}
       <AnnouncementBar />
 
-      {/* 2. Main Navigation Bar with Admin shortcut */}
+      {/* 2. Main Navigation Bar with Admin shortcut & Direct Cart Page */}
       <Navbar
         cartCount={totalCartCount}
-        onOpenCart={() => setIsCartOpen(true)}
+        onOpenCart={() => {
+          window.location.hash = 'cart'
+          setCurrentView('cart')
+        }}
         onSelectCategory={(cat) => {
           setActiveCategory(cat)
           const el = document.getElementById('catalogo')
@@ -419,6 +603,16 @@ export function App() {
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
         coupons={coupons}
+        onOpenFullCart={() => {
+          setIsCartOpen(false)
+          window.location.hash = 'cart'
+          setCurrentView('cart')
+        }}
+        onProceedToCheckout={() => {
+          setIsCartOpen(false)
+          window.location.hash = 'checkout'
+          setCurrentView('checkout')
+        }}
       />
 
       {/* Quick View Product Modal */}
