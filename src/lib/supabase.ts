@@ -153,30 +153,26 @@ export async function createProduct(
         const { error } = await supabase.from('products').update(payload).eq('id', productData.id)
         if (error) throw error
       } else {
-        // Insert nuevo
-        const { error } = await supabase.from('products').insert([payload])
+        // Insert nuevo (con fallback por si la columna brand aún no existe en Supabase)
+        let { error } = await supabase.from('products').insert([payload])
+        if (error && error.message?.includes("'brand' column")) {
+          const { brand: _b, images: _img, ...compatiblePayload } = payload
+          const retryRes = await supabase.from('products').insert([compatiblePayload])
+          error = retryRes.error
+        }
         if (error) throw error
       }
       return { success: true, data: newProduct }
     } catch (err: any) {
-      console.warn('Error al guardar producto en Supabase, guardando localmente:', err)
+      console.error('Error al guardar producto en Supabase:', err)
+      return {
+        success: false,
+        message: err.message || 'Error de permisos (RLS) en Supabase',
+      }
     }
   }
 
-  // Respaldo local
-  try {
-    const existing: Product[] = JSON.parse(localStorage.getItem('gj_custom_products') || '[]')
-    const index = existing.findIndex((p) => p.id === id)
-    if (index > -1) {
-      existing[index] = newProduct
-    } else {
-      existing.unshift(newProduct)
-    }
-    localStorage.setItem('gj_custom_products', JSON.stringify(existing))
-    return { success: true, data: newProduct }
-  } catch (err) {
-    return { success: false, message: 'No se pudo guardar el producto localmente.' }
-  }
+  return { success: false, message: 'Supabase no está configurado.' }
 }
 
 export async function deleteProduct(productId: string): Promise<{ success: boolean; message?: string }> {

@@ -12,6 +12,7 @@ import {
   Layers,
   Sparkles,
   Star,
+  AlertTriangle,
 } from 'lucide-react'
 import type { Product } from '../../types/database.types'
 
@@ -37,27 +38,20 @@ export const ProductForm = ({
 }: ProductFormProps) => {
   const isEditing = Boolean(initialProduct)
 
-  // Form State initialized with initialProduct or default values
-  const [title, setTitle] = useState(initialProduct?.title || 'Hoodie No Signal')
-  const [description, setDescription] = useState(
-    initialProduct?.description ||
-      'Hoodie de algodón pesado de 450 g, corte relaxed fit y acabado negro. Bordado frontal No Signal. Hecho para la calle, sin pedir permiso.'
-  )
+  // Form State initialized from 0 (without preset mock descriptions or default hoodie)
+  const [title, setTitle] = useState(initialProduct?.title || '')
+  const [description, setDescription] = useState(initialProduct?.description || '')
   const [category, setCategory] = useState<'gorras' | 'playeras' | 'hoodies' | 'accesorios'>(
-    (initialProduct?.category as any) || 'hoodies'
+    (initialProduct?.category as any) || 'playeras'
   )
   const [brand, setBrand] = useState(initialProduct?.brand || 'GJ')
-  const [price, setPrice] = useState<number>(initialProduct?.price || 1499)
-  const [tag, setTag] = useState(initialProduct?.tag || 'NUEVO')
-  const [tagType, setTagType] = useState<'white' | 'lime'>(
-    (initialProduct?.tag_type as any) || 'lime'
-  )
-  const [collection, setCollection] = useState('Drop 004')
+  const [price, setPrice] = useState<number>(initialProduct?.price || 0)
+  const [tag, setTag] = useState(initialProduct?.tag || '')
   const [status, setStatus] = useState<'borrador' | 'publicado'>('publicado')
   const [inOnlineStore, setInOnlineStore] = useState(true)
-  const [isFeatured, setIsFeatured] = useState<boolean>(initialProduct?.is_featured ?? true)
+  const [isFeatured, setIsFeatured] = useState<boolean>(initialProduct?.is_featured ?? false)
 
-  // Multi-Image Gallery State (Up to 6 images)
+  // Multi-Image Gallery State (starts completely empty: 0 images)
   const [images, setImages] = useState<string[]>(() => {
     if (initialProduct?.images && initialProduct.images.length > 0) {
       return initialProduct.images
@@ -65,32 +59,33 @@ export const ProductForm = ({
     if (initialProduct?.image_url) {
       return [initialProduct.image_url]
     }
-    return ['/images/product-hoodie.jpg']
+    return []
   })
   const [coverIndex, setCoverIndex] = useState<number>(0)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   // Unitalla vs Tallas State
   const isCap = category === 'gorras'
 
-  // Cap Unitalla Stock & SKU
-  const [capStock, setCapStock] = useState<number>(initialProduct?.stock || 24)
+  // Cap Unitalla Stock & SKU (starts at 0)
+  const [capStock, setCapStock] = useState<number>(initialProduct?.stock || 0)
   const [capSku, setCapSku] = useState<string>(
-    initialProduct ? `GJ-CAP-${initialProduct.id.slice(-4).toUpperCase()}` : 'GJ-CAP-001'
+    initialProduct?.slug || ''
   )
 
-  // Clothing Variants (for hoodies, playeras, etc.)
+  // Clothing Variants (all stock starts strictly from 0)
   const [colorName, setColorName] = useState('Negro')
   const [colorHex, setColorHex] = useState(
     initialProduct?.colors?.[0] || '#171717'
   )
   const [variants, setVariants] = useState<VariantRow[]>([
-    { size: 'S', sku: 'GJ-NS-BLK-S', stock: 8, price: price },
-    { size: 'M', sku: 'GJ-NS-BLK-M', stock: 12, price: price },
-    { size: 'L', sku: 'GJ-NS-BLK-L', stock: 16, price: price },
-    { size: 'XL', sku: 'GJ-NS-BLK-XL', stock: 8, price: price },
+    { size: 'S', sku: '', stock: 0, price: price },
+    { size: 'M', sku: '', stock: 0, price: price },
+    { size: 'L', sku: '', stock: 0, price: price },
+    { size: 'XL', sku: '', stock: 0, price: price },
   ])
 
   // Sync price changes to variants
@@ -100,48 +95,9 @@ export const ProductForm = ({
     }
   }, [price, isCap])
 
-  // When switching category to gorras, adapt image and title if default
+  // Change category cleanly without overwriting user data
   const handleCategoryChange = (newCat: 'gorras' | 'playeras' | 'hoodies' | 'accesorios') => {
     setCategory(newCat)
-    if (!isEditing) {
-      if (newCat === 'gorras') {
-        if (images.length === 1 && images[0] === '/images/product-hoodie.jpg') {
-          setImages(['/images/product-cap-black.jpg', '/images/product-cap-stone.jpg'])
-          setCoverIndex(0)
-        }
-        if (title === 'Hoodie No Signal') {
-          setTitle('Gorra GJ Signature')
-          setDescription(
-            'Silueta insignia de gabardina de alto gramaje, corona estructurada y bordado 3D frontal "gj". Broche metálico grabado ajustable.'
-          )
-          setPrice(699)
-        }
-      } else if (newCat === 'hoodies') {
-        if (images.length >= 1 && images[0].includes('product-cap')) {
-          setImages(['/images/product-hoodie.jpg'])
-          setCoverIndex(0)
-        }
-        if (title === 'Gorra GJ Signature') {
-          setTitle('Hoodie No Signal')
-          setDescription(
-            'Hoodie de algodón pesado de 450 g, corte relaxed fit y acabado negro. Bordado frontal No Signal. Hecho para la calle, sin pedir permiso.'
-          )
-          setPrice(1499)
-        }
-      } else if (newCat === 'playeras') {
-        if (images.length >= 1 && (images[0].includes('cap') || images[0].includes('hoodie'))) {
-          setImages(['/images/product-tshirt.jpg'])
-          setCoverIndex(0)
-        }
-        if (title === 'Hoodie No Signal' || title === 'Gorra GJ Signature') {
-          setTitle('Playera Heavyweight')
-          setDescription(
-            'Playera oversized de corte boxy confeccionada en algodón peinado 280 GSM. Lavado mineral vintage y bordado tonal minimalista.'
-          )
-          setPrice(899)
-        }
-      }
-    }
   }
 
   // Stock calculation: If gorra, takes capStock directly; if clothes, sums variants
@@ -198,12 +154,12 @@ export const ProductForm = ({
   }
 
   const handleRemoveImage = (indexToRemove: number) => {
-    if (images.length <= 1) return
+    if (images.length === 0) return
     setImages((prev) => prev.filter((_, idx) => idx !== indexToRemove))
     if (coverIndex === indexToRemove) {
       setCoverIndex(0)
     } else if (coverIndex > indexToRemove) {
-      setCoverIndex((prev) => prev - 1)
+      setCoverIndex((prev) => Math.max(0, prev - 1))
     }
   }
 
@@ -214,24 +170,24 @@ export const ProductForm = ({
   const handlePublish = async (newStatus: 'borrador' | 'publicado' = 'publicado') => {
     setIsSubmitting(true)
     const specsComputed = isCap
-      ? `${colorName} / Bordado 3D / Unitalla Ajustable`
-      : `${colorName} / Relaxed fit / ${price > 1000 ? '450 g' : '280 g'}`
+      ? `${colorName} / Unitalla Ajustable`
+      : `${colorName} / Tallas: ${variants.filter(v => v.stock > 0).map(v => v.size).join(', ') || 'S, M, L, XL'}`
 
-    const currentCover = images[coverIndex] || images[0] || '/images/product-hoodie.jpg'
+    const currentCover = images[coverIndex] || images[0] || ''
 
     const productPayload: Partial<Product> = {
       id: initialProduct?.id,
-      title,
+      title: title || 'Sin nombre',
       slug:
         initialProduct?.slug ||
-        title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+        (title ? title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : `prenda-${Date.now()}`),
       category,
-      brand,
-      price,
+      brand: brand || 'GJ',
+      price: Number(price) || 0,
       currency: 'MXN',
       tag: tag || null,
-      tag_type: tagType,
-      description,
+      tag_type: 'lime',
+      description: description || '',
       specs: specsComputed,
       colors: [colorHex],
       image_url: currentCover,
@@ -241,18 +197,23 @@ export const ProductForm = ({
       created_at: initialProduct?.created_at,
     }
 
+    setSaveError(null)
     const ok = await onSaveProduct(productPayload)
     setIsSubmitting(false)
     if (ok) {
       setStatus(newStatus)
       setSavedSuccess(true)
       setTimeout(() => setSavedSuccess(false), 2500)
+    } else {
+      setSaveError(
+        '⚠️ Supabase rechazó la prenda porque tu base de datos tiene bloqueados los permisos de inserción (RLS). Para solucionarlo, debes ejecutar el script SQL en el SQL Editor de tu panel de Supabase.'
+      )
     }
   }
 
   return (
     <div className="w-full text-white space-y-8 animate-in fade-in duration-200">
-      
+
       {/* Top Breadcrumb & Page Title Bar */}
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -332,21 +293,31 @@ export const ProductForm = ({
 
           <span className="text-[11px] font-mono text-gray-500 uppercase flex items-center gap-1.5">
             <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                status === 'publicado' ? 'bg-[#D4FF00]' : 'bg-gray-500'
-              }`}
+              className={`w-1.5 h-1.5 rounded-full ${status === 'publicado' ? 'bg-[#D4FF00]' : 'bg-gray-500'
+                }`}
             />
             {status === 'publicado' ? 'PUBLICADO EN TIENDA' : 'BORRADOR · SIN PUBLICAR'}
           </span>
         </div>
       </div>
 
+      {/* Error Alert Banner */}
+      {saveError && (
+        <div className="p-4 bg-red-950/70 border border-red-500 text-red-200 text-xs font-mono space-y-2 animate-in fade-in">
+          <div className="flex items-center gap-2 font-bold text-red-400 uppercase text-sm">
+            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+            <span>Error de permisos en Supabase (RLS)</span>
+          </div>
+          <p>{saveError}</p>
+        </div>
+      )}
+
       {/* Main Two Columns Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
+
         {/* Left Column (Forms) - 8 Cols */}
         <div className="lg:col-span-8 space-y-6">
-          
+
           {/* Section 01: Imágenes del producto (Galería de hasta 6 imágenes) */}
           <div className="bg-[#101010] border border-[#202020] p-6 space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-[#1c1c1c]">
@@ -368,11 +339,10 @@ export const ProductForm = ({
                 return (
                   <div
                     key={idx}
-                    className={`relative aspect-[4/5] bg-[#161616] border transition-all group overflow-hidden ${
-                      isCover
+                    className={`relative aspect-[4/5] bg-[#161616] border transition-all group overflow-hidden ${isCover
                         ? 'border-[#D4FF00] shadow-[0_0_15px_rgba(212,255,0,0.25)] ring-1 ring-[#D4FF00]'
                         : 'border-[#262626] hover:border-gray-500'
-                    }`}
+                      }`}
                   >
                     {/* Badge / Button: Portada */}
                     {isCover ? (
@@ -398,7 +368,7 @@ export const ProductForm = ({
                     />
 
                     {/* Delete Photo Button */}
-                    {images.length > 1 && (
+                    {images.length > 0 && (
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(idx)}
@@ -522,7 +492,7 @@ export const ProductForm = ({
 
             {/* Category & Sale Price Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-              
+
               <div className="space-y-1.5">
                 <label className="text-xs font-mono text-gray-400 uppercase tracking-wider flex items-center justify-between">
                   <span>Categoría *</span>
@@ -552,8 +522,10 @@ export const ProductForm = ({
                   <span className="absolute left-3.5 top-2.5 text-sm font-mono text-gray-400">$</span>
                   <input
                     type="number"
-                    value={price}
-                    onChange={(e) => setPrice(Number(e.target.value))}
+                    min="0"
+                    placeholder="0"
+                    value={price === 0 ? '' : price}
+                    onChange={(e) => setPrice(Math.max(0, Number(e.target.value) || 0))}
                     className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] pl-8 pr-4 py-2.5 text-sm font-mono text-white focus:outline-none transition-colors"
                   />
                 </div>
@@ -599,35 +571,21 @@ export const ProductForm = ({
               </div>
             </div>
 
-            {/* Tag / Badge Configuration */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            {/* Tag Configuration (Without label color) */}
+            <div className="pt-2">
               <div className="space-y-1.5">
                 <label className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
-                  Etiqueta Destacada
+                  Etiqueta Destacada (Opcional)
                 </label>
                 <select
                   value={tag}
                   onChange={(e) => setTag(e.target.value)}
                   className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-sans text-white focus:outline-none cursor-pointer"
                 >
+                  <option value="">Sin etiqueta (Por defecto)</option>
                   <option value="NUEVO">NUEVO</option>
                   <option value="BEST SELLER">BEST SELLER</option>
                   <option value="EDICIÓN LIMITADA">EDICIÓN LIMITADA</option>
-                  <option value="">Sin etiqueta</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
-                  Color de Etiqueta
-                </label>
-                <select
-                  value={tagType}
-                  onChange={(e) => setTagType(e.target.value as 'white' | 'lime')}
-                  className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-sans text-white focus:outline-none cursor-pointer"
-                >
-                  <option value="lime">Verde Neón (#D4FF00)</option>
-                  <option value="white">Blanco (#FFFFFF)</option>
                 </select>
               </div>
             </div>
@@ -655,7 +613,7 @@ export const ProductForm = ({
 
           {/* Section 03: Existencias (Condicional: Si es Gorra = Unitalla directa; si es otra = Tabla de tallas) */}
           <div className="bg-[#101010] border border-[#202020] p-6 space-y-4">
-            
+
             {/* Header of Section 03 */}
             <div className="flex items-center justify-between pb-3 border-b border-[#1c1c1c]">
               <div className="flex items-center space-x-2">
@@ -673,7 +631,7 @@ export const ProductForm = ({
             {/* CASO 1: ES GORRA -> NO SE MUESTRAN TALLAS, SOLO EXISTENCIAS */}
             {isCap ? (
               <div className="space-y-5 pt-1">
-                
+
                 {/* Banner Informativo Unitalla */}
                 <div className="p-3.5 bg-[#141414] border border-[#282828] flex items-start gap-3">
                   <div className="p-2 bg-[#D4FF00]/10 border border-[#D4FF00]/30 text-[#D4FF00] shrink-0 mt-0.5">
@@ -695,7 +653,7 @@ export const ProductForm = ({
 
                 {/* Grid de Existencias y SKU Unitalla */}
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end bg-[#131313] p-4 border border-[#222222]">
-                  
+
                   {/* Campo de Existencias Totales */}
                   <div className="sm:col-span-6 space-y-2">
                     <label className="text-xs font-mono text-gray-300 uppercase tracking-wider font-bold block">
@@ -782,9 +740,8 @@ export const ProductForm = ({
                           if (hex === '#4A5243') setColorName('Verde Olivo')
                           if (hex === '#1e293b') setColorName('Navy')
                         }}
-                        className={`w-5 h-5 rounded-full border transition-transform ${
-                          colorHex === hex ? 'border-[#D4FF00] scale-110' : 'border-white/20'
-                        }`}
+                        className={`w-5 h-5 rounded-full border transition-transform ${colorHex === hex ? 'border-[#D4FF00] scale-110' : 'border-white/20'
+                          }`}
                         style={{ backgroundColor: hex }}
                       />
                     ))}
@@ -795,7 +752,7 @@ export const ProductForm = ({
             ) : (
               /* CASO 2: NO ES GORRA (HOODIES, PLAYERAS, ETC) -> TABLA DE TALLAS S, M, L, XL */
               <div className="space-y-4">
-                
+
                 {/* Color selection line */}
                 <div className="flex items-center justify-between text-xs font-mono">
                   <div className="flex items-center space-x-3">
@@ -900,7 +857,7 @@ export const ProductForm = ({
 
         {/* Right Column (Sidebar Preview & Publication) - 4 Cols */}
         <div className="lg:col-span-4 space-y-6">
-          
+
           {/* Card: VISTA PREVIA EN TIENDA */}
           <div className="bg-[#101010] border border-[#202020] p-6 space-y-4 sticky top-6">
             <div className="flex items-center justify-between">
@@ -916,19 +873,24 @@ export const ProductForm = ({
             <div className="bg-[#151515] border border-[#262626] p-3 space-y-3 shadow-lg">
               <div className="relative aspect-square bg-[#0f0f0f] overflow-hidden">
                 {tag && (
-                  <span
-                    className={`absolute top-2 left-2 z-10 px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-widest ${
-                      tagType === 'lime' ? 'bg-[#D4FF00] text-black' : 'bg-white text-black'
-                    }`}
-                  >
+                  <span className="absolute top-2 left-2 z-10 px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-widest bg-[#D4FF00] text-black">
                     {tag}
                   </span>
                 )}
-                <img
-                  src={images[coverIndex] || images[0] || '/images/product-hoodie.jpg'}
-                  alt={title}
-                  className="w-full h-full object-cover object-center transition-all duration-200"
-                />
+                {images.length > 0 ? (
+                  <img
+                    src={images[coverIndex] || images[0]}
+                    alt={title || 'Prenda'}
+                    className="w-full h-full object-cover object-center transition-all duration-200"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-[#101010] border border-dashed border-[#222222] text-gray-600 space-y-2 p-4 text-center">
+                    <Package className="w-10 h-10 stroke-[1.2] opacity-40 text-[#D4FF00]" />
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
+                      Sin foto seleccionada
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Mini thumbnails strip in preview */}
@@ -939,11 +901,10 @@ export const ProductForm = ({
                       key={idx}
                       type="button"
                       onClick={() => setCoverIndex(idx)}
-                      className={`w-9 h-9 rounded-sm overflow-hidden border transition-all shrink-0 cursor-pointer ${
-                        idx === coverIndex
+                      className={`w-9 h-9 rounded-sm overflow-hidden border transition-all shrink-0 cursor-pointer ${idx === coverIndex
                           ? 'border-[#D4FF00] scale-105'
                           : 'border-[#333] opacity-60 hover:opacity-100'
-                      }`}
+                        }`}
                     >
                       <img src={img} alt="" className="w-full h-full object-cover" />
                     </button>
@@ -961,7 +922,7 @@ export const ProductForm = ({
                 <div className="text-[11px] font-sans text-gray-400">
                   {isCap
                     ? `${colorName} / Unitalla Ajustable`
-                    : `${colorName} / Relaxed fit / 450 g`}
+                    : `${colorName} · ${variants.filter(v => v.stock > 0).map(v => v.size).join(', ') || 'Sin stock cargado'}`}
                 </div>
                 <div className="pt-1 flex items-center justify-between">
                   <span
@@ -993,22 +954,6 @@ export const ProductForm = ({
                 >
                   <option value="publicado">Publicado (Visible en tienda)</option>
                   <option value="borrador">Borrador (Oculto)</option>
-                </select>
-              </div>
-
-              {/* Collection selector */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
-                  Colección
-                </label>
-                <select
-                  value={collection}
-                  onChange={(e) => setCollection(e.target.value)}
-                  className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-xs font-mono text-white focus:outline-none cursor-pointer"
-                >
-                  <option value="Drop 004">Drop 004 (Actual)</option>
-                  <option value="Drop 003">Drop 003</option>
-                  <option value="Underground Basics">Underground Basics</option>
                 </select>
               </div>
 

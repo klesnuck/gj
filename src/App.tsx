@@ -183,8 +183,10 @@ export function App() {
       setIsCreatingProduct(false)
       setEditingProduct(null)
       return true
+    } else {
+      alert(`⚠️ Supabase no permitió guardar la prenda:\n\n"${res.message}"\n\nDebes ejecutar el script SQL en el SQL Editor de Supabase para activar los permisos de subida.`)
+      return false
     }
-    return false
   }
 
   const handleDeleteProduct = async (productId: string) => {
@@ -264,9 +266,8 @@ export function App() {
     setAppliedCoupon(found)
     return {
       success: true,
-      message: `¡Cupón ${found.code} aplicado! (${
-        found.discountType === 'percentage' ? `${found.discountValue}% OFF` : `$${found.discountValue} MXN`
-      })`,
+      message: `¡Cupón ${found.code} aplicado! (${found.discountType === 'percentage' ? `${found.discountValue}% OFF` : `$${found.discountValue} MXN`
+        })`,
     }
   }
 
