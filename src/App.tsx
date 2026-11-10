@@ -152,10 +152,10 @@ export function App() {
     let isMounted = true
     const loadData = async () => {
       try {
-        const [pData, oData, cData, coupData] = await Promise.all([
+        const oData = await fetchOrders()
+        const [pData, cData, coupData] = await Promise.all([
           fetchProducts(activeCategory),
-          fetchOrders(),
-          fetchCustomers(),
+          fetchCustomers(oData),
           fetchCoupons(),
         ])
         if (isMounted) {
@@ -310,6 +310,31 @@ export function App() {
 
     // Add to Orders State
     setOrders((prev) => [newOrder, ...prev])
+
+    // Update Customers State immediately
+    setCustomers((prev) => {
+      const existingIdx = prev.findIndex((c) => c.email.toLowerCase() === orderPayload.customerEmail.toLowerCase())
+      if (existingIdx > -1) {
+        const next = [...prev]
+        next[existingIdx].ordersCount += 1
+        next[existingIdx].totalSpent += orderPayload.total
+        next[existingIdx].lastOrderDate = new Date().toISOString().split('T')[0]
+        return next
+      } else {
+        const newCust: Customer = {
+          id: `cust-${Date.now()}`,
+          name: orderPayload.customerName,
+          phone: orderPayload.customerPhone,
+          email: orderPayload.customerEmail,
+          city: orderPayload.shippingType === 'saltillo_local' ? 'Saltillo, Coah.' : 'Nacional',
+          ordersCount: 1,
+          totalSpent: orderPayload.total,
+          registeredAt: new Date().toISOString().split('T')[0],
+          lastOrderDate: new Date().toISOString().split('T')[0],
+        }
+        return [newCust, ...prev]
+      }
+    })
 
     // Persist to Supabase
     createOrder({

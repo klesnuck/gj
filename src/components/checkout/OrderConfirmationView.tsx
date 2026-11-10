@@ -12,7 +12,7 @@ export const OrderConfirmationView: React.FC<OrderConfirmationViewProps> = ({
   onReturnToStore,
 }) => {
   const isSaltillo = order.shippingType === 'saltillo_local'
-  const waPhone = '528441234567'
+  const waPhone = '528444923686'
   const waText = encodeURIComponent(
     `¡Hola gj.! Acabo de realizar el pedido *#${order.orderNumber}* por un total de *$${order.total.toLocaleString(
       'es-MX'

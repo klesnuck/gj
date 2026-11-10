@@ -225,6 +225,8 @@ export async function toggleProductFeatured(productId: string): Promise<boolean>
 // ============================================================
 
 export async function fetchOrders(): Promise<Order[]> {
+  let supabaseOrders: Order[] = []
+
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase
@@ -233,10 +235,10 @@ export async function fetchOrders(): Promise<Order[]> {
         .order('created_at', { ascending: false })
 
       if (!error && data && data.length > 0) {
-        return data.map((row: any) => ({
+        supabaseOrders = data.map((row: any) => ({
           id: row.id,
           orderNumber: row.order_number,
-          customerName: row.customer_name || 'Cliente GJ',
+          customerName: row.customer_name || (row.shipping_address?.customer_name || 'Cliente GJ'),
           customerPhone: row.customer_phone || (row.shipping_address?.phone || ''),
           customerEmail: row.customer_email,
           shippingType: row.shipping_type || (row.shipping_address?.address?.toLowerCase().includes('saltillo') ? 'saltillo_local' : 'paqueteria_nacional'),
@@ -256,7 +258,24 @@ export async function fetchOrders(): Promise<Order[]> {
     }
   }
 
-  return []
+  // Leer orders de localStorage para que nunca se pierdan si Supabase RLS bloquea SELECT
+  let localOrders: Order[] = []
+  try {
+    localOrders = JSON.parse(localStorage.getItem('gj_admin_orders') || '[]')
+  } catch (e) {
+    console.warn(e)
+  }
+
+  // Combinar por orderNumber (dando prioridad a Supabase, pero agregando los locales)
+  const combinedMap = new Map<string, Order>()
+  for (const o of localOrders) {
+    combinedMap.set(o.orderNumber, o)
+  }
+  for (const o of supabaseOrders) {
+    combinedMap.set(o.orderNumber, o)
+  }
+
+  return Array.from(combinedMap.values())
 }
 
 export async function createOrder(orderPayload: {
@@ -285,43 +304,68 @@ export async function createOrder(orderPayload: {
     createdAt: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
   }
 
+  // Guardar SIEMPRE en localStorage para que esté disponible inmediatamente en el panel del admin
+  try {
+    const existing = JSON.parse(localStorage.getItem('gj_admin_orders') || '[]')
+    const filtered = existing.filter((o: Order) => o.orderNumber !== newOrder.orderNumber)
+    localStorage.setItem('gj_admin_orders', JSON.stringify([newOrder, ...filtered]))
+  } catch (e) {
+    console.warn(e)
+  }
+
   if (isSupabaseConfigured && supabase) {
     try {
-      const { error } = await supabase.from('orders').insert([
-        {
-          order_number: orderPayload.orderNumber,
-          customer_name: orderPayload.customerName,
-          customer_phone: orderPayload.customerPhone,
-          customer_email: orderPayload.customerEmail,
-          shipping_type: orderPayload.shippingType,
-          shipping_address: { address: orderPayload.shippingAddress, phone: orderPayload.customerPhone },
-          total_amount: orderPayload.total,
-          currency: 'MXN',
-          status: 'pendiente',
-          payment_method: orderPayload.paymentMethod,
-          items: orderPayload.items,
-        },
-      ])
-      if (!error) {
+      const payload: any = {
+        order_number: orderPayload.orderNumber,
+        customer_name: orderPayload.customerName,
+        customer_phone: orderPayload.customerPhone,
+        customer_email: orderPayload.customerEmail,
+        shipping_type: orderPayload.shippingType,
+        shipping_address: { address: orderPayload.shippingAddress, phone: orderPayload.customerPhone, customer_name: orderPayload.customerName },
+        total_amount: orderPayload.total,
+        currency: 'MXN',
+        status: 'pendiente',
+        payment_method: orderPayload.paymentMethod,
+        items: orderPayload.items,
+      }
+
+      let { error } = await supabase.from('orders').insert([payload])
+      let attempts = 0
+      while (error && error.message?.includes('in the schema cache') && attempts < 5) {
+        attempts++
+        const match = error.message.match(/Could not find the '([^']+)' column/)
+        if (match && match[1]) {
+          delete payload[match[1]]
+          const retryRes = await supabase.from('orders').insert([payload])
+          error = retryRes.error
+        } else {
+          break
+        }
+      }
+
+      if (error) {
+        console.error('Error insertando orden en Supabase:', error)
+      } else {
         return { success: true, data: newOrder }
       }
     } catch (err) {
-      console.warn('Error al insertar orden en Supabase, guardando local:', err)
+      console.warn('Error al insertar orden en Supabase:', err)
     }
-  }
-
-  // Guardar local
-  try {
-    const existing = JSON.parse(localStorage.getItem('gj_admin_orders') || '[]')
-    localStorage.setItem('gj_admin_orders', JSON.stringify([newOrder, ...existing]))
-  } catch (e) {
-    console.warn(e)
   }
 
   return { success: true, data: newOrder }
 }
 
 export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<boolean> {
+  // Actualizar en localStorage
+  try {
+    const existing: Order[] = JSON.parse(localStorage.getItem('gj_admin_orders') || '[]')
+    const updated = existing.map((o) => (o.id === orderId || o.orderNumber === orderId ? { ...o, status } : o))
+    localStorage.setItem('gj_admin_orders', JSON.stringify(updated))
+  } catch (e) {
+    console.warn(e)
+  }
+
   if (isSupabaseConfigured && supabase) {
     try {
       await supabase.from('orders').update({ status }).eq('id', orderId)
@@ -336,12 +380,14 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
 // CLIENTES (CUSTOMERS)
 // ============================================================
 
-export async function fetchCustomers(): Promise<Customer[]> {
+export async function fetchCustomers(ordersList?: Order[]): Promise<Customer[]> {
+  let customersFromDb: Customer[] = []
+
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase.from('customers').select('*').order('last_order_date', { ascending: false })
       if (!error && data && data.length > 0) {
-        return data.map((row: any) => ({
+        customersFromDb = data.map((row: any) => ({
           id: row.id,
           name: row.name,
           phone: row.phone || '',
@@ -358,7 +404,37 @@ export async function fetchCustomers(): Promise<Customer[]> {
     }
   }
 
-  return []
+  if (customersFromDb.length > 0) {
+    return customersFromDb
+  }
+
+  // Si la tabla customers no existe en Supabase o está vacía, derivar automáticamente los clientes a partir de los pedidos realizados
+  const orders = ordersList || await fetchOrders()
+  const customerMap = new Map<string, Customer>()
+
+  for (const o of orders) {
+    if (!o.customerEmail) continue
+    const key = o.customerEmail.toLowerCase().trim()
+    const existing = customerMap.get(key)
+    if (existing) {
+      existing.ordersCount += 1
+      existing.totalSpent += o.total
+    } else {
+      customerMap.set(key, {
+        id: `cust-${o.orderNumber}`,
+        name: o.customerName || 'Cliente GJ',
+        phone: o.customerPhone || '',
+        email: o.customerEmail,
+        city: o.shippingType === 'saltillo_local' ? 'Saltillo, Coah.' : 'Nacional',
+        ordersCount: 1,
+        totalSpent: o.total,
+        registeredAt: o.createdAt || new Date().toISOString().split('T')[0],
+        lastOrderDate: o.createdAt || new Date().toISOString().split('T')[0],
+      })
+    }
+  }
+
+  return Array.from(customerMap.values())
 }
 
 export async function saveCustomer(customer: Customer): Promise<boolean> {
