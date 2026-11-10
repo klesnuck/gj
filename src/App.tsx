@@ -26,8 +26,21 @@ import { CheckoutPage } from './components/checkout/CheckoutPage'
 import { OrderConfirmationView } from './components/checkout/OrderConfirmationView'
 import { CollectionPage } from './components/collection/CollectionPage'
 
-import { fetchProducts, createProduct, deleteProduct } from './lib/supabase'
-import { INITIAL_ORDERS, INITIAL_CUSTOMERS, INITIAL_COUPONS } from './lib/mockData'
+import {
+  fetchProducts,
+  createProduct,
+  deleteProduct,
+  toggleProductFeatured,
+  fetchOrders,
+  createOrder,
+  updateOrderStatus,
+  fetchCustomers,
+  saveCustomer,
+  fetchCoupons,
+  saveCoupon,
+  toggleCoupon,
+  deleteCoupon,
+} from './lib/supabase'
 import type { Product, CartItem, Order, Customer, Coupon, OrderItem } from './types/database.types'
 
 export function App() {
@@ -47,7 +60,7 @@ export function App() {
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null)
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null)
 
-  // Store data
+  // Store data from Supabase
   const [products, setProducts] = useState<Product[]>([])
   const [activeCategory, setActiveCategory] = useState<string>('todos')
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -61,31 +74,31 @@ export function App() {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
-  // Admin Data with localStorage persistence
+  // Live Supabase Datasets (Orders, Customers, Coupons)
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
       const saved = localStorage.getItem('gj_admin_orders')
-      return saved ? JSON.parse(saved) : INITIAL_ORDERS
+      return saved ? JSON.parse(saved) : []
     } catch {
-      return INITIAL_ORDERS
+      return []
     }
   })
 
   const [customers, setCustomers] = useState<Customer[]>(() => {
     try {
       const saved = localStorage.getItem('gj_admin_customers')
-      return saved ? JSON.parse(saved) : INITIAL_CUSTOMERS
+      return saved ? JSON.parse(saved) : []
     } catch {
-      return INITIAL_CUSTOMERS
+      return []
     }
   })
 
   const [coupons, setCoupons] = useState<Coupon[]>(() => {
     try {
       const saved = localStorage.getItem('gj_admin_coupons')
-      return saved ? JSON.parse(saved) : INITIAL_COUPONS
+      return saved ? JSON.parse(saved) : []
     } catch {
-      return INITIAL_COUPONS
+      return []
     }
   })
 
@@ -136,7 +149,7 @@ export function App() {
     }
   }, [orders, customers, coupons])
 
-  // Load products
+  // Load live data from Supabase
   const reloadProducts = async () => {
     const data = await fetchProducts(activeCategory)
     setProducts(data)
@@ -144,13 +157,25 @@ export function App() {
 
   useEffect(() => {
     let isMounted = true
-    const load = async () => {
-      const data = await fetchProducts(activeCategory)
-      if (isMounted) {
-        setProducts(data)
+    const loadData = async () => {
+      try {
+        const [pData, oData, cData, coupData] = await Promise.all([
+          fetchProducts(activeCategory),
+          fetchOrders(),
+          fetchCustomers(),
+          fetchCoupons(),
+        ])
+        if (isMounted) {
+          setProducts(pData)
+          if (oData && oData.length > 0) setOrders(oData)
+          if (cData && cData.length > 0) setCustomers(cData)
+          if (coupData && coupData.length > 0) setCoupons(coupData)
+        }
+      } catch (err) {
+        console.warn('Error cargando datos desde Supabase:', err)
       }
     }
-    load()
+    loadData()
     return () => {
       isMounted = false
     }
@@ -180,26 +205,11 @@ export function App() {
     }
   }
 
-  const handleToggleFeatured = (productId: string) => {
+  const handleToggleFeatured = async (productId: string) => {
     setProducts((prev) =>
       prev.map((p) => (p.id === productId ? { ...p, is_featured: !p.is_featured } : p))
     )
-    try {
-      const custom: Product[] = JSON.parse(localStorage.getItem('gj_custom_products') || '[]')
-      const idx = custom.findIndex((p) => p.id === productId)
-      if (idx > -1) {
-        custom[idx].is_featured = !custom[idx].is_featured
-        localStorage.setItem('gj_custom_products', JSON.stringify(custom))
-      } else {
-        const found = products.find((p) => p.id === productId)
-        if (found) {
-          custom.push({ ...found, is_featured: !found.is_featured })
-          localStorage.setItem('gj_custom_products', JSON.stringify(custom))
-        }
-      }
-    } catch (err) {
-      console.warn('Could not save featured toggle', err)
-    }
+    await toggleProductFeatured(productId)
   }
 
   const handleOpenCategory = (cat: string) => {
@@ -214,28 +224,35 @@ export function App() {
     setCurrentView('collection')
   }
 
-  const handleUpdateOrderStatus = (orderId: string, newStatus: Order['status']) => {
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
     )
+    await updateOrderStatus(orderId, newStatus)
   }
 
-  const handleAddCustomer = (newCustomer: Customer) => {
+  const handleAddCustomer = async (newCustomer: Customer) => {
     setCustomers((prev) => [newCustomer, ...prev])
+    await saveCustomer(newCustomer)
   }
 
-  const handleAddCoupon = (newCoupon: Coupon) => {
+  const handleAddCoupon = async (newCoupon: Coupon) => {
     setCoupons((prev) => [newCoupon, ...prev])
+    await saveCoupon(newCoupon)
   }
 
-  const handleToggleCoupon = (couponId: string) => {
+  const handleToggleCoupon = async (couponId: string) => {
+    const target = coupons.find((c) => c.id === couponId)
+    const nextState = target ? !target.isActive : false
     setCoupons((prev) =>
       prev.map((c) => (c.id === couponId ? { ...c, isActive: !c.isActive } : c))
     )
+    await toggleCoupon(couponId, nextState)
   }
 
-  const handleDeleteCoupon = (couponId: string) => {
+  const handleDeleteCoupon = async (couponId: string) => {
     setCoupons((prev) => prev.filter((c) => c.id !== couponId))
+    await deleteCoupon(couponId)
   }
 
   // Coupon handling for Cart & Checkout
@@ -300,20 +317,31 @@ export function App() {
     // Add to Admin Orders State
     setOrders((prev) => [newOrder, ...prev])
 
+    // Persist to Supabase
+    createOrder({
+      orderNumber: newOrderNumber,
+      customerName: orderPayload.customerName,
+      customerPhone: orderPayload.customerPhone,
+      customerEmail: orderPayload.customerEmail,
+      shippingType: orderPayload.shippingType,
+      shippingAddress: orderPayload.shippingAddress,
+      paymentMethod: orderPayload.paymentMethod,
+      items: orderItems,
+      total: orderPayload.total,
+    }).catch(console.warn)
+
     // Update / Register Customer in Admin Customers directory
     setCustomers((prev) => {
       const exists = prev.find((c) => c.email.toLowerCase() === orderPayload.customerEmail.toLowerCase())
       if (exists) {
-        return prev.map((c) =>
-          c.id === exists.id
-            ? {
-                ...c,
-                ordersCount: (c.ordersCount || 1) + 1,
-                totalSpent: (c.totalSpent || 0) + orderPayload.total,
-                lastOrderDate: new Date().toISOString().split('T')[0],
-              }
-            : c
-        )
+        const updated = {
+          ...exists,
+          ordersCount: (exists.ordersCount || 1) + 1,
+          totalSpent: (exists.totalSpent || 0) + orderPayload.total,
+          lastOrderDate: new Date().toISOString().split('T')[0],
+        }
+        saveCustomer(updated).catch(console.warn)
+        return prev.map((c) => (c.id === exists.id ? updated : c))
       } else {
         const newCustomer: Customer = {
           id: `cust-${Date.now()}`,
@@ -326,6 +354,7 @@ export function App() {
           registeredAt: new Date().toISOString().split('T')[0],
           lastOrderDate: new Date().toISOString().split('T')[0],
         }
+        saveCustomer(newCustomer).catch(console.warn)
         return [newCustomer, ...prev]
       }
     })

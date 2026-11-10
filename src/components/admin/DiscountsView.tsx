@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Clock,
   Plus,
@@ -27,6 +27,10 @@ export const DiscountsView = ({
   const [coupons, setCoupons] = useState<Coupon[]>(initialCoupons)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [createdSuccess, setCreatedSuccess] = useState(false)
+
+  useEffect(() => {
+    setCoupons(initialCoupons)
+  }, [initialCoupons])
 
   // Form states
   const [code, setCode] = useState('')

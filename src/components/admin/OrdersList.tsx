@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   ShoppingBag,
   MapPin,
@@ -20,6 +20,10 @@ export const OrdersList = ({ orders: initialOrders, onUpdateOrderStatus }: Order
   const [search, setSearch] = useState('')
   const [shippingFilter, setShippingFilter] = useState<'all' | 'saltillo_local' | 'paqueteria_nacional'>('all')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+
+  useEffect(() => {
+    setOrders(initialOrders)
+  }, [initialOrders])
 
   const handleStatusChange = (orderId: string, status: Order['status']) => {
     setOrders((prev) =>

@@ -25,69 +25,65 @@ export const DashboardOverview = ({
   onNavigateToTab,
   onAddNewProduct,
 }: DashboardOverviewProps) => {
-  // Top selling products calculated/mocked
-  const topSellers = [
-    {
-      product: products.find((p) => p.slug === 'gorra-gj-signature') || products[0],
-      unitsSold: 58,
-      revenue: 40542,
-      percentage: 92,
-    },
-    {
-      product: products.find((p) => p.slug === 'playera-heavyweight') || products[1],
-      unitsSold: 44,
-      revenue: 39556,
-      percentage: 78,
-    },
-    {
-      product: products.find((p) => p.slug === 'hoodie-no-signal') || products[3],
-      unitsSold: 28,
-      revenue: 41972,
-      percentage: 64,
-    },
-    {
-      product: products.find((p) => p.slug === 'gorra-script-club') || products[2],
-      unitsSold: 12,
-      revenue: 8988,
-      percentage: 36,
-    },
-  ]
+  // Calculate dynamic sales by product from real orders
+  const salesByProductKey: Record<string, { unitsSold: number; revenue: number }> = {}
+  orders.forEach((o) => {
+    o.items?.forEach((it) => {
+      const key = (it.title || '').trim().toLowerCase()
+      if (!salesByProductKey[key]) {
+        salesByProductKey[key] = { unitsSold: 0, revenue: 0 }
+      }
+      salesByProductKey[key].unitsSold += it.quantity || 1
+      salesByProductKey[key].revenue += (it.price || 0) * (it.quantity || 1)
+    })
+  })
 
-  // Low stock items: items with <= 8 units
-  const lowStockItems = [
-    {
-      id: 'low-1',
-      title: 'Gorra Script Club',
-      variant: 'Stone / Bordado / Ajustable',
-      remaining: 2,
-      max: 30,
-      image: '/images/product-cap-stone.jpg',
-      category: 'gorras',
-    },
-    {
-      id: 'low-2',
-      title: 'Hoodie No Signal',
-      variant: 'Negro / Relaxed Fit / Tallas L & XL',
-      remaining: 4,
-      max: 40,
-      image: '/images/product-hoodie.jpg',
-      category: 'hoodies',
-    },
-    {
-      id: 'low-3',
-      title: 'Playera Heavyweight',
-      variant: 'Washed Black / Talla XXL',
-      remaining: 3,
-      max: 25,
-      image: '/images/product-tshirt.jpg',
-      category: 'playeras',
-    },
-  ]
+  // Dynamic top sellers ranking based on real orders or featured products
+  const topSellers = products
+    .map((p) => {
+      const key = (p.title || '').trim().toLowerCase()
+      const sales = salesByProductKey[key] || { unitsSold: 0, revenue: 0 }
+      return {
+        product: p,
+        unitsSold: sales.unitsSold,
+        revenue: sales.revenue,
+      }
+    })
+    .sort((a, b) => b.unitsSold - a.unitsSold)
+    .slice(0, 4)
+    .map((item, _, arr) => {
+      const maxUnits = arr[0]?.unitsSold || 1
+      return {
+        ...item,
+        percentage: item.unitsSold > 0 ? Math.round((item.unitsSold / maxUnits) * 100) : 0,
+      }
+    })
+
+  // Low stock items: real items from database with stock <= 5
+  const lowStockItems = products
+    .filter((p) => (p.stock ?? 0) <= 5)
+    .map((p) => {
+      const stockVal = p.stock ?? 0
+      return {
+        id: p.id,
+        title: p.title,
+        variant: `${p.category.toUpperCase()} · ${p.brand || 'GJ'}`,
+        remaining: stockVal,
+        max: Math.max(stockVal * 3, 20),
+        image: p.image_url,
+        category: p.category,
+      }
+    })
 
   const recentOrders = orders.slice(0, 5)
   const saltilloOrdersCount = orders.filter((o) => o.shippingType === 'saltillo_local').length
   const paqueteriaOrdersCount = orders.filter((o) => o.shippingType === 'paqueteria_nacional').length
-  const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0)
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0)
+  const totalUnitsSold = orders.reduce(
+    (sum, o) => sum + (o.items ? o.items.reduce((acc, it) => acc + (it.quantity || 1), 0) : 0),
+    0
+  )
+  const avgUnitsPerCart = orders.length > 0 ? (totalUnitsSold / orders.length).toFixed(1) : '0'
 
   return (
     <div className="space-y-8 text-white">
@@ -125,7 +121,7 @@ export const DashboardOverview = ({
             <span className="text-xs font-mono font-normal text-gray-400">MXN</span>
           </div>
           <div className="text-[11px] font-mono text-[#D4FF00]">
-            +24.5% vs Drop 003 anterior
+            {orders.length > 0 ? `${orders.length} pedidos registrados` : 'En espera del primer pedido'}
           </div>
         </div>
 
@@ -151,10 +147,10 @@ export const DashboardOverview = ({
             <PackageCheck className="w-4 h-4 text-purple-400" />
           </div>
           <div className="font-display text-3xl sm:text-4xl text-white font-black tracking-tight">
-            142 <span className="text-xs font-mono font-normal text-gray-400">piezas</span>
+            {totalUnitsSold} <span className="text-xs font-mono font-normal text-gray-400">piezas</span>
           </div>
           <div className="text-[11px] font-mono text-gray-400">
-            Promedio de 1.8 piezas por carrito
+            Promedio de {avgUnitsPerCart} piezas por carrito
           </div>
         </div>
 
@@ -169,7 +165,7 @@ export const DashboardOverview = ({
             <span className="text-xs font-mono font-normal text-yellow-400">artículos críticos</span>
           </div>
           <div className="text-[11px] font-mono text-yellow-400/80">
-            Requiere restock en Drop 004
+            {lowStockItems.length > 0 ? 'Stock menor o igual a 5 unidades' : 'Inventario con stock suficiente'}
           </div>
         </div>
       </div>
@@ -203,44 +199,50 @@ export const DashboardOverview = ({
 
           {/* List of Top Selling Items */}
           <div className="space-y-4">
-            {topSellers.map((item, idx) => (
-              <div
-                key={idx}
-                className="p-3 bg-[#141414] border border-[#222222] hover:border-[#333] transition-colors flex items-center justify-between gap-4"
-              >
-                <div className="flex items-center space-x-3 min-w-0">
-                  <span className="font-display text-2xl text-gray-500 w-6 text-center">
-                    0{idx + 1}
-                  </span>
-                  <img
-                    src={item.product?.image_url || '/images/product-hoodie.jpg'}
-                    alt={item.product?.title}
-                    className="w-12 h-12 object-cover bg-black border border-[#262626] shrink-0"
-                  />
-                  <div className="min-w-0">
-                    <div className="font-bold text-sm text-white font-sans truncate">
-                      {item.product?.title}
-                    </div>
-                    <div className="text-[11px] font-mono text-gray-400">
-                      {item.unitsSold} vendidas ·{' '}
-                      <span className="text-[#D4FF00] font-semibold">
-                        ${item.revenue.toLocaleString('es-MX')} MXN
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="w-28 shrink-0 space-y-1 text-right">
-                  <span className="text-[10px] font-mono text-gray-500 uppercase">Demanda</span>
-                  <div className="w-full h-1.5 bg-[#252525] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#D4FF00]"
-                      style={{ width: `${item.percentage}%` }}
-                    />
-                  </div>
-                </div>
+            {topSellers.length === 0 ? (
+              <div className="p-6 text-center text-xs font-mono text-gray-500 bg-[#121212] border border-[#1f1f1f]">
+                No hay productos en el catálogo todavía.
               </div>
-            ))}
+            ) : (
+              topSellers.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 bg-[#141414] border border-[#222222] hover:border-[#333] transition-colors flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <span className="font-display text-2xl text-gray-500 w-6 text-center">
+                      0{idx + 1}
+                    </span>
+                    <img
+                      src={item.product?.image_url || '/images/product-hoodie.jpg'}
+                      alt={item.product?.title}
+                      className="w-12 h-12 object-cover bg-black border border-[#262626] shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <div className="font-bold text-sm text-white font-sans truncate">
+                        {item.product?.title}
+                      </div>
+                      <div className="text-[11px] font-mono text-gray-400">
+                        {item.unitsSold} vendidas ·{' '}
+                        <span className="text-[#D4FF00] font-semibold">
+                          ${item.revenue.toLocaleString('es-MX')} MXN
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="w-28 shrink-0 space-y-1 text-right">
+                    <span className="text-[10px] font-mono text-gray-500 uppercase">Demanda</span>
+                    <div className="w-full h-1.5 bg-[#252525] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#D4FF00]"
+                        style={{ width: `${item.percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -261,37 +263,43 @@ export const DashboardOverview = ({
           </div>
 
           <div className="space-y-3.5">
-            {lowStockItems.map((item) => (
-              <div
-                key={item.id}
-                className="p-3 bg-[#15120a] border border-yellow-800/30 rounded-none space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="w-10 h-10 object-cover bg-black border border-[#282828]"
-                    />
-                    <div>
-                      <h4 className="text-xs font-bold text-white font-sans">{item.title}</h4>
-                      <p className="text-[10px] text-gray-400 font-mono">{item.variant}</p>
+            {lowStockItems.length === 0 ? (
+              <div className="p-6 text-center text-xs font-mono text-gray-500 bg-[#121212] border border-[#1f1f1f]">
+                Todo el inventario cuenta con stock suficiente.
+              </div>
+            ) : (
+              lowStockItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-3 bg-[#15120a] border border-yellow-800/30 rounded-none space-y-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="w-10 h-10 object-cover bg-black border border-[#282828]"
+                      />
+                      <div>
+                        <h4 className="text-xs font-bold text-white font-sans">{item.title}</h4>
+                        <p className="text-[10px] text-gray-400 font-mono">{item.variant}</p>
+                      </div>
                     </div>
+
+                    <span className="px-2 py-0.5 bg-yellow-400 text-black font-mono font-black text-[10px] uppercase">
+                      {item.remaining} PIEZAS
+                    </span>
                   </div>
 
-                  <span className="px-2 py-0.5 bg-yellow-400 text-black font-mono font-black text-[10px] uppercase">
-                    {item.remaining} PIEZAS
-                  </span>
+                  <div className="w-full h-1 bg-[#282212] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-yellow-400"
+                      style={{ width: `${(item.remaining / item.max) * 100}%` }}
+                    />
+                  </div>
                 </div>
-
-                <div className="w-full h-1 bg-[#282212] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-yellow-400"
-                    style={{ width: `${(item.remaining / item.max) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           <div className="pt-2 text-center">
@@ -344,7 +352,14 @@ export const DashboardOverview = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1b1b1b]">
-              {recentOrders.map((order) => (
+              {recentOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-gray-500 font-mono text-xs">
+                    No hay pedidos registrados en la base de datos todavía.
+                  </td>
+                </tr>
+              ) : (
+                recentOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-[#141414] transition-colors">
                   <td className="py-3 px-3 font-bold text-white">{order.orderNumber}</td>
                   <td className="py-3 px-3">
@@ -391,8 +406,9 @@ export const DashboardOverview = ({
                     ${order.total.toLocaleString('es-MX')} MXN
                   </td>
                 </tr>
-              ))}
-            </tbody>
+              ))
+            )}
+          </tbody>
           </table>
         </div>
       </div>

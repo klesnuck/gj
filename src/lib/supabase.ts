@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Product, DropInfo } from '../types/database.types'
+import type { Product, DropInfo, Order, Customer, Coupon, OrderItem } from '../types/database.types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
@@ -15,163 +15,6 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null
 
-// Initial Seed Products matching exactly the website screenshots
-export const MOCK_PRODUCTS: Product[] = [
-  {
-    id: 'prod-001',
-    slug: 'gorra-gj-signature',
-    title: 'Gorra GJ Signature',
-    category: 'gorras',
-    brand: 'GJ',
-    price: 699,
-    currency: 'MXN',
-    tag: 'BEST SELLER',
-    tag_type: 'white',
-    specs: 'Negro / Bordado 3D / Ajustable',
-    colors: ['#111111', '#d5c7b3', '#4A5243'],
-    image_url: '/images/product-cap-black.jpg',
-    description: 'Nuestra silueta insignia. Construida con gabardina de algodón de alto gramaje, corona estructurada y bordado 3D frontal "gj". Cierre ajustable metálico grabado.',
-    stock: 14,
-    is_featured: true
-  },
-  {
-    id: 'prod-002',
-    slug: 'playera-heavyweight',
-    title: 'Playera Heavyweight',
-    category: 'playeras',
-    brand: 'GJ',
-    price: 899,
-    currency: 'MXN',
-    tag: 'NUEVO',
-    tag_type: 'lime',
-    specs: 'Washed black / Oversized / 280 g',
-    colors: ['#262626', '#ECEAE4'],
-    image_url: '/images/product-tshirt.jpg',
-    description: 'Playera oversized de corte boxy confeccionada en algodón peinado 280 GSM. Lavado mineral vintage único y bordado tonal minimalista en el pecho.',
-    stock: 20,
-    is_featured: true
-  },
-  {
-    id: 'prod-003',
-    slug: 'gorra-script-club',
-    title: 'Gorra Script Club',
-    category: 'gorras',
-    brand: 'GJ',
-    price: 749,
-    currency: 'MXN',
-    tag: 'EDICIÓN LIMITADA',
-    tag_type: 'white',
-    specs: 'Stone / Bordado / Ajustable',
-    colors: ['#C4B69F', '#111111'],
-    image_url: '/images/product-cap-stone.jpg',
-    description: 'Edición limitada en tono Stone lavado. Logotipo cursivo bordado de alta densidad. Perfil medio con visera curva preformada.',
-    stock: 6,
-    is_featured: true
-  },
-  {
-    id: 'prod-004',
-    slug: 'hoodie-no-signal',
-    title: 'Hoodie No Signal',
-    category: 'hoodies',
-    brand: 'GJ',
-    price: 1499,
-    currency: 'MXN',
-    tag: 'NUEVO',
-    tag_type: 'lime',
-    specs: 'Negro / Relaxed fit / 450 g',
-    colors: ['#171717', '#3E3E3E'],
-    image_url: '/images/product-hoodie.jpg',
-    description: 'Sudadera pesada de 450 GSM con felpa francesa. Capucha de doble panel sin cordones para un perfil brutalista limpio. Bolsillo canguro reforzado.',
-    stock: 8,
-    is_featured: true
-  },
-  {
-    id: 'prod-005',
-    slug: 'gorra-new-era-ny-yankees-59fifty',
-    title: 'Gorra New Era 59FIFTY NY Yankees',
-    category: 'gorras',
-    brand: 'New Era',
-    price: 1099,
-    currency: 'MXN',
-    tag: 'BEST SELLER',
-    tag_type: 'white',
-    specs: 'Navy / Corona alta estructurada / Fitted',
-    colors: ['#0A1128', '#111111'],
-    image_url: '/images/product-cap-black.jpg',
-    description: 'Clásica silueta 59FIFTY de New Era. Corona de 6 paneles estructurada y bordado frontal en relieve de los New York Yankees.',
-    stock: 12,
-    is_featured: true
-  },
-  {
-    id: 'prod-006',
-    slug: 'gorra-mitchell-ness-chicago-bulls',
-    title: 'Gorra Mitchell & Ness Chicago Bulls',
-    category: 'gorras',
-    brand: 'Mitchell & Ness',
-    price: 999,
-    currency: 'MXN',
-    tag: 'HARDWOOD',
-    tag_type: 'lime',
-    specs: 'Negro & Rojo / Snapback clásico / Retro',
-    colors: ['#111111', '#BA0C2F'],
-    image_url: '/images/product-cap-stone.jpg',
-    description: 'Línea Hardwood Classics de Mitchell & Ness. Confección en lana acrílica con bordado frontal del toro de Chicago y visera plana retro.',
-    stock: 9,
-    is_featured: true
-  },
-  {
-    id: 'prod-007',
-    slug: 'gorra-47-brand-la-dodgers-clean-up',
-    title: 'Gorra 47 Brand Clean Up LA Dodgers',
-    category: 'gorras',
-    brand: '47 Brand',
-    price: 849,
-    currency: 'MXN',
-    tag: 'ORIGINAL',
-    tag_type: 'white',
-    specs: 'Stone & Royal Blue / Corona suave / Ajustable',
-    colors: ['#C4B69F', '#005A9C'],
-    image_url: '/images/product-cap-stone.jpg',
-    description: 'La silueta Clean Up icónica de 47 Brand: relajada, lavada en prenda y con correa de tela ajustable para un estilo streetwear sin esfuerzo.',
-    stock: 15,
-    is_featured: true
-  },
-  {
-    id: 'prod-008',
-    slug: 'calcetines-gj-crew-socks',
-    title: 'Calcetines GJ Heavyweight Crew (Pack 2)',
-    category: 'accesorios',
-    brand: 'GJ',
-    price: 349,
-    currency: 'MXN',
-    tag: 'DROP 004',
-    tag_type: 'lime',
-    specs: 'Pack 2 pares / Algodón peinado / Unitalla',
-    colors: ['#FFFFFF', '#111111'],
-    image_url: '/images/product-tshirt.jpg',
-    description: 'Pack de calcetines crew con tejido de alta densidad, soporte en puente del pie y bordado GJ tejido al tobillo.',
-    stock: 25,
-    is_featured: true
-  },
-  {
-    id: 'prod-009',
-    slug: 'llavero-mosqueton-gj-tactical',
-    title: 'Mosquetón Táctico GJ Tactical Keychain',
-    category: 'accesorios',
-    brand: 'GJ',
-    price: 249,
-    currency: 'MXN',
-    tag: 'ESENCIAL',
-    tag_type: 'white',
-    specs: 'Negro mate / Cinta nylon / Grabado láser',
-    colors: ['#171717'],
-    image_url: '/images/product-cap-black.jpg',
-    description: 'Mosquetón táctico utilitario en aleación de zinc negro mate con cinta de nylon militar y grabado "BUILT FOR THE STREETS".',
-    stock: 30,
-    is_featured: true
-  }
-]
-
 export const MOCK_DROP: DropInfo = {
   id: 'drop-004',
   code: 'DROP 004',
@@ -182,62 +25,74 @@ export const MOCK_DROP: DropInfo = {
   is_active: true
 }
 
-/**
- * Fetch products with category filter
- */
+// ============================================================
+// PRODUCTOS
+// ============================================================
+
 export async function fetchProducts(category?: string): Promise<Product[]> {
+  let productsList: Product[] = []
+
   if (isSupabaseConfigured && supabase) {
     try {
       let query = supabase.from('products').select('*').order('created_at', { ascending: false })
-      if (category && category !== 'todos' && category !== 'ropa' && !category.includes(':')) {
-        query = query.eq('category', category)
-      }
       const { data, error } = await query
       if (error) throw error
-      if (data && data.length > 0) return data as Product[]
+      if (data && data.length > 0) {
+        productsList = data.map((row: any) => ({
+          id: row.id,
+          slug: row.slug,
+          title: row.title,
+          category: row.category,
+          brand: row.brand || (row.category === 'gorras' ? 'GJ' : 'GJ'),
+          price: Number(row.price),
+          currency: row.currency || 'MXN',
+          tag: row.tag || null,
+          tag_type: row.tag_type || 'white',
+          description: row.description || '',
+          specs: row.specs || '',
+          colors: Array.isArray(row.colors) ? row.colors : [],
+          image_url: row.image_url,
+          images: Array.isArray(row.images) ? row.images : (row.image_url ? [row.image_url] : []),
+          stock: row.stock ?? 10,
+          is_featured: row.is_featured ?? true,
+          created_at: row.created_at,
+        }))
+      }
     } catch (err) {
-      console.warn('Supabase query error, falling back to local dataset:', err)
+      console.warn('Supabase fetchProducts error, usando respaldo local:', err)
     }
   }
 
-  // Fallback to local catalog (including locally added products)
-  const customProducts: Product[] = (() => {
+  // Si Supabase aún no tiene productos o está fuera de línea, usar los guardados localmente
+  if (productsList.length === 0) {
     try {
-      return JSON.parse(localStorage.getItem('gj_custom_products') || '[]')
+      productsList = JSON.parse(localStorage.getItem('gj_custom_products') || '[]')
     } catch {
-      return []
+      productsList = []
     }
-  })()
+  }
 
-  const deletedIds: string[] = (() => {
-    try {
-      return JSON.parse(localStorage.getItem('gj_deleted_product_ids') || '[]')
-    } catch {
-      return []
-    }
-  })()
-
-  const allProducts = [...customProducts, ...MOCK_PRODUCTS].filter(p => !deletedIds.includes(p.id))
-
+  // Filtrado de categoría
   if (!category || category === 'todos') {
-    return allProducts
+    return productsList
   }
 
   const catLower = category.toLowerCase()
 
-  // Case 1: "ropa" -> Shows all clothes (playeras, hoodies, ropa, etc.)
+  // Caso 1: Ropa (muestra playeras, hoodies y todo lo de ropa)
   if (catLower === 'ropa') {
-    return allProducts.filter(p =>
-      p.category === 'playeras' ||
-      p.category === 'hoodies' ||
-      (p.category as string) === 'ropa'
+    return productsList.filter(
+      (p) =>
+        p.category === 'playeras' ||
+        p.category === 'hoodies' ||
+        (p.category as string) === 'ropa'
     )
   }
 
-  // Case 2: Gorras with brand filter (e.g. "gorras:new-era", "gorras:mitchell", "gorras:47", "gorras:gj")
+  // Caso 2: Gorras con filtro de marca
   if (catLower.startsWith('gorras:')) {
     const brandTerm = catLower.replace('gorras:', '').trim()
-    return allProducts.filter(p => {
+    return productsList.filter((p) => {
       if (p.category !== 'gorras') return false
       const brandStr = (p.brand || '').toLowerCase()
       const titleStr = p.title.toLowerCase()
@@ -245,74 +100,82 @@ export async function fetchProducts(category?: string): Promise<Product[]> {
     })
   }
 
-  // Case 3: "gorras" -> All gorras
+  // Caso 3: Todas las gorras
   if (catLower === 'gorras') {
-    return allProducts.filter(p => p.category === 'gorras')
+    return productsList.filter((p) => p.category === 'gorras')
   }
 
-  // Case 4: "accesorios" -> General accessories
+  // Caso 4: Accesorios
   if (catLower === 'accesorios') {
-    return allProducts.filter(p => p.category === 'accesorios')
+    return productsList.filter((p) => p.category === 'accesorios')
   }
 
-  return allProducts.filter(p => p.category.toLowerCase() === catLower)
+  return productsList.filter((p) => p.category.toLowerCase() === catLower)
 }
 
-/**
- * Create/publish or update product in Supabase (with localStorage fallback)
- */
-export async function createProduct(productData: Partial<Product>): Promise<{ success: boolean; data?: Product; message?: string }> {
-  const isUpdate = Boolean(productData.id)
+export async function createProduct(
+  productData: Partial<Product>
+): Promise<{ success: boolean; data?: Product; message?: string }> {
   const id = productData.id || `prod-${Date.now()}`
-  
   const newProduct: Product = {
     id,
-    slug: productData.slug || `producto-${Date.now()}`,
-    title: productData.title || 'Nuevo Producto',
-    category: productData.category || 'hoodies',
-    price: productData.price || 999,
+    slug: productData.slug || `prod-${Date.now()}`,
+    title: productData.title || 'Nueva Prenda',
+    category: productData.category || 'playeras',
+    brand: productData.brand || 'GJ',
+    price: productData.price || 0,
     currency: productData.currency || 'MXN',
     tag: productData.tag || null,
-    tag_type: productData.tag_type || 'lime',
-    specs: productData.specs || '',
-    description: productData.description || '',
-    colors: productData.colors || ['#111111'],
-    image_url: productData.image_url || (productData.images && productData.images[0]) || '/images/product-hoodie.jpg',
-    images: productData.images && productData.images.length > 0 ? productData.images : [productData.image_url || '/images/product-hoodie.jpg'],
-    stock: productData.stock || 10,
+    tag_type: productData.tag_type || 'white',
+    description: productData.description || null,
+    specs: productData.specs || null,
+    colors: productData.colors || [],
+    image_url: productData.image_url || '/images/product-tshirt.jpg',
+    images: productData.images || [],
+    stock: productData.stock ?? 15,
     is_featured: productData.is_featured ?? true,
-    created_at: productData.created_at || new Date().toISOString()
+    created_at: productData.created_at || new Date().toISOString(),
   }
 
   if (isSupabaseConfigured && supabase) {
     try {
-      if (isUpdate) {
-        const { data, error } = await supabase
-          .from('products')
-          .update(newProduct)
-          .eq('id', id)
-          .select()
-          .single()
-        if (error) throw error
-        return { success: true, data: data as Product }
-      } else {
-        const { data, error } = await supabase
-          .from('products')
-          .insert([newProduct])
-          .select()
-          .single()
-        if (error) throw error
-        return { success: true, data: data as Product }
+      const payload: any = {
+        slug: newProduct.slug,
+        title: newProduct.title,
+        category: newProduct.category,
+        brand: newProduct.brand,
+        price: newProduct.price,
+        currency: newProduct.currency,
+        tag: newProduct.tag,
+        tag_type: newProduct.tag_type,
+        description: newProduct.description,
+        specs: newProduct.specs,
+        colors: newProduct.colors,
+        image_url: newProduct.image_url,
+        images: newProduct.images,
+        stock: newProduct.stock,
+        is_featured: newProduct.is_featured,
       }
+
+      if (productData.id && productData.id.includes('-') && productData.id.length > 20) {
+        // Update UUID existente
+        const { error } = await supabase.from('products').update(payload).eq('id', productData.id)
+        if (error) throw error
+      } else {
+        // Insert nuevo
+        const { error } = await supabase.from('products').insert([payload])
+        if (error) throw error
+      }
+      return { success: true, data: newProduct }
     } catch (err: any) {
-      console.warn('Error inserting/updating in Supabase, saving to local store:', err)
+      console.warn('Error al guardar producto en Supabase, guardando localmente:', err)
     }
   }
 
-  // Persist to local storage
+  // Respaldo local
   try {
     const existing: Product[] = JSON.parse(localStorage.getItem('gj_custom_products') || '[]')
-    const index = existing.findIndex(p => p.id === id)
+    const index = existing.findIndex((p) => p.id === id)
     if (index > -1) {
       existing[index] = newProduct
     } else {
@@ -325,41 +188,292 @@ export async function createProduct(productData: Partial<Product>): Promise<{ su
   }
 }
 
-/**
- * Delete product from Supabase & local storage
- */
 export async function deleteProduct(productId: string): Promise<{ success: boolean; message?: string }> {
   if (isSupabaseConfigured && supabase) {
     try {
-      const { error } = await supabase.from('products').delete().eq('id', productId)
-      if (error) throw error
+      await supabase.from('products').delete().eq('id', productId)
     } catch (err: any) {
-      console.warn('Error deleting product from Supabase:', err)
+      console.warn('Error al eliminar producto en Supabase:', err)
     }
   }
 
   try {
-    // Remove from custom products
     const custom: Product[] = JSON.parse(localStorage.getItem('gj_custom_products') || '[]')
-    const filtered = custom.filter(p => p.id !== productId)
+    const filtered = custom.filter((p) => p.id !== productId)
     localStorage.setItem('gj_custom_products', JSON.stringify(filtered))
-
-    // Track deleted IDs so mock products don't reappear on reload
-    const deletedIds: string[] = JSON.parse(localStorage.getItem('gj_deleted_product_ids') || '[]')
-    if (!deletedIds.includes(productId)) {
-      deletedIds.push(productId)
-      localStorage.setItem('gj_deleted_product_ids', JSON.stringify(deletedIds))
-    }
-
     return { success: true }
-  } catch (err) {
-    return { success: false, message: 'No se pudo eliminar el producto localmente.' }
+  } catch {
+    return { success: false }
   }
 }
 
-/**
- * Save email subscriber
- */
+export async function toggleProductFeatured(productId: string): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data } = await supabase.from('products').select('is_featured').eq('id', productId).single()
+      if (data) {
+        const nextVal = !data.is_featured
+        await supabase.from('products').update({ is_featured: nextVal }).eq('id', productId)
+        return true
+      }
+    } catch (err) {
+      console.warn('Error toggle featured en Supabase:', err)
+    }
+  }
+  return false
+}
+
+// ============================================================
+// PEDIDOS (ORDERS)
+// ============================================================
+
+export async function fetchOrders(): Promise<Order[]> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (!error && data && data.length > 0) {
+        return data.map((row: any) => ({
+          id: row.id,
+          orderNumber: row.order_number,
+          customerName: row.customer_name || 'Cliente GJ',
+          customerPhone: row.customer_phone || (row.shipping_address?.phone || ''),
+          customerEmail: row.customer_email,
+          shippingType: row.shipping_type || (row.shipping_address?.address?.toLowerCase().includes('saltillo') ? 'saltillo_local' : 'paqueteria_nacional'),
+          shippingAddress: typeof row.shipping_address === 'string' ? row.shipping_address : (row.shipping_address?.address || ''),
+          items: Array.isArray(row.items) ? row.items : [],
+          total: Number(row.total_amount),
+          status: row.status === 'en_camino' ? 'en_camino' : (row.status === 'entregado' ? 'entregado' : 'pendiente'),
+          paymentMethod: row.payment_method || 'Tarjeta',
+          createdAt: new Date(row.created_at).toLocaleDateString('es-MX', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        }))
+      }
+    } catch (err) {
+      console.warn('Error al consultar orders de Supabase:', err)
+    }
+  }
+
+  try {
+    return JSON.parse(localStorage.getItem('gj_admin_orders') || '[]')
+  } catch {
+    return []
+  }
+}
+
+export async function createOrder(orderPayload: {
+  orderNumber: string
+  customerName: string
+  customerPhone: string
+  customerEmail: string
+  shippingType: 'saltillo_local' | 'paqueteria_nacional'
+  shippingAddress: string
+  paymentMethod: string
+  items: OrderItem[]
+  total: number
+}): Promise<{ success: boolean; data?: Order }> {
+  const newOrder: Order = {
+    id: `ord-${Date.now()}`,
+    orderNumber: orderPayload.orderNumber,
+    customerName: orderPayload.customerName,
+    customerPhone: orderPayload.customerPhone,
+    customerEmail: orderPayload.customerEmail,
+    shippingType: orderPayload.shippingType,
+    shippingAddress: orderPayload.shippingAddress,
+    items: orderPayload.items,
+    total: orderPayload.total,
+    status: 'pendiente',
+    paymentMethod: orderPayload.paymentMethod,
+    createdAt: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+  }
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase.from('orders').insert([
+        {
+          order_number: orderPayload.orderNumber,
+          customer_name: orderPayload.customerName,
+          customer_phone: orderPayload.customerPhone,
+          customer_email: orderPayload.customerEmail,
+          shipping_type: orderPayload.shippingType,
+          shipping_address: { address: orderPayload.shippingAddress, phone: orderPayload.customerPhone },
+          total_amount: orderPayload.total,
+          currency: 'MXN',
+          status: 'pendiente',
+          payment_method: orderPayload.paymentMethod,
+          items: orderPayload.items,
+        },
+      ])
+      if (!error) {
+        return { success: true, data: newOrder }
+      }
+    } catch (err) {
+      console.warn('Error al insertar orden en Supabase, guardando local:', err)
+    }
+  }
+
+  // Guardar local
+  try {
+    const existing = JSON.parse(localStorage.getItem('gj_admin_orders') || '[]')
+    localStorage.setItem('gj_admin_orders', JSON.stringify([newOrder, ...existing]))
+  } catch (e) {
+    console.warn(e)
+  }
+
+  return { success: true, data: newOrder }
+}
+
+export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from('orders').update({ status }).eq('id', orderId)
+    } catch (err) {
+      console.warn('Error al actualizar status de order:', err)
+    }
+  }
+  return true
+}
+
+// ============================================================
+// CLIENTES (CUSTOMERS)
+// ============================================================
+
+export async function fetchCustomers(): Promise<Customer[]> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase.from('customers').select('*').order('last_order_date', { ascending: false })
+      if (!error && data && data.length > 0) {
+        return data.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          phone: row.phone || '',
+          email: row.email,
+          city: row.city || 'Saltillo, Coah.',
+          ordersCount: row.orders_count || 1,
+          totalSpent: Number(row.total_spent) || 0,
+          registeredAt: row.registered_at ? new Date(row.registered_at).toISOString().split('T')[0] : '',
+          lastOrderDate: row.last_order_date ? new Date(row.last_order_date).toISOString().split('T')[0] : '',
+        }))
+      }
+    } catch (err) {
+      console.warn('Error al consultar customers en Supabase:', err)
+    }
+  }
+
+  try {
+    return JSON.parse(localStorage.getItem('gj_admin_customers') || '[]')
+  } catch {
+    return []
+  }
+}
+
+export async function saveCustomer(customer: Customer): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from('customers').upsert([
+        {
+          name: customer.name,
+          phone: customer.phone,
+          email: customer.email,
+          city: customer.city,
+          orders_count: customer.ordersCount,
+          total_spent: customer.totalSpent,
+        },
+      ], { onConflict: 'email' })
+    } catch (err) {
+      console.warn('Error al upsert customer en Supabase:', err)
+    }
+  }
+  return true
+}
+
+// ============================================================
+// CUPONES (COUPONS)
+// ============================================================
+
+export async function fetchCoupons(): Promise<Coupon[]> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase.from('coupons').select('*').order('created_at', { ascending: false })
+      if (!error && data && data.length > 0) {
+        return data.map((row: any) => ({
+          id: row.id,
+          code: row.code,
+          discountType: row.discount_type,
+          discountValue: Number(row.discount_value),
+          durationLabel: row.duration_label || 'Activo',
+          expiresAt: row.expires_at,
+          isActive: row.is_active ?? true,
+          minPurchase: Number(row.min_purchase) || 0,
+          usesCount: row.uses_count || 0,
+          createdAt: row.created_at,
+        }))
+      }
+    } catch (err) {
+      console.warn('Error al consultar coupons en Supabase:', err)
+    }
+  }
+
+  try {
+    return JSON.parse(localStorage.getItem('gj_admin_coupons') || '[]')
+  } catch {
+    return []
+  }
+}
+
+export async function saveCoupon(coupon: Coupon): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from('coupons').insert([
+        {
+          code: coupon.code,
+          discount_type: coupon.discountType,
+          discount_value: coupon.discountValue,
+          duration_label: coupon.durationLabel,
+          expires_at: coupon.expiresAt,
+          is_active: coupon.isActive,
+          min_purchase: coupon.minPurchase,
+          uses_count: coupon.usesCount,
+        },
+      ])
+    } catch (err) {
+      console.warn('Error al guardar coupon en Supabase:', err)
+    }
+  }
+  return true
+}
+
+export async function toggleCoupon(couponId: string, isActive: boolean): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from('coupons').update({ is_active: isActive }).eq('id', couponId)
+    } catch (err) {
+      console.warn('Error al toggle coupon en Supabase:', err)
+    }
+  }
+  return true
+}
+
+export async function deleteCoupon(couponId: string): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from('coupons').delete().eq('id', couponId)
+    } catch (err) {
+      console.warn('Error al eliminar coupon en Supabase:', err)
+    }
+  }
+  return true
+}
+
+// ============================================================
+// NEWSLETTER
+// ============================================================
+
 export async function subscribeNewsletter(email: string): Promise<{ success: boolean; message: string }> {
   if (!email || !email.includes('@')) {
     return { success: false, message: 'Por favor ingresa un correo electrónico válido.' }
@@ -384,7 +498,6 @@ export async function subscribeNewsletter(email: string): Promise<{ success: boo
     }
   }
 
-  // Simulated local storage fallback
   try {
     const existing = JSON.parse(localStorage.getItem('gj_newsletter_subscribers') || '[]')
     if (!existing.includes(email)) {
@@ -396,4 +509,3 @@ export async function subscribeNewsletter(email: string): Promise<{ success: boo
     return { success: true, message: '¡Suscrito con éxito!' }
   }
 }
-

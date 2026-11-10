@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Users,
   Search,
@@ -20,6 +20,10 @@ export const CustomersList = ({ customers: initialCustomers, onAddCustomer }: Cu
   const [search, setSearch] = useState('')
   const [cityFilter, setCityFilter] = useState<'all' | 'saltillo' | 'otras'>('all')
   const [showAddModal, setShowAddModal] = useState(false)
+
+  useEffect(() => {
+    setCustomers(initialCustomers)
+  }, [initialCustomers])
 
   // New customer form state
   const [newName, setNewName] = useState('')
