@@ -1,8 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Product, DropInfo, Order, Customer, Coupon, OrderItem } from '../types/database.types'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+const DEFAULT_SUPABASE_URL = 'https://cvuafxqixfjjjbwdjvuq.supabase.co'
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_Z9WaZfwZSbMT9mJk-TVrJA_VES1IG1v'
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl && 
@@ -153,12 +156,19 @@ export async function createProduct(
         const { error } = await supabase.from('products').update(payload).eq('id', productData.id)
         if (error) throw error
       } else {
-        // Insert nuevo (con fallback por si la columna brand aún no existe en Supabase)
+        // Insert nuevo (con auto-recuperación si falta alguna columna en el esquema de Supabase)
         let { error } = await supabase.from('products').insert([payload])
-        if (error && error.message?.includes("'brand' column")) {
-          const { brand: _b, images: _img, ...compatiblePayload } = payload
-          const retryRes = await supabase.from('products').insert([compatiblePayload])
-          error = retryRes.error
+        let attempts = 0
+        while (error && error.message?.includes('in the schema cache') && attempts < 5) {
+          attempts++
+          const match = error.message.match(/Could not find the '([^']+)' column/)
+          if (match && match[1]) {
+            delete payload[match[1]]
+            const retryRes = await supabase.from('products').insert([payload])
+            error = retryRes.error
+          } else {
+            break
+          }
         }
         if (error) throw error
       }

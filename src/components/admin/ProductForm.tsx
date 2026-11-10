@@ -130,7 +130,48 @@ export const ProductForm = ({
     setVariants((prev) => prev.filter((_, i) => i !== index))
   }
 
-  // Multi-file upload handler: reads up to 6 images as Data URLs so they persist forever
+  // Helper to compress images on-the-fly to max 1200px and 0.82 quality (reduces large iPhone photos from 8MB to ~150KB)
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const maxDim = 1200
+          let width = img.width
+          let height = img.height
+
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width)
+              width = maxDim
+            } else {
+              width = Math.round((width * maxDim) / height)
+              height = maxDim
+            }
+          }
+
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height)
+            resolve(canvas.toDataURL('image/jpeg', 0.82))
+          } else {
+            resolve(dataUrl)
+          }
+        }
+        img.onerror = () => resolve(dataUrl)
+        img.src = dataUrl
+      }
+      reader.onerror = () => resolve('')
+      reader.readAsDataURL(file)
+    })
+  }
+
+  // Multi-file upload handler: reads and compresses up to 6 images as Data URLs so they persist forever
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files
     if (!fileList || fileList.length === 0) return
@@ -140,16 +181,10 @@ export const ProductForm = ({
     if (availableSlots <= 0) return
 
     const filesToRead = filesArray.slice(0, availableSlots)
-    const readPromises = filesToRead.map((file) => {
-      return new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result as string)
-        reader.readAsDataURL(file)
-      })
-    })
+    const readPromises = filesToRead.map((file) => compressImage(file))
 
     const newBase64Images = await Promise.all(readPromises)
-    setImages((prev) => [...prev, ...newBase64Images].slice(0, 6))
+    setImages((prev) => [...prev, ...newBase64Images.filter(Boolean)].slice(0, 6))
     e.target.value = ''
   }
 
