@@ -75,7 +75,17 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
 
         {/* Curated Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {displayProducts.map((product) => {
+          {displayProducts.length === 0 ? (
+            <div className="col-span-full py-16 text-center border border-dashed border-[#242424] bg-[#0c0c0c] p-8 space-y-3">
+              <span className="font-display text-2xl uppercase tracking-wider text-gray-400">
+                PRÓXIMAMENTE NUEVAS PRENDAS
+              </span>
+              <p className="text-xs font-mono text-gray-500 max-w-md mx-auto">
+                No hay productos en portada en este momento. Las nuevas prendas y restocks se anunciarán aquí.
+              </p>
+            </div>
+          ) : (
+            displayProducts.map((product) => {
             const currentColor =
               selectedColors[product.id] || (product.colors && product.colors[0])
             const isJustAdded = addedAnimation === product.id
@@ -187,7 +197,7 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                 </div>
               </div>
             )
-          })}
+          }))}
         </div>
 
       </div>

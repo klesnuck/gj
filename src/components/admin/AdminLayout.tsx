@@ -26,19 +26,19 @@ export const AdminLayout = ({
 }: AdminLayoutProps) => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
-  const navItems = [
+  const navItems: { id: string; label: string; icon: React.ElementType; badge?: string }[] = [
     { id: 'resumen', label: 'Resumen', icon: LayoutDashboard },
     { id: 'productos', label: 'Productos', icon: Package },
-    { id: 'pedidos', label: 'Pedidos', icon: ShoppingBag, badge: '08' },
+    { id: 'pedidos', label: 'Pedidos', icon: ShoppingBag },
     { id: 'clientes', label: 'Clientes', icon: Users },
     { id: 'descuentos', label: 'Descuentos', icon: Tag },
   ]
 
   const breadcrumbMap: Record<string, { parent: string; current: string }> = {
     resumen: { parent: 'Panel General', current: 'Resumen y Métricas' },
-    productos: { parent: 'Catálogo', current: 'Productos' },
+    productos: { parent: 'Catálogo', current: 'Gestión de Productos' },
     pedidos: { parent: 'Logística', current: 'Pedidos y Envíos' },
-    clientes: { parent: 'Audiencia', current: 'Clientes y Teléfonos' },
+    clientes: { parent: 'Audiencia', current: 'Clientes y Contactos' },
     descuentos: { parent: 'Marketing', current: 'Cupones Temporales' },
   }
 

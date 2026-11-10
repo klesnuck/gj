@@ -74,24 +74,9 @@ export function App() {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
-  // Live Supabase Datasets (Orders, Customers, Coupons)
-  const [orders, setOrders] = useState<Order[]>(() => {
-    try {
-      const saved = localStorage.getItem('gj_admin_orders')
-      return saved ? JSON.parse(saved) : []
-    } catch {
-      return []
-    }
-  })
-
-  const [customers, setCustomers] = useState<Customer[]>(() => {
-    try {
-      const saved = localStorage.getItem('gj_admin_customers')
-      return saved ? JSON.parse(saved) : []
-    } catch {
-      return []
-    }
-  })
+  // Live Datasets (Starting from 0, populated live from Supabase)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
 
   const [coupons, setCoupons] = useState<Coupon[]>(() => {
     try {
@@ -138,16 +123,14 @@ export function App() {
     }
   }, [cartItems])
 
-  // Save admin orders, customers & coupons
+  // Save admin coupons
   useEffect(() => {
     try {
-      localStorage.setItem('gj_admin_orders', JSON.stringify(orders))
-      localStorage.setItem('gj_admin_customers', JSON.stringify(customers))
       localStorage.setItem('gj_admin_coupons', JSON.stringify(coupons))
     } catch (e) {
-      console.warn('Could not save admin datasets', e)
+      console.warn('Could not save coupons', e)
     }
-  }, [orders, customers, coupons])
+  }, [coupons])
 
   // Load live data from Supabase
   const reloadProducts = async () => {
@@ -167,8 +150,8 @@ export function App() {
         ])
         if (isMounted) {
           setProducts(pData)
-          if (oData && oData.length > 0) setOrders(oData)
-          if (cData && cData.length > 0) setCustomers(cData)
+          setOrders(oData || [])
+          setCustomers(cData || [])
           if (coupData && coupData.length > 0) setCoupons(coupData)
         }
       } catch (err) {
@@ -224,18 +207,6 @@ export function App() {
     setCurrentView('collection')
   }
 
-  const handleUpdateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-    )
-    await updateOrderStatus(orderId, newStatus)
-  }
-
-  const handleAddCustomer = async (newCustomer: Customer) => {
-    setCustomers((prev) => [newCustomer, ...prev])
-    await saveCustomer(newCustomer)
-  }
-
   const handleAddCoupon = async (newCoupon: Coupon) => {
     setCoupons((prev) => [newCoupon, ...prev])
     await saveCoupon(newCoupon)
@@ -253,6 +224,18 @@ export function App() {
   const handleDeleteCoupon = async (couponId: string) => {
     setCoupons((prev) => prev.filter((c) => c.id !== couponId))
     await deleteCoupon(couponId)
+  }
+
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+    )
+    await updateOrderStatus(orderId, newStatus)
+  }
+
+  const handleAddCustomer = async (newCustomer: Customer) => {
+    setCustomers((prev) => [newCustomer, ...prev])
+    await saveCustomer(newCustomer)
   }
 
   // Coupon handling for Cart & Checkout
@@ -314,7 +297,7 @@ export function App() {
       createdAt: new Date().toISOString(),
     }
 
-    // Add to Admin Orders State
+    // Add to Orders State
     setOrders((prev) => [newOrder, ...prev])
 
     // Persist to Supabase
@@ -330,34 +313,18 @@ export function App() {
       total: orderPayload.total,
     }).catch(console.warn)
 
-    // Update / Register Customer in Admin Customers directory
-    setCustomers((prev) => {
-      const exists = prev.find((c) => c.email.toLowerCase() === orderPayload.customerEmail.toLowerCase())
-      if (exists) {
-        const updated = {
-          ...exists,
-          ordersCount: (exists.ordersCount || 1) + 1,
-          totalSpent: (exists.totalSpent || 0) + orderPayload.total,
-          lastOrderDate: new Date().toISOString().split('T')[0],
-        }
-        saveCustomer(updated).catch(console.warn)
-        return prev.map((c) => (c.id === exists.id ? updated : c))
-      } else {
-        const newCustomer: Customer = {
-          id: `cust-${Date.now()}`,
-          name: orderPayload.customerName,
-          phone: orderPayload.customerPhone,
-          email: orderPayload.customerEmail,
-          city: orderPayload.shippingType === 'saltillo_local' ? 'Saltillo, Coah.' : 'Nacional',
-          ordersCount: 1,
-          totalSpent: orderPayload.total,
-          registeredAt: new Date().toISOString().split('T')[0],
-          lastOrderDate: new Date().toISOString().split('T')[0],
-        }
-        saveCustomer(newCustomer).catch(console.warn)
-        return [newCustomer, ...prev]
-      }
-    })
+    // Also persist customer to Supabase
+    saveCustomer({
+      id: `cust-${Date.now()}`,
+      name: orderPayload.customerName,
+      phone: orderPayload.customerPhone,
+      email: orderPayload.customerEmail,
+      city: orderPayload.shippingType === 'saltillo_local' ? 'Saltillo, Coah.' : 'Nacional',
+      ordersCount: 1,
+      totalSpent: orderPayload.total,
+      registeredAt: new Date().toISOString().split('T')[0],
+      lastOrderDate: new Date().toISOString().split('T')[0],
+    }).catch(console.warn)
 
     // Reset Cart and display Step 03 Confirmation
     setCartItems([])

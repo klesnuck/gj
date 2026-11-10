@@ -4,7 +4,6 @@ import {
   Search,
   MessageCircle,
   Phone,
-  MapPin,
   Plus,
   X,
 } from 'lucide-react'
@@ -104,7 +103,9 @@ export const CustomersList = ({ customers: initialCustomers, onAddCustomer }: Cu
           <div className="font-display text-3xl text-white font-bold mt-1">
             {customers.length}
           </div>
-          <div className="text-[10px] font-mono text-gray-500 mt-1">Comunidad activa</div>
+          <div className="text-[10px] font-mono text-gray-500 mt-1">
+            {customers.length === 0 ? 'Sin clientes aún' : 'Comunidad activa'}
+          </div>
         </div>
 
         <div className="p-4 bg-[#101010] border border-[#202020]">
@@ -113,7 +114,9 @@ export const CustomersList = ({ customers: initialCustomers, onAddCustomer }: Cu
             {saltilloCustomersCount}
           </div>
           <div className="text-[10px] font-mono text-[#D4FF00] mt-1">
-            {Math.round((saltilloCustomersCount / customers.length) * 100)}% base local
+            {customers.length > 0
+              ? `${Math.round((saltilloCustomersCount / customers.length) * 100)}% base local`
+              : '0% base local'}
           </div>
         </div>
 
@@ -122,65 +125,66 @@ export const CustomersList = ({ customers: initialCustomers, onAddCustomer }: Cu
           <div className="font-display text-3xl text-emerald-400 font-bold mt-1">
             {customers.filter((c) => c.phone).length}
           </div>
-          <div className="text-[10px] font-mono text-emerald-400/80 mt-1">100% con WhatsApp directo</div>
+          <div className="text-[10px] font-mono text-emerald-400/80 mt-1">Con WhatsApp directo</div>
         </div>
 
         <div className="p-4 bg-[#101010] border border-[#202020]">
           <div className="text-xs font-mono text-gray-400 uppercase">Ticket Promedio</div>
           <div className="font-display text-3xl text-white font-bold mt-1">
-            $1,840
+            {customers.length > 0
+              ? `$${Math.round(
+                  customers.reduce((acc, c) => acc + (c.totalSpent || 0), 0) / customers.length
+                ).toLocaleString('es-MX')}`
+              : '$0'}
           </div>
-          <div className="text-[10px] font-mono text-gray-500 mt-1">MXN por cliente</div>
+          <div className="text-[10px] font-mono text-gray-400 mt-1">Por cliente</div>
         </div>
       </div>
 
-      {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* Search */}
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-500" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nombre, teléfono o ciudad..."
-            className="w-full bg-[#131313] border border-[#242424] focus:border-[#D4FF00] pl-9 pr-4 py-2 text-xs font-mono text-white focus:outline-none"
-          />
-        </div>
-
-        {/* City Filter */}
+      {/* Filter Tabs */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setCityFilter('all')}
-            className={`px-3 py-1.5 rounded-none text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer border ${
+            className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer border ${
               cityFilter === 'all'
                 ? 'bg-white text-black border-white font-bold'
-                : 'bg-[#121212] text-gray-400 border-[#262626]'
+                : 'bg-[#121212] text-gray-400 border-[#262626] hover:text-white'
             }`}
           >
             Todos ({customers.length})
           </button>
           <button
             onClick={() => setCityFilter('saltillo')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-none text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer border ${
+            className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer border ${
               cityFilter === 'saltillo'
                 ? 'bg-[#182109] text-[#D4FF00] border-[#D4FF00] font-bold'
-                : 'bg-[#121212] text-gray-400 border-[#262626]'
+                : 'bg-[#121212] text-gray-400 border-[#262626] hover:text-white'
             }`}
           >
-            <MapPin className="w-3 h-3 text-[#D4FF00]" />
-            <span>Saltillo ({saltilloCustomersCount})</span>
+            Saltillo ({saltilloCustomersCount})
           </button>
           <button
             onClick={() => setCityFilter('otras')}
-            className={`px-3 py-1.5 rounded-none text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer border ${
+            className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer border ${
               cityFilter === 'otras'
-                ? 'bg-blue-950/60 text-blue-400 border-blue-400 font-bold'
-                : 'bg-[#121212] text-gray-400 border-[#262626]'
+                ? 'bg-blue-950 text-blue-400 border-blue-400 font-bold'
+                : 'bg-[#121212] text-gray-400 border-[#262626] hover:text-white'
             }`}
           >
-            Nacionales ({customers.length - saltilloCustomersCount})
+            Otras Ciudades ({customers.length - saltilloCustomersCount})
           </button>
+        </div>
+
+        <div className="relative w-full sm:w-72">
+          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-500" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por nombre, teléfono, email..."
+            className="w-full bg-[#131313] border border-[#242424] focus:border-[#D4FF00] pl-9 pr-4 py-2 text-xs font-mono text-white focus:outline-none"
+          />
         </div>
       </div>
 
@@ -191,89 +195,85 @@ export const CustomersList = ({ customers: initialCustomers, onAddCustomer }: Cu
             <thead>
               <tr className="border-b border-[#222222] bg-[#141414] text-gray-500 uppercase tracking-wider">
                 <th className="py-3 px-4">CLIENTE</th>
-                <th className="py-3 px-4">NÚMERO DE TELÉFONO</th>
-                <th className="py-3 px-4">CIUDAD / UBICACIÓN</th>
+                <th className="py-3 px-4">TELÉFONO</th>
+                <th className="py-3 px-4">UBICACIÓN</th>
                 <th className="py-3 px-4 text-center">PEDIDOS</th>
                 <th className="py-3 px-4 text-right">TOTAL GASTADO</th>
-                <th className="py-3 px-4 text-center">CONTACTO RÁPIDO</th>
+                <th className="py-3 px-4">REGISTRO</th>
+                <th className="py-3 px-4 text-center">CONTACTO</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1b1b1b]">
-              {filtered.map((customer) => (
-                <tr key={customer.id} className="hover:bg-[#141414] transition-colors">
-                  {/* Name & Email */}
-                  <td className="py-3 px-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-[#181818] border border-[#2c2c2c] flex items-center justify-center font-bold text-xs text-[#D4FF00] shrink-0">
-                        {customer.name.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="font-bold text-white font-sans text-sm">
-                          {customer.name}
-                        </div>
-                        <div className="text-[10px] text-gray-500">{customer.email}</div>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Phone with quick call */}
-                  <td className="py-3 px-4 font-bold text-white">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-mono text-sm tracking-wider text-gray-200">
-                        {customer.phone}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* City */}
-                  <td className="py-3 px-4">
-                    {customer.city.toLowerCase().includes('saltillo') ? (
-                      <span className="inline-flex items-center gap-1 text-[#D4FF00] font-semibold">
-                        <MapPin className="w-3 h-3 text-[#D4FF00]" />
-                        {customer.city}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">{customer.city}</span>
-                    )}
-                  </td>
-
-                  {/* Orders Count */}
-                  <td className="py-3 px-4 text-center font-bold text-white">
-                    <span className="inline-block px-2 py-0.5 bg-[#181818] border border-[#2a2a2a] rounded">
-                      {customer.ordersCount} compras
-                    </span>
-                  </td>
-
-                  {/* Total Spent */}
-                  <td className="py-3 px-4 text-right font-bold text-[#D4FF00]">
-                    ${customer.totalSpent.toLocaleString('es-MX')} MXN
-                  </td>
-
-                  {/* Quick Action: WhatsApp & Call */}
-                  <td className="py-3 px-4 text-center">
-                    <div className="flex items-center justify-center space-x-2">
-                      <a
-                        href={`https://wa.me/${getCleanPhone(customer.phone)}?text=Hola%20${encodeURIComponent(customer.name)},%20te%20escribimos%20de%20la%20tienda%20oficial%20gj.%20CLOTHING%20AND%20CAPS`}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Abrir chat de WhatsApp"
-                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-950 hover:bg-emerald-900 text-emerald-400 border border-emerald-800/60 rounded text-[11px] font-bold transition-colors"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        <span>WhatsApp</span>
-                      </a>
-
-                      <a
-                        href={`tel:${getCleanPhone(customer.phone)}`}
-                        title="Llamar al cliente"
-                        className="p-1.5 bg-[#181818] hover:bg-[#252525] text-gray-300 hover:text-white border border-[#2a2a2a] rounded transition-colors"
-                      >
-                        <Phone className="w-3.5 h-3.5" />
-                      </a>
-                    </div>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-gray-500">
+                    <Users className="w-8 h-8 mx-auto mb-2 opacity-40 text-gray-600" />
+                    No hay clientes registrados todavía.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filtered.map((customer) => (
+                  <tr key={customer.id} className="hover:bg-[#141414] transition-colors">
+                    <td className="py-3 px-4">
+                      <div className="font-bold text-white font-sans text-sm">
+                        {customer.name}
+                      </div>
+                      <div className="text-[10px] text-gray-500">{customer.email}</div>
+                    </td>
+                    <td className="py-3 px-4 font-bold text-gray-300">
+                      {customer.phone || 'Sin registrar'}
+                    </td>
+                    <td className="py-3 px-4">
+                      {customer.city.toLowerCase().includes('saltillo') ? (
+                        <span className="inline-block px-2 py-0.5 bg-[#182109] text-[#D4FF00] border border-[#2b3b12] text-[10px] font-bold uppercase">
+                          📍 Saltillo
+                        </span>
+                      ) : (
+                        <span className="inline-block px-2 py-0.5 bg-blue-950/40 text-blue-400 border border-blue-900/40 text-[10px] font-bold uppercase">
+                          {customer.city}
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="px-2 py-0.5 bg-[#1a1a1a] border border-[#282828] text-white font-bold">
+                        {customer.ordersCount}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right font-bold text-[#D4FF00]">
+                      ${(customer.totalSpent || 0).toLocaleString('es-MX')} MXN
+                    </td>
+                    <td className="py-3 px-4 text-gray-400">{customer.registeredAt}</td>
+                    <td className="py-3 px-4 text-center">
+                      <div className="flex items-center justify-center space-x-2">
+                        {customer.phone && (
+                          <a
+                            href={`https://wa.me/${getCleanPhone(customer.phone)}?text=Hola%20${encodeURIComponent(
+                              customer.name
+                            )},%20te%20escribimos%20de%20gj.`}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Enviar WhatsApp"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-950 hover:bg-emerald-900 text-emerald-400 border border-emerald-800/60 rounded text-[11px] font-bold transition-colors"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>WhatsApp</span>
+                          </a>
+                        )}
+
+                        {customer.phone && (
+                          <a
+                            href={`tel:${getCleanPhone(customer.phone)}`}
+                            title="Llamar al cliente"
+                            className="p-1.5 bg-[#181818] hover:bg-[#252525] text-gray-300 hover:text-white border border-[#2a2a2a] rounded transition-colors"
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

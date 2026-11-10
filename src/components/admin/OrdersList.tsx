@@ -78,41 +78,6 @@ export const OrdersList = ({ orders: initialOrders, onUpdateOrderStatus }: Order
       <div className="flex flex-wrap items-center gap-3">
         <button
           onClick={() => setShippingFilter('all')}
-          className={`px-4 py-2 rounded-none text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer border ${shippingFilter === 'all'
-            ? 'bg-white text-black border-white font-bold'
-            : 'bg-[#121212] text-gray-400 border-[#262626] hover:text-white hover:border-[#383838]'
-            }`}
-        >
-          Todos los pedidos ({orders.length})
-        </button>
-
-        <button
-          onClick={() => setShippingFilter('saltillo_local')}
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-none text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer border ${shippingFilter === 'saltillo_local'
-            ? 'bg-[#182109] text-[#D4FF00] border-[#D4FF00] font-bold shadow-md shadow-[#D4FF00]/10'
-            : 'bg-[#121212] text-gray-300 border-[#262626] hover:border-[#D4FF00]/50'
-            }`}
-        >
-          <MapPin className="w-3.5 h-3.5 text-[#D4FF00]" />
-          <span>📍 Entrega Local Saltillo ({saltilloCount})</span>
-        </button>
-
-        <button
-          onClick={() => setShippingFilter('paqueteria_nacional')}
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-none text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer border ${shippingFilter === 'paqueteria_nacional'
-            ? 'bg-blue-950/60 text-blue-400 border-blue-400 font-bold'
-            : 'bg-[#121212] text-gray-300 border-[#262626] hover:border-blue-400/50'
-            }`}
-        >
-          <Truck className="w-3.5 h-3.5 text-blue-400" />
-          <span>📦 Paquetería Nacional ({paqueteriaCount})</span>
-        </button>
-      </div>
-
-      {/* Shipping Type Filter Pills */}
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          onClick={() => setShippingFilter('all')}
           className={`px-4 py-2 rounded-none text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer border ${
             shippingFilter === 'all'
               ? 'bg-white text-black border-white font-bold'
@@ -154,175 +119,75 @@ export const OrdersList = ({ orders: initialOrders, onUpdateOrderStatus }: Order
             <thead>
               <tr className="border-b border-[#222222] bg-[#141414] text-gray-500 uppercase tracking-wider">
                 <th className="py-3 px-4">PEDIDO</th>
-                <th className="py-3 px-4">CLIENTE / TELÉFONO</th>
-                <th className="py-3 px-4">TIPO DE ENVÍO Y DESTINO</th>
-                <th className="py-3 px-4">ARTÍCULOS</th>
+                <th className="py-3 px-4">CLIENTE</th>
+                <th className="py-3 px-4">TIPO DE ENVÍO</th>
+                <th className="py-3 px-4">FECHA</th>
                 <th className="py-3 px-4">ESTADO</th>
                 <th className="py-3 px-4 text-right">TOTAL</th>
                 <th className="py-3 px-4 text-center">ACCIONES</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1b1b1b]">
-              {filtered.map((order) => (
-                <tr key={order.id} className="hover:bg-[#141414] transition-colors">
-                  {/* Order Number & Date */}
-                  <td className="py-3 px-4">
-                    <div className="font-bold text-white flex items-center gap-1.5">
-                      <ShoppingBag className="w-3.5 h-3.5 text-[#D4FF00]" />
-                      <span>{order.orderNumber}</span>
-                    </div>
-                    <div className="text-[10px] text-gray-500 mt-0.5">{order.createdAt}</div>
-                    <div className="text-[10px] text-gray-400 font-sans mt-0.5">
-                      {order.paymentMethod}
-                    </div>
-                  </td>
-
-                  {/* Customer & Phone with direct WhatsApp */}
-                  <td className="py-3 px-4">
-                    <div className="font-sans font-bold text-white text-sm">
-                      {order.customerName}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-gray-300 font-mono text-[11px]">{order.customerPhone}</span>
-                      <a
-                        href={`https://wa.me/${getCleanPhone(order.customerPhone)}?text=Hola%20${encodeURIComponent(order.customerName)},%20te%20escribimos%20de%20gj.%20referente%20a%20tu%20pedido%20${order.orderNumber}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Enviar WhatsApp al cliente"
-                        className="inline-flex items-center gap-1 text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-1.5 py-0.5 rounded hover:bg-emerald-900 transition-colors"
-                      >
-                        <MessageCircle className="w-3 h-3" />
-                        <span>WA</span>
-                      </a>
-                    </div>
-                    <div className="text-[10px] text-gray-500 mt-0.5">{order.customerEmail}</div>
-                  </td>
-
-                  {/* Shipping Type: Saltillo Local vs Paqueteria */}
-                  <td className="py-3 px-4 max-w-xs">
-                    {order.shippingType === 'saltillo_local' ? (
-                      <div className="space-y-1">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#182109] text-[#D4FF00] border border-[#2b3b12] text-[10px] font-bold uppercase">
-                          <MapPin className="w-3 h-3 text-[#D4FF00]" />
-                          📍 DENTRO DE SALTILLO
-                        </span>
-                        <p className="text-[11px] text-gray-300 font-sans leading-tight">
-                          {order.shippingAddress}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-950/60 text-blue-400 border border-blue-800/60 text-[10px] font-bold uppercase">
-                          <Truck className="w-3 h-3 text-blue-400" />
-                          📦 ENVÍO POR PAQUETERÍA
-                        </span>
-                        <p className="text-[11px] text-gray-300 font-sans leading-tight">
-                          {order.shippingAddress}
-                        </p>
-                      </div>
-                    )}
-                  </td>
-
-                  {/* Items */}
-                  <td className="py-3 px-4">
-                    <div className="space-y-1">
-                      {order.items.map((it, idx) => (
-                        <div key={idx} className="text-[11px] text-gray-300 font-sans">
-                          <span className="font-bold text-white">{it.quantity}x</span> {it.title}
-                          {it.size && <span className="text-gray-500"> ({it.size})</span>}
-                        </div>
-                      ))}
-                    </div>
-                  </td>
-
-                  {/* Status dropdown */}
-                  <td className="py-3 px-4">
-                    <select
-                      value={order.status}
-                      onChange={(e) => handleStatusChange(order.id, e.target.value as any)}
-                      className={`text-xs font-mono uppercase font-bold px-2.5 py-1.5 border focus:outline-none cursor-pointer ${order.status === 'entregado'
-                        ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800/40'
-                        : order.status === 'en_camino'
-                          ? 'bg-blue-950/40 text-blue-400 border-blue-800/40'
-                          : 'bg-yellow-950/40 text-yellow-400 border-yellow-800/40'
-                        }`}
-                    >
-                      <option value="pendiente">Pendiente</option>
-                      <option value="en_camino">En camino</option>
-                      <option value="entregado">Entregado</option>
-                    </select>
-                  </td>
-
-                  {/* Total */}
-                  <td className="py-3 px-4 text-right">
-                    <span className="font-bold text-[#D4FF00] text-sm font-mono block">
-                      ${order.total.toLocaleString('es-MX')}
-                    </span>
-                    <span className="text-[10px] text-gray-500">MXN</span>
-                  </td>
-
-                  {/* Actions */}
-                  <td className="py-3 px-4 text-center">
-                    <button
-                      onClick={() => setSelectedOrder(order)}
-                      title="Ver detalle del pedido"
-                      className="p-1.5 text-gray-400 hover:text-white hover:bg-[#1f1f1f] rounded transition-colors"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                  </td>
-
-                  {/* Items */}
-                  <td className="py-3 px-4">
-                    <div className="space-y-1">
-                      {order.items.map((it, idx) => (
-                        <div key={idx} className="text-[11px] text-gray-300 font-sans">
-                          <span className="font-bold text-white">{it.quantity}x</span> {it.title}
-                          {it.size && <span className="text-gray-500"> ({it.size})</span>}
-                        </div>
-                      ))}
-                    </div>
-                  </td>
-
-                  {/* Status dropdown */}
-                  <td className="py-3 px-4">
-                    <select
-                      value={order.status}
-                      onChange={(e) => handleStatusChange(order.id, e.target.value as any)}
-                      className={`text-xs font-mono uppercase font-bold px-2.5 py-1.5 border focus:outline-none cursor-pointer ${
-                        order.status === 'entregado'
-                          ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800/40'
-                          : order.status === 'en_camino'
-                          ? 'bg-blue-950/40 text-blue-400 border-blue-800/40'
-                          : 'bg-yellow-950/40 text-yellow-400 border-yellow-800/40'
-                      }`}
-                    >
-                      <option value="pendiente">Pendiente</option>
-                      <option value="en_camino">En camino</option>
-                      <option value="entregado">Entregado</option>
-                    </select>
-                  </td>
-
-                  {/* Total */}
-                  <td className="py-3 px-4 text-right">
-                    <span className="font-bold text-[#D4FF00] text-sm font-mono block">
-                      ${order.total.toLocaleString('es-MX')}
-                    </span>
-                    <span className="text-[10px] text-gray-500">MXN</span>
-                  </td>
-
-                  {/* Actions */}
-                  <td className="py-3 px-4 text-center">
-                    <button
-                      onClick={() => setSelectedOrder(order)}
-                      title="Ver detalle del pedido"
-                      className="p-1.5 text-gray-400 hover:text-white hover:bg-[#1f1f1f] rounded transition-colors"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-gray-500">
+                    <ShoppingBag className="w-8 h-8 mx-auto mb-2 opacity-40 text-gray-600" />
+                    No hay pedidos registrados todavía.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filtered.map((order) => (
+                  <tr key={order.id} className="hover:bg-[#141414] transition-colors">
+                    <td className="py-3 px-4 font-bold text-white">{order.orderNumber}</td>
+                    <td className="py-3 px-4">
+                      <span className="font-sans text-white font-semibold block">
+                        {order.customerName}
+                      </span>
+                      <span className="text-[10px] text-gray-500">{order.customerPhone}</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      {order.shippingType === 'saltillo_local' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#182109] text-[#D4FF00] border border-[#2b3b12] text-[10px] font-bold uppercase">
+                          <MapPin className="w-3 h-3 text-[#D4FF00]" />
+                          Saltillo Local
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-950/40 text-blue-400 border border-blue-900/40 text-[10px] font-bold uppercase">
+                          <Truck className="w-3 h-3" />
+                          Paquetería Nacional
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-gray-400">{order.createdAt}</td>
+                    <td className="py-3 px-4">
+                      <select
+                        value={order.status}
+                        onChange={(e) =>
+                          handleStatusChange(order.id, e.target.value as Order['status'])
+                        }
+                        className="bg-[#181818] border border-[#2e2e2e] text-white px-2 py-1 text-[11px] font-mono focus:border-[#D4FF00] focus:outline-none cursor-pointer"
+                      >
+                        <option value="pendiente">Pendiente</option>
+                        <option value="en_camino">En camino</option>
+                        <option value="entregado">Entregado</option>
+                        <option value="cancelado">Cancelado</option>
+                      </select>
+                    </td>
+                    <td className="py-3 px-4 text-right font-bold text-[#D4FF00]">
+                      ${order.total.toLocaleString('es-MX')} MXN
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        onClick={() => setSelectedOrder(order)}
+                        className="p-1.5 text-gray-400 hover:text-white hover:bg-[#1f1f1f] rounded transition-colors"
+                        title="Ver detalle del pedido"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -406,7 +271,9 @@ export const OrdersList = ({ orders: initialOrders, onUpdateOrderStatus }: Order
 
             <div className="flex gap-3 pt-2">
               <a
-                href={`https://wa.me/${getCleanPhone(selectedOrder.customerPhone)}?text=Hola%20${encodeURIComponent(selectedOrder.customerName)},%20te%20escribimos%20de%20gj.%20para%20confirmar%20tu%20entrega.`}
+                href={`https://wa.me/${getCleanPhone(selectedOrder.customerPhone)}?text=Hola%20${encodeURIComponent(
+                  selectedOrder.customerName
+                )},%20te%20escribimos%20de%20gj.%20para%20confirmar%20tu%20entrega.`}
                 target="_blank"
                 rel="noreferrer"
                 className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold text-xs uppercase flex items-center justify-center gap-2 transition-colors"
