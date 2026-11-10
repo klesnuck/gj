@@ -20,21 +20,23 @@ import { OrdersList } from './components/admin/OrdersList'
 import { CustomersList } from './components/admin/CustomersList'
 import { DiscountsView } from './components/admin/DiscountsView'
 
-// Cart & Checkout Pages matching the design interfaces
+// Cart, Checkout & Collection Pages
 import { CartPage } from './components/cart/CartPage'
 import { CheckoutPage } from './components/checkout/CheckoutPage'
 import { OrderConfirmationView } from './components/checkout/OrderConfirmationView'
+import { CollectionPage } from './components/collection/CollectionPage'
 
 import { fetchProducts, createProduct, deleteProduct } from './lib/supabase'
 import { INITIAL_ORDERS, INITIAL_CUSTOMERS, INITIAL_COUPONS } from './lib/mockData'
 import type { Product, CartItem, Order, Customer, Coupon, OrderItem } from './types/database.types'
 
 export function App() {
-  const [currentView, setCurrentView] = useState<'store' | 'cart' | 'checkout' | 'admin' | 'order-success'>(() => {
+  const [currentView, setCurrentView] = useState<'store' | 'collection' | 'cart' | 'checkout' | 'admin' | 'order-success'>(() => {
     const hash = window.location.hash
     if (hash.startsWith('#admin')) return 'admin'
     if (hash.startsWith('#checkout')) return 'checkout'
     if (hash.startsWith('#cart')) return 'cart'
+    if (hash.startsWith('#coleccion')) return 'collection'
     return 'store'
   })
   const [adminTab, setAdminTab] = useState<string>('resumen')
@@ -97,6 +99,10 @@ export function App() {
         setCurrentView('checkout')
       } else if (hash.startsWith('#cart')) {
         setCurrentView('cart')
+      } else if (hash.startsWith('#coleccion')) {
+        const cat = hash.replace('#coleccion/', '') || 'todos'
+        setActiveCategory(cat)
+        setCurrentView('collection')
       } else if (currentView !== 'order-success') {
         setCurrentView('store')
       }
@@ -172,6 +178,40 @@ export function App() {
         setIsCreatingProduct(false)
       }
     }
+  }
+
+  const handleToggleFeatured = (productId: string) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, is_featured: !p.is_featured } : p))
+    )
+    try {
+      const custom: Product[] = JSON.parse(localStorage.getItem('gj_custom_products') || '[]')
+      const idx = custom.findIndex((p) => p.id === productId)
+      if (idx > -1) {
+        custom[idx].is_featured = !custom[idx].is_featured
+        localStorage.setItem('gj_custom_products', JSON.stringify(custom))
+      } else {
+        const found = products.find((p) => p.id === productId)
+        if (found) {
+          custom.push({ ...found, is_featured: !found.is_featured })
+          localStorage.setItem('gj_custom_products', JSON.stringify(custom))
+        }
+      }
+    } catch (err) {
+      console.warn('Could not save featured toggle', err)
+    }
+  }
+
+  const handleOpenCategory = (cat: string) => {
+    if (cat === 'todos') {
+      setActiveCategory('todos')
+      window.location.hash = ''
+      setCurrentView('store')
+      return
+    }
+    setActiveCategory(cat)
+    window.location.hash = `coleccion/${cat}`
+    setCurrentView('collection')
   }
 
   const handleUpdateOrderStatus = (orderId: string, newStatus: Order['status']) => {
@@ -347,15 +387,11 @@ export function App() {
   const totalCartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0)
 
   const handleShopDrop = () => {
-    setActiveCategory('todos')
-    const el = document.getElementById('catalogo')
-    if (el) el.scrollIntoView({ behavior: 'smooth' })
+    handleOpenCategory('ropa')
   }
 
   const handleExploreCaps = () => {
-    setActiveCategory('gorras')
-    const el = document.getElementById('catalogo')
-    if (el) el.scrollIntoView({ behavior: 'smooth' })
+    handleOpenCategory('gorras')
   }
 
   // RENDER ADMIN VIEW
@@ -416,6 +452,7 @@ export function App() {
                   setIsCreatingProduct(true)
                 }}
                 onDeleteProduct={handleDeleteProduct}
+                onToggleFeatured={handleToggleFeatured}
                 onViewProductInStore={(prod) => {
                   window.location.hash = ''
                   setCurrentView('store')
@@ -512,6 +549,32 @@ export function App() {
     )
   }
 
+  // RENDER DEDICATED COLLECTION VIEW (Ropa, Gorras por marca, Accesorios)
+  if (currentView === 'collection') {
+    return (
+      <CollectionPage
+        products={products}
+        activeCategory={activeCategory}
+        onSelectCategory={handleOpenCategory}
+        onAddToCart={(product, color, size) => handleAddToCart(product, color, size)}
+        onSelectProduct={(product) => setSelectedProduct(product)}
+        onBackToHome={() => {
+          window.location.hash = ''
+          setCurrentView('store')
+        }}
+        cartCount={totalCartCount}
+        onOpenCart={() => {
+          window.location.hash = 'cart'
+          setCurrentView('cart')
+        }}
+        onOpenAdmin={() => {
+          window.location.hash = 'admin'
+          setCurrentView('admin')
+        }}
+      />
+    )
+  }
+
   // RENDER PUBLIC STOREFRONT VIEW
   return (
     <div className="min-h-screen bg-[#090909] text-white flex flex-col selection:bg-[#D4FF00] selection:text-black">
@@ -525,11 +588,7 @@ export function App() {
           window.location.hash = 'cart'
           setCurrentView('cart')
         }}
-        onSelectCategory={(cat) => {
-          setActiveCategory(cat)
-          const el = document.getElementById('catalogo')
-          if (el) el.scrollIntoView({ behavior: 'smooth' })
-        }}
+        onSelectCategory={handleOpenCategory}
         onOpenAdmin={() => {
           window.location.hash = 'admin'
           setCurrentView('admin')
@@ -546,25 +605,20 @@ export function App() {
         {/* 4. Marquee Endless Ticker */}
         <MarqueeTicker />
 
-        {/* 5. 01 / LA SELECCIÓN GJ - LOS MÁS BUSCADOS */}
+        {/* 5. 01 / LA SELECCIÓN GJ - LOS MÁS BUSCADOS (Solo destacados o elegidos desde el admin) */}
         <FeaturedProducts
           products={products}
-          activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
+          onOpenCollection={handleOpenCategory}
           onAddToCart={(product, color) => handleAddToCart(product, color)}
           onSelectProduct={(product) => setSelectedProduct(product)}
         />
 
         {/* 6. 02 / ENCUENTRA TU ESENCIA - ELIGE TU CÓDIGO (Clothing, Caps & Accesorios) */}
         <CategoriesBanner
-          onSelectCategory={(cat) => {
-            setActiveCategory(cat)
-            const el = document.getElementById('catalogo')
-            if (el) el.scrollIntoView({ behavior: 'smooth' })
-          }}
+          onSelectCategory={handleOpenCategory}
         />
 
-        {/* 7. 03 / RECIÉN ATERRIZADO - Editorial, Manifiesto y Pilares */}
+        {/* 7. 03 / RECIÉN ATERRIZADO - Editorial */}
         <EditorialSection
           onDiscoverNews={handleShopDrop}
         />
@@ -575,11 +629,7 @@ export function App() {
 
       {/* 9. Comprehensive Streetwear Footer */}
       <Footer
-        onSelectCategory={(cat) => {
-          setActiveCategory(cat)
-          const el = document.getElementById('catalogo')
-          if (el) el.scrollIntoView({ behavior: 'smooth' })
-        }}
+        onSelectCategory={handleOpenCategory}
       />
 
       {/* Floating Discreet Admin Quick Access Pill */}

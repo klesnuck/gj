@@ -4,28 +4,26 @@ import type { Product } from '../types/database.types'
 
 interface FeaturedProductsProps {
   products: Product[]
-  activeCategory: string
-  onCategoryChange: (category: string) => void
+  onOpenCollection: (category: string) => void
   onAddToCart: (product: Product, selectedColor?: string) => void
   onSelectProduct: (product: Product) => void
 }
 
 export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
   products,
-  activeCategory,
-  onCategoryChange,
+  onOpenCollection,
   onAddToCart,
   onSelectProduct,
 }) => {
   const [selectedColors, setSelectedColors] = useState<Record<string, string>>({})
   const [addedAnimation, setAddedAnimation] = useState<string | null>(null)
 
-  const categories = [
-    { id: 'todos', label: 'Todos' },
-    { id: 'ropa', label: 'Ropa' },
-    { id: 'gorras', label: 'Gorras' },
-    { id: 'accesorios', label: 'Accesorios' },
-  ]
+  // Filter to show ONLY featured products selected in Admin or top sellers
+  const featuredProducts = products.filter(
+    (p) => p.is_featured === true || p.tag === 'BEST SELLER'
+  )
+  const displayProducts =
+    featuredProducts.length > 0 ? featuredProducts : products.slice(0, 4)
 
   const handleColorClick = (productId: string, color: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -44,97 +42,40 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
   }
 
   return (
-    <section id="catalogo" className="w-full bg-[#090909] py-16 sm:py-24 border-b border-[#1c1c1c]">
+    <section id="lo-mas-buscado" className="w-full bg-[#090909] py-16 sm:py-24 border-b border-[#1c1c1c]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-4">
-          <div>
-            <span className="text-xs font-mono tracking-widest text-gray-500 uppercase block mb-1">
-              01 / LA SELECCIÓN GJ
-            </span>
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-4 border-b border-[#181818]">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#D4FF00] animate-pulse" />
+              <span className="text-xs font-mono tracking-widest text-[#D4FF00] font-bold uppercase">
+                01 / SELECCIÓN GJ · LO MÁS VENDIDO
+              </span>
+            </div>
             <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-white font-extrabold leading-none">
               LOS MÁS BUSCADOS
             </h2>
+            <p className="text-xs sm:text-sm font-sans text-gray-400 max-w-lg pt-1">
+              Las prendas y siluetas con mayor demanda del Drop 004, seleccionadas especialmente para la portada.
+            </p>
           </div>
 
-          <a
-            href="#todos-los-productos"
-            onClick={(e) => {
-              e.preventDefault()
-              onCategoryChange('todos')
-            }}
-            className="group inline-flex items-center gap-1.5 text-xs sm:text-sm font-mono tracking-wider text-gray-400 hover:text-[#D4FF00] uppercase mt-4 md:mt-0 transition-colors"
-          >
-            <span>VER TODOS LOS PRODUCTOS</span>
-            <ArrowUpRight className="w-4 h-4 stroke-[2.2] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-          </a>
-        </div>
-
-        {/* Filter Tabs and Currency Note */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[#1a1a1a]">
-          {/* Filter Pills */}
-          <div className="flex items-center space-x-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-none">
-            {categories.map((cat) => {
-              const isCatActive =
-                activeCategory.toLowerCase() === cat.id.toLowerCase() ||
-                (cat.id === 'gorras' && activeCategory.toLowerCase().startsWith('gorras'))
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => onCategoryChange(cat.id)}
-                  className={`px-5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-                    isCatActive
-                      ? 'bg-white text-black font-bold shadow-sm'
-                      : 'bg-[#141414] text-gray-400 hover:text-white border border-[#242424] hover:border-[#383838]'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Pricing Currency Note */}
-          <div className="text-[11px] font-mono tracking-widest text-gray-500 uppercase">
-            PRECIOS EN MXN / IVA INCLUIDO
+          <div className="flex items-center space-x-4 mt-4 md:mt-0">
+            <button
+              onClick={() => onOpenCollection('todos')}
+              className="group inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#141414] hover:bg-[#D4FF00] text-gray-300 hover:text-black border border-[#262626] hover:border-[#D4FF00] text-xs font-mono font-bold tracking-wider uppercase transition-all duration-200 cursor-pointer"
+            >
+              <span>VER CATÁLOGO COMPLETO</span>
+              <ArrowUpRight className="w-4 h-4 stroke-[2.2] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </button>
           </div>
         </div>
 
-        {/* Brand Sub-filter for Gorras */}
-        {activeCategory.toLowerCase().startsWith('gorras') && (
-          <div className="flex items-center space-x-2 overflow-x-auto pb-3 mb-8 scrollbar-none animate-in fade-in duration-200">
-            <span className="text-[11px] font-mono text-[#D4FF00] uppercase font-bold tracking-wider shrink-0 mr-1">
-              MARCAS DE GORRAS:
-            </span>
-            {[
-              { id: 'gorras', label: 'Todas las gorras' },
-              { id: 'gorras:gj', label: 'GJ Signature' },
-              { id: 'gorras:new era', label: 'New Era' },
-              { id: 'gorras:mitchell', label: 'Mitchell & Ness' },
-              { id: 'gorras:47', label: '47 Brand' },
-            ].map((b) => {
-              const isBrandActive = activeCategory.toLowerCase() === b.id.toLowerCase()
-              return (
-                <button
-                  key={b.id}
-                  onClick={() => onCategoryChange(b.id)}
-                  className={`px-3.5 py-1.5 rounded-sm text-[11px] font-mono uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
-                    isBrandActive
-                      ? 'bg-[#D4FF00] text-black font-bold shadow-sm'
-                      : 'bg-[#151515] text-gray-400 hover:text-white border border-[#262626] hover:border-[#3a3a3a]'
-                  }`}
-                >
-                  {b.label}
-                </button>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Product Grid */}
+        {/* Curated Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.map((product) => {
+          {displayProducts.map((product) => {
             const currentColor =
               selectedColors[product.id] || (product.colors && product.colors[0])
             const isJustAdded = addedAnimation === product.id
@@ -148,7 +89,7 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                 {/* Product Image Box */}
                 <div className="relative w-full aspect-square bg-[#141414] overflow-hidden border border-[#202020] group-hover:border-[#383838] transition-colors">
                   
-                  {/* Badge (BEST SELLER / NUEVO / EDICIÓN LIMITADA) */}
+                  {/* Badge */}
                   {product.tag && (
                     <div className="absolute top-3 left-3 z-20">
                       <span
@@ -163,77 +104,86 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                     </div>
                   )}
 
-                  {/* Main Product Image */}
+                  {/* Brand Tag */}
+                  {product.brand && (
+                    <div className="absolute top-3 right-3 z-20">
+                      <span className="inline-block px-2 py-0.5 text-[9px] font-mono tracking-wider uppercase bg-black/80 text-gray-300 border border-white/10 backdrop-blur-sm">
+                        {product.brand}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Product Image */}
                   <img
                     src={product.image_url}
                     alt={product.title}
                     className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src =
-                        'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=600&q=80'
+                        '/images/product-cap-black.jpg'
                     }}
                   />
 
-                  {/* Bottom Right Quick Add Button "+" */}
-                  <button
-                    onClick={(e) => handleQuickAdd(product, e)}
-                    aria-label={`Agregar ${product.title} al carrito`}
-                    className={`absolute bottom-3 right-3 z-20 w-8 h-8 flex items-center justify-center transition-all duration-200 ${
-                      isJustAdded
-                        ? 'bg-[#D4FF00] text-black scale-110'
-                        : 'bg-white text-black hover:bg-[#D4FF00] hover:text-black shadow-md'
-                    }`}
-                  >
-                    {isJustAdded ? (
-                      <Check className="w-4 h-4 stroke-[3]" />
-                    ) : (
-                      <Plus className="w-4 h-4 stroke-[2.8]" />
-                    )}
-                  </button>
-                </div>
-
-                {/* Product Information */}
-                <div className="pt-3.5 space-y-1">
-                  
-                  {/* Title & Price Row */}
-                  <div className="flex items-center justify-between text-sm sm:text-base font-semibold tracking-tight text-white">
-                    <span className="group-hover:text-[#D4FF00] transition-colors font-sans truncate mr-2">
-                      {product.title}
-                    </span>
-                    <span className="font-mono text-sm text-gray-200 whitespace-nowrap">
-                      ${product.price.toLocaleString('es-MX')}
-                    </span>
+                  {/* Quick Add Button */}
+                  <div className="absolute bottom-3 right-3 z-20">
+                    <button
+                      onClick={(e) => handleQuickAdd(product, e)}
+                      aria-label={`Agregar ${product.title} a la bolsa`}
+                      className={`w-10 h-10 flex items-center justify-center transition-all duration-200 cursor-pointer ${
+                        isJustAdded
+                          ? 'bg-[#D4FF00] text-black scale-110'
+                          : 'bg-black/90 hover:bg-[#D4FF00] text-white hover:text-black border border-white/20 hover:border-transparent'
+                      }`}
+                    >
+                      {isJustAdded ? (
+                        <Check className="w-5 h-5 stroke-[2.5]" />
+                      ) : (
+                        <Plus className="w-5 h-5 stroke-[2.5]" />
+                      )}
+                    </button>
                   </div>
 
-                  {/* Specs Subtext */}
-                  {product.specs && (
-                    <div className="text-xs text-gray-400 font-sans tracking-normal">
-                      {product.specs}
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                </div>
+
+                {/* Product Meta */}
+                <div className="mt-4 flex flex-col space-y-1.5 flex-1 justify-between">
+                  <div>
+                    <div className="flex justify-between items-start gap-2">
+                      <h3 className="font-sans font-bold text-base text-white group-hover:text-[#D4FF00] transition-colors leading-snug">
+                        {product.title}
+                      </h3>
+                      <span className="font-mono text-sm font-semibold text-white shrink-0">
+                        ${product.price.toLocaleString('es-MX')}
+                      </span>
                     </div>
-                  )}
+
+                    {product.specs && (
+                      <p className="text-xs text-gray-500 font-mono mt-0.5 line-clamp-1">
+                        {product.specs}
+                      </p>
+                    )}
+                  </div>
 
                   {/* Color Swatches */}
                   {product.colors && product.colors.length > 0 && (
-                    <div className="flex items-center space-x-2 pt-1.5">
-                      {product.colors.map((color, cIdx) => {
-                        const isSelected = currentColor === color
-                        return (
-                          <button
-                            key={cIdx}
-                            onClick={(e) => handleColorClick(product.id, color, e)}
-                            aria-label={`Seleccionar color ${color}`}
-                            className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${
-                              isSelected
-                                ? 'ring-1 ring-offset-2 ring-offset-black ring-white scale-110'
-                                : 'opacity-70 hover:opacity-100 hover:scale-105'
-                            }`}
-                            style={{ backgroundColor: color }}
-                          />
-                        )
-                      })}
+                    <div className="flex items-center space-x-1.5 pt-2">
+                      {product.colors.map((color) => (
+                        <button
+                          key={color}
+                          onClick={(e) => handleColorClick(product.id, color, e)}
+                          className={`w-3.5 h-3.5 rounded-full border transition-all cursor-pointer ${
+                            currentColor === color
+                              ? 'border-[#D4FF00] scale-125'
+                              : 'border-[#333333] hover:border-white'
+                          }`}
+                          style={{ backgroundColor: color }}
+                          aria-label={`Color ${color}`}
+                        />
+                      ))}
                     </div>
                   )}
-
                 </div>
               </div>
             )
@@ -244,4 +194,3 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
     </section>
   )
 }
-

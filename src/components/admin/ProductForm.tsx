@@ -11,6 +11,7 @@ import {
   Package,
   Layers,
   Sparkles,
+  Star,
 } from 'lucide-react'
 import type { Product } from '../../types/database.types'
 
@@ -54,6 +55,7 @@ export const ProductForm = ({
   const [collection, setCollection] = useState('Drop 004')
   const [status, setStatus] = useState<'borrador' | 'publicado'>('publicado')
   const [inOnlineStore, setInOnlineStore] = useState(true)
+  const [isFeatured, setIsFeatured] = useState<boolean>(initialProduct?.is_featured ?? true)
 
   // Multi-Image Gallery State (Up to 6 images)
   const [images, setImages] = useState<string[]>(() => {
@@ -235,7 +237,7 @@ export const ProductForm = ({
       image_url: currentCover,
       images: images,
       stock: totalStock,
-      is_featured: true,
+      is_featured: isFeatured,
       created_at: initialProduct?.created_at,
     }
 
@@ -628,6 +630,25 @@ export const ProductForm = ({
                   <option value="white">Blanco (#FFFFFF)</option>
                 </select>
               </div>
+            </div>
+
+            {/* Toggle: En "Los Más Buscados" (Portada) */}
+            <div className="p-4 bg-[#141414] border border-[#262626] flex items-center justify-between gap-4 mt-2">
+              <div className="space-y-0.5">
+                <label className="text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                  <Star className={`w-3.5 h-3.5 ${isFeatured ? 'fill-[#D4FF00] text-[#D4FF00]' : 'text-gray-500'}`} />
+                  <span>MOSTRAR EN "LOS MÁS BUSCADOS" (PORTADA)</span>
+                </label>
+                <p className="text-[11px] text-gray-400 font-sans">
+                  Activa esta opción para que este producto aparezca destacado en la sección principal de la tienda.
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={isFeatured}
+                onChange={(e) => setIsFeatured(e.target.checked)}
+                className="w-5 h-5 accent-[#D4FF00] cursor-pointer shrink-0"
+              />
             </div>
 
           </div>

@@ -21,10 +21,6 @@ export const Navbar = ({ cartCount, onOpenCart, onSelectCategory, onOpenAdmin }:
     }
     setMobileMenuOpen(false)
     setCapsDropdownOpen(false)
-    const element = document.getElementById('catalogo')
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' })
-    }
   }
 
   return (
@@ -33,11 +29,14 @@ export const Navbar = ({ cartCount, onOpenCart, onSelectCategory, onOpenAdmin }:
         <div className="flex items-center justify-between h-20">
 
           {/* Brand Logo */}
-          <a href="#" className="flex items-center group">
+          <button
+            onClick={() => handleNavClick('todos')}
+            className="flex items-center group cursor-pointer text-left"
+          >
             <span className="font-display text-4xl sm:text-5xl tracking-tighter font-extrabold text-white group-hover:text-[#D4FF00] transition-colors leading-none">
               gj.
             </span>
-          </a>
+          </button>
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center space-x-8 text-sm font-medium tracking-wide">

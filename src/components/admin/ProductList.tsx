@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   X,
   CheckCircle,
+  Star,
 } from 'lucide-react'
 import type { Product } from '../../types/database.types'
 
@@ -18,6 +19,7 @@ interface ProductListProps {
   onEditProduct?: (product: Product) => void
   onDeleteProduct?: (productId: string) => void
   onViewProductInStore?: (product: Product) => void
+  onToggleFeatured?: (productId: string) => void
 }
 
 export const ProductList = ({
@@ -26,6 +28,7 @@ export const ProductList = ({
   onEditProduct,
   onDeleteProduct,
   onViewProductInStore,
+  onToggleFeatured,
 }: ProductListProps) => {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('todos')
@@ -129,13 +132,14 @@ export const ProductList = ({
                 <th className="py-3 px-4">PRECIO</th>
                 <th className="py-3 px-4">EXISTENCIAS</th>
                 <th className="py-3 px-4">ETIQUETA</th>
+                <th className="py-3 px-4 text-center">EN "MÁS BUSCADOS"</th>
                 <th className="py-3 px-4 text-right">ACCIONES</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1b1b1b]">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-gray-500">
+                  <td colSpan={7} className="py-12 text-center text-gray-500">
                     <Package className="w-8 h-8 mx-auto mb-2 opacity-40" />
                     No se encontraron productos coincidentes.
                   </td>
@@ -201,6 +205,31 @@ export const ProductList = ({
                         ) : (
                           <span className="text-gray-600">—</span>
                         )}
+                      </td>
+
+                      {/* Toggle En Portada / Más Buscados */}
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => onToggleFeatured?.(product.id)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider rounded-sm transition-all cursor-pointer ${
+                            product.is_featured
+                              ? 'bg-[#D4FF00] text-black shadow-sm shadow-[#D4FF00]/25'
+                              : 'bg-[#181818] text-gray-500 hover:text-white border border-[#282828] hover:border-gray-500'
+                          }`}
+                          title={
+                            product.is_featured
+                              ? 'En portada (Haz clic para quitar de Los más buscados)'
+                              : 'No mostrado en portada (Haz clic para poner en Los más buscados)'
+                          }
+                        >
+                          <Star
+                            className={`w-3 h-3 ${
+                              product.is_featured ? 'fill-black text-black' : 'text-gray-500'
+                            }`}
+                          />
+                          <span>{product.is_featured ? 'EN PORTADA' : 'NO'}</span>
+                        </button>
                       </td>
 
                       {/* Actions */}
