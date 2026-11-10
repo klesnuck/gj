@@ -5,7 +5,6 @@ import { Hero } from './components/Hero'
 import { MarqueeTicker } from './components/MarqueeTicker'
 import { FeaturedProducts } from './components/FeaturedProducts'
 import { CategoriesBanner } from './components/CategoriesBanner'
-import { EditorialSection } from './components/EditorialSection'
 import { Newsletter } from './components/Newsletter'
 import { Footer } from './components/Footer'
 import { CartDrawer } from './components/CartDrawer'
@@ -622,12 +621,7 @@ export function App() {
           onSelectCategory={handleOpenCategory}
         />
 
-        {/* 7. 03 / RECIÉN ATERRIZADO - Editorial */}
-        <EditorialSection
-          onDiscoverNews={handleShopDrop}
-        />
-
-        {/* 8. Newsletter (ENTRA AL CÍRCULO) */}
+        {/* 7. Newsletter (ENTRA AL CÍRCULO) */}
         <Newsletter />
       </main>
 
