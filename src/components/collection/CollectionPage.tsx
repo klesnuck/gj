@@ -3,11 +3,15 @@ import { ArrowLeft, Plus, Check, Filter } from 'lucide-react'
 import { AnnouncementBar } from '../AnnouncementBar'
 import { Navbar } from '../Navbar'
 import { Footer } from '../Footer'
-import type { Product } from '../../types/database.types'
+import { QuickViewModal } from '../QuickViewModal'
+import { CartDrawer } from '../CartDrawer'
+import type { Product, CartItem, Coupon } from '../../types/database.types'
 import { resolveColorHex } from '../../lib/colors'
+import { getCapBrands } from '../../lib/brands'
 
 interface CollectionPageProps {
   products: Product[]
+  allProducts?: Product[]
   activeCategory: string
   onSelectCategory: (category: string) => void
   onAddToCart: (product: Product, selectedColor?: string, selectedSize?: string) => void
@@ -16,10 +20,19 @@ interface CollectionPageProps {
   cartCount: number
   onOpenCart: () => void
   onOpenAdmin?: () => void
+  selectedProduct?: Product | null
+  onCloseProduct?: () => void
+  isCartOpen?: boolean
+  onCloseCart?: () => void
+  cartItems?: CartItem[]
+  onUpdateQuantity?: (productId: string, quantity: number, size?: string, color?: string) => void
+  onRemoveItem?: (productId: string, size?: string, color?: string) => void
+  coupons?: Coupon[]
 }
 
 export const CollectionPage: React.FC<CollectionPageProps> = ({
   products,
+  allProducts = [],
   activeCategory,
   onSelectCategory,
   onAddToCart,
@@ -28,6 +41,14 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
   cartCount,
   onOpenCart,
   onOpenAdmin,
+  selectedProduct,
+  onCloseProduct,
+  isCartOpen,
+  onCloseCart,
+  cartItems,
+  onUpdateQuantity,
+  onRemoveItem,
+  coupons = [],
 }) => {
   const [selectedColors, setSelectedColors] = useState<Record<string, string>>({})
   const [addedAnimation, setAddedAnimation] = useState<string | null>(null)
@@ -35,6 +56,15 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
   const isRopa = activeCategory.toLowerCase() === 'ropa'
   const isGorra = activeCategory.toLowerCase().startsWith('gorras')
   const isAccesorios = activeCategory.toLowerCase() === 'accesorios'
+
+  // Dynamic cap brands
+  const capBrandOptions = [
+    { id: 'gorras', label: 'Todas las gorras' },
+    ...getCapBrands(allProducts.length > 0 ? allProducts : products).map((b) => ({
+      id: b.id,
+      label: b.name,
+    })),
+  ]
 
   // Determine Title & Subtitle
   let collectionTitle = 'CATÁLOGO'
@@ -62,8 +92,13 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
 
   const handleQuickAdd = (product: Product, e: React.MouseEvent) => {
     e.stopPropagation()
+    // Si la prenda tiene tallas (ropa, playeras, sudaderas), abre el selector para elegir talla
+    if (product.category !== 'gorras') {
+      onSelectProduct(product)
+      return
+    }
     const color = selectedColors[product.id] || (product.colors && product.colors[0])
-    onAddToCart(product, color)
+    onAddToCart(product, color, 'Unitalla')
 
     setAddedAnimation(product.id)
     setTimeout(() => {
@@ -82,6 +117,7 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
         cartCount={cartCount}
         onOpenCart={onOpenCart}
         onSelectCategory={onSelectCategory}
+        products={allProducts.length > 0 ? allProducts : products}
       />
 
       {/* Main Collection Container */}
@@ -144,13 +180,7 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
             </div>
 
             <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none pb-1 sm:pb-0">
-              {[
-                { id: 'gorras', label: 'Todas las gorras' },
-                { id: 'gorras:gj', label: 'GJ Signature' },
-                { id: 'gorras:new era', label: 'New Era' },
-                { id: 'gorras:mitchell', label: 'Mitchell & Ness' },
-                { id: 'gorras:47', label: '47 Brand' },
-              ].map((brand) => {
+              {capBrandOptions.map((brand) => {
                 const isActive = activeCategory.toLowerCase() === brand.id.toLowerCase()
                 return (
                   <button
@@ -346,6 +376,35 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
         onSelectCategory={onSelectCategory}
         onOpenAdmin={onOpenAdmin}
       />
+
+      {/* Quick View Product Modal (Opens immediately when clicking any piece in collection) */}
+      {selectedProduct && onCloseProduct && (
+        <QuickViewModal
+          product={selectedProduct}
+          onClose={onCloseProduct}
+          onAddToCart={onAddToCart}
+        />
+      )}
+
+      {/* Cart Drawer */}
+      {isCartOpen !== undefined && onCloseCart && cartItems && onUpdateQuantity && onRemoveItem && (
+        <CartDrawer
+          isOpen={isCartOpen}
+          onClose={onCloseCart}
+          items={cartItems}
+          onUpdateQuantity={onUpdateQuantity}
+          onRemoveItem={onRemoveItem}
+          coupons={coupons}
+          onOpenFullCart={() => {
+            onCloseCart()
+            window.location.hash = 'cart'
+          }}
+          onProceedToCheckout={() => {
+            onCloseCart()
+            window.location.hash = 'checkout'
+          }}
+        />
+      )}
 
     </div>
   )

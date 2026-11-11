@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { AnnouncementBar } from './components/AnnouncementBar'
 import { Navbar } from './components/Navbar'
 import { Hero } from './components/Hero'
@@ -42,6 +42,7 @@ import {
   deleteCoupon,
 } from './lib/supabase'
 import { decrementProductStock, parseSizeStocks } from './lib/stock'
+import { filterProductsByCategory } from './lib/brands'
 import type { Product, CartItem, Order, Customer, Coupon, OrderItem } from './types/database.types'
 
 export function App() {
@@ -146,7 +147,7 @@ export function App() {
 
   // Load live data from Supabase
   const reloadProducts = async () => {
-    const data = await fetchProducts(activeCategory)
+    const data = await fetchProducts('todos')
     setProducts(data)
   }
 
@@ -156,7 +157,7 @@ export function App() {
       try {
         const oData = await fetchOrders()
         const [pData, cData, coupData] = await Promise.all([
-          fetchProducts(activeCategory),
+          fetchProducts('todos'),
           fetchCustomers(oData),
           fetchCoupons(),
         ])
@@ -174,7 +175,18 @@ export function App() {
     return () => {
       isMounted = false
     }
-  }, [activeCategory])
+  }, [])
+
+  // In-memory instant filtering: 0ms lag when switching categories or brands
+  const filteredProducts = useMemo(
+    () => filterProductsByCategory(products, activeCategory),
+    [products, activeCategory]
+  )
+
+  // Keep selectedProduct in sync with live stock
+  const activeSelectedProduct = selectedProduct
+    ? products.find((p) => p.id === selectedProduct.id) || selectedProduct
+    : null
 
   // Admin Handlers
   const handleSaveProduct = async (productData: Partial<Product>): Promise<boolean> => {
@@ -395,9 +407,11 @@ export function App() {
 
   // Cart operations
   const handleAddToCart = (product: Product, selectedColor?: string, selectedSize?: string) => {
-    const size = selectedSize || (product.category === 'gorras' ? 'Unitalla' : 'S')
+    const isCap = product.category === 'gorras'
+    const size = (selectedSize || (isCap ? 'Unitalla' : 'S')).trim()
+    const color = (selectedColor || product.colors?.[0] || 'default').trim()
     const sizeStocks = parseSizeStocks(product.specs, product.stock ?? 0)
-    const maxAvailable = product.category === 'gorras'
+    const maxAvailable = isCap
       ? (product.stock ?? 0)
       : (sizeStocks[size.toUpperCase()] ?? (product.stock ?? 0))
 
@@ -410,8 +424,8 @@ export function App() {
       const existingIndex = prev.findIndex(
         (item) =>
           item.product.id === product.id &&
-          item.selectedColor === selectedColor &&
-          item.selectedSize === size
+          (item.selectedSize || (isCap ? 'Unitalla' : 'S')).trim().toUpperCase() === size.toUpperCase() &&
+          (item.selectedColor || product.colors?.[0] || 'default').trim().toLowerCase() === color.toLowerCase()
       )
 
       if (existingIndex > -1) {
@@ -421,7 +435,10 @@ export function App() {
           return prev
         }
         const next = [...prev]
-        next[existingIndex].quantity += 1
+        next[existingIndex] = {
+          ...next[existingIndex],
+          quantity: currentQty + 1,
+        }
         return next
       } else {
         return [
@@ -429,7 +446,7 @@ export function App() {
           {
             product,
             quantity: 1,
-            selectedColor: selectedColor || (product.colors && product.colors[0]),
+            selectedColor: color,
             selectedSize: size,
           },
         ]
@@ -438,22 +455,26 @@ export function App() {
     setIsCartOpen(true)
   }
 
-  const handleUpdateQuantity = (productId: string, quantity: number) => {
+  const handleUpdateQuantity = (productId: string, quantity: number, size?: string, color?: string) => {
     if (quantity <= 0) {
-      handleRemoveItem(productId)
+      handleRemoveItem(productId, size, color)
       return
     }
     setCartItems((prev) =>
       prev.map((item) => {
-        if (item.product.id === productId) {
-          const size = item.selectedSize || (item.product.category === 'gorras' ? 'Unitalla' : 'S')
+        const matchesProduct = item.product.id === productId
+        const matchesSize = !size || (item.selectedSize || '').trim().toUpperCase() === size.trim().toUpperCase()
+        const matchesColor = !color || (item.selectedColor || '').trim().toLowerCase() === color.trim().toLowerCase()
+
+        if (matchesProduct && matchesSize && matchesColor) {
+          const itemSize = item.selectedSize || (item.product.category === 'gorras' ? 'Unitalla' : 'S')
           const sizeStocks = parseSizeStocks(item.product.specs, item.product.stock ?? 0)
           const maxAvailable = item.product.category === 'gorras'
             ? (item.product.stock ?? 0)
-            : (sizeStocks[size.toUpperCase()] ?? (item.product.stock ?? 0))
+            : (sizeStocks[itemSize.toUpperCase()] ?? (item.product.stock ?? 0))
 
           if (quantity > maxAvailable) {
-            alert(`Solo hay ${maxAvailable} piezas disponibles para la talla ${size}.`)
+            alert(`Solo hay ${maxAvailable} piezas disponibles para la talla ${itemSize}.`)
             return { ...item, quantity: maxAvailable }
           }
           return { ...item, quantity }
@@ -463,8 +484,15 @@ export function App() {
     )
   }
 
-  const handleRemoveItem = (productId: string) => {
-    setCartItems((prev) => prev.filter((item) => item.product.id !== productId))
+  const handleRemoveItem = (productId: string, size?: string, color?: string) => {
+    setCartItems((prev) =>
+      prev.filter((item) => {
+        const matchesProduct = item.product.id === productId
+        const matchesSize = !size || (item.selectedSize || '').trim().toUpperCase() === size.trim().toUpperCase()
+        const matchesColor = !color || (item.selectedColor || '').trim().toLowerCase() === color.trim().toLowerCase()
+        return !(matchesProduct && matchesSize && matchesColor)
+      })
+    )
   }
 
   const totalCartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0)
@@ -522,6 +550,7 @@ export function App() {
                   setEditingProduct(null)
                 }}
                 onDeleteProduct={handleDeleteProduct}
+                products={products}
               />
             ) : (
               <ProductList
@@ -636,7 +665,8 @@ export function App() {
   if (currentView === 'collection') {
     return (
       <CollectionPage
-        products={products}
+        products={filteredProducts}
+        allProducts={products}
         activeCategory={activeCategory}
         onSelectCategory={handleOpenCategory}
         onAddToCart={(product, color, size) => handleAddToCart(product, color, size)}
@@ -654,6 +684,14 @@ export function App() {
           window.location.hash = 'admin'
           setCurrentView('admin')
         }}
+        selectedProduct={activeSelectedProduct}
+        onCloseProduct={() => setSelectedProduct(null)}
+        isCartOpen={isCartOpen}
+        onCloseCart={() => setIsCartOpen(false)}
+        cartItems={cartItems}
+        onUpdateQuantity={handleUpdateQuantity}
+        onRemoveItem={handleRemoveItem}
+        coupons={coupons}
       />
     )
   }
@@ -672,6 +710,7 @@ export function App() {
           setCurrentView('cart')
         }}
         onSelectCategory={handleOpenCategory}
+        products={products}
       />
 
       <main className="flex-1">
@@ -732,7 +771,7 @@ export function App() {
 
       {/* Quick View Product Modal */}
       <QuickViewModal
-        product={selectedProduct}
+        product={activeSelectedProduct}
         onClose={() => setSelectedProduct(null)}
         onAddToCart={handleAddToCart}
       />

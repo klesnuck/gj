@@ -6,8 +6,8 @@ interface CartDrawerProps {
   isOpen: boolean
   onClose: () => void
   items: CartItem[]
-  onUpdateQuantity: (productId: string, quantity: number) => void
-  onRemoveItem: (productId: string) => void
+  onUpdateQuantity: (productId: string, quantity: number, size?: string, color?: string) => void
+  onRemoveItem: (productId: string, size?: string, color?: string) => void
   coupons?: Coupon[]
   onOpenFullCart?: () => void
   onProceedToCheckout?: () => void
@@ -155,72 +155,82 @@ export const CartDrawer = ({
                 </button>
               </div>
             ) : (
-              items.map((item) => (
-                <div
-                  key={item.product.id}
-                  className="flex gap-4 p-3 bg-[#131313] border border-[#222222] rounded-none"
-                >
-                  {/* Item Image */}
-                  <img
-                    src={item.product.image_url}
-                    alt={item.product.title}
-                    className="w-20 h-20 object-cover bg-black shrink-0"
-                  />
+              items.map((item) => {
+                const itemKey = `${item.product.id}-${item.selectedSize || 'u'}-${item.selectedColor || 'c'}`
+                return (
+                  <div
+                    key={itemKey}
+                    className="flex gap-4 p-3 bg-[#131313] border border-[#222222] rounded-none"
+                  >
+                    {/* Item Image */}
+                    <img
+                      src={item.product.image_url}
+                      alt={item.product.title}
+                      className="w-20 h-20 object-cover bg-black shrink-0"
+                    />
 
-                  {/* Item Details */}
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-start">
-                        <h4 className="text-sm font-semibold text-white font-sans truncate max-w-[170px]">
-                          {item.product.title}
-                        </h4>
-                        <button
-                          onClick={() => onRemoveItem(item.product.id)}
-                          className="text-gray-500 hover:text-red-400 p-1"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      {item.selectedColor && (
-                        <div className="flex items-center space-x-1.5 mt-1">
-                          <span
-                            className="w-2.5 h-2.5 rounded-full inline-block border border-white/20"
-                            style={{ backgroundColor: item.selectedColor }}
-                          />
-                          <span className="text-[11px] font-mono text-gray-400">Color seleccionado</span>
+                    {/* Item Details */}
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start">
+                          <h4 className="text-sm font-semibold text-white font-sans truncate max-w-[170px]">
+                            {item.product.title}
+                          </h4>
+                          <button
+                            onClick={() => onRemoveItem(item.product.id, item.selectedSize, item.selectedColor)}
+                            className="text-gray-500 hover:text-red-400 p-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                      )}
-                    </div>
 
-                    <div className="flex justify-between items-center pt-2">
-                      {/* Quantity Modifier */}
-                      <div className="flex items-center border border-[#2b2b2b] bg-[#1a1a1a]">
-                        <button
-                          onClick={() => onUpdateQuantity(item.product.id, item.quantity - 1)}
-                          className="px-2 py-0.5 text-xs text-gray-400 hover:text-white"
-                        >
-                          -
-                        </button>
-                        <span className="px-2 text-xs font-mono text-white">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => onUpdateQuantity(item.product.id, item.quantity + 1)}
-                          className="px-2 py-0.5 text-xs text-gray-400 hover:text-white"
-                        >
-                          +
-                        </button>
+                        <div className="flex items-center gap-2 mt-1">
+                          {item.selectedSize && (
+                            <span className="text-[11px] font-mono text-[#D4FF00] font-bold">
+                              Talla {item.selectedSize}
+                            </span>
+                          )}
+
+                          {item.selectedColor && (
+                            <div className="flex items-center space-x-1.5">
+                              <span
+                                className="w-2.5 h-2.5 rounded-full inline-block border border-white/20"
+                                style={{ backgroundColor: item.selectedColor }}
+                              />
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Price */}
-                      <span className="font-mono text-sm text-[#D4FF00] font-semibold">
-                        ${(item.product.price * item.quantity).toLocaleString('es-MX')}
-                      </span>
+                      <div className="flex justify-between items-center pt-2">
+                        {/* Quantity Modifier */}
+                        <div className="flex items-center border border-[#2b2b2b] bg-[#1a1a1a]">
+                          <button
+                            onClick={() => onUpdateQuantity(item.product.id, item.quantity - 1, item.selectedSize, item.selectedColor)}
+                            className="px-2.5 py-0.5 text-xs text-gray-400 hover:text-white cursor-pointer"
+                          >
+                            -
+                          </button>
+                          <span className="px-2 text-xs font-mono text-white font-bold">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => onUpdateQuantity(item.product.id, item.quantity + 1, item.selectedSize, item.selectedColor)}
+                            className="px-2.5 py-0.5 text-xs text-gray-400 hover:text-white cursor-pointer"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        {/* Price */}
+                        <span className="font-mono text-sm text-[#D4FF00] font-semibold">
+                          ${(item.product.price * item.quantity).toLocaleString('es-MX')}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
 

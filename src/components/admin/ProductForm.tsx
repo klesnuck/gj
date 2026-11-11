@@ -17,12 +17,14 @@ import {
 import type { Product } from '../../types/database.types'
 import { getColorHexFromName } from '../../lib/colors'
 import { parseSizeStocks } from '../../lib/stock'
+import { getAllKnownBrands, saveCustomBrand } from '../../lib/brands'
 
 interface ProductFormProps {
   onSaveProduct: (productData: Partial<Product>) => Promise<boolean>
   onCancel: () => void
   initialProduct?: Product | null
   onDeleteProduct?: (productId: string) => void
+  products?: Product[]
 }
 
 interface VariantRow {
@@ -37,6 +39,7 @@ export const ProductForm = ({
   onCancel,
   initialProduct,
   onDeleteProduct,
+  products = [],
 }: ProductFormProps) => {
   const isEditing = Boolean(initialProduct)
 
@@ -267,6 +270,9 @@ export const ProductForm = ({
     const ok = await onSaveProduct(productPayload)
     setIsSubmitting(false)
     if (ok) {
+      if (brand && brand.trim()) {
+        saveCustomBrand(brand.trim())
+      }
       setStatus(newStatus)
       setSavedSuccess(true)
       setTimeout(() => setSavedSuccess(false), 2500)
@@ -611,27 +617,33 @@ export const ProductForm = ({
                 </span>
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <select
-                  value={['GJ', 'New Era', 'Mitchell & Ness', '47 Brand'].includes(brand) ? brand : 'otro'}
-                  onChange={(e) => {
-                    if (e.target.value !== 'otro') {
-                      setBrand(e.target.value)
-                    }
-                  }}
-                  className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-sans text-white focus:outline-none cursor-pointer"
-                >
-                  <option value="GJ">GJ Signature / Oficial</option>
-                  <option value="New Era">New Era</option>
-                  <option value="Mitchell & Ness">Mitchell & Ness</option>
-                  <option value="47 Brand">47 Brand</option>
-                  <option value="otro">Otra marca...</option>
-                </select>
+                {(() => {
+                  const knownBrands = getAllKnownBrands(products)
+                  return (
+                    <select
+                      value={knownBrands.includes(brand) ? brand : 'otro'}
+                      onChange={(e) => {
+                        if (e.target.value !== 'otro') {
+                          setBrand(e.target.value)
+                        }
+                      }}
+                      className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-sans text-white focus:outline-none cursor-pointer"
+                    >
+                      {knownBrands.map((b) => (
+                        <option key={b} value={b}>
+                          {b === 'GJ' ? 'GJ Signature / Oficial' : b}
+                        </option>
+                      ))}
+                      <option value="otro">+ Escribir otra marca...</option>
+                    </select>
+                  )
+                })()}
 
                 <input
                   type="text"
                   value={brand}
                   onChange={(e) => setBrand(e.target.value)}
-                  placeholder="Nombre de la marca..."
+                  placeholder="Nombre de la marca (ej. Supreme, Nike, Goorin Bros)..."
                   className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-mono text-white focus:outline-none"
                 />
               </div>

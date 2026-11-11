@@ -19,8 +19,8 @@ import type { CartItem, Coupon } from '../../types/database.types'
 
 interface CartPageProps {
   items: CartItem[]
-  onUpdateQuantity: (productId: string, quantity: number) => void
-  onRemoveItem: (productId: string) => void
+  onUpdateQuantity: (productId: string, quantity: number, size?: string, color?: string) => void
+  onRemoveItem: (productId: string, size?: string, color?: string) => void
   onContinueShopping: () => void
   onProceedToCheckout: () => void
   appliedCoupon: Coupon | null
@@ -314,7 +314,7 @@ export const CartPage: React.FC<CartPageProps> = ({
                           <div className="inline-flex items-center border border-[#2b2b2b] bg-[#111111] text-xs font-mono">
                             <button
                               onClick={() =>
-                                onUpdateQuantity(item.product.id, Math.max(1, item.quantity - 1))
+                                onUpdateQuantity(item.product.id, Math.max(1, item.quantity - 1), item.selectedSize, item.selectedColor)
                               }
                               className="px-2.5 py-1.5 hover:bg-[#202020] hover:text-[#D4FF00] transition-colors cursor-pointer text-gray-400"
                               title="Restar una unidad"
@@ -326,7 +326,7 @@ export const CartPage: React.FC<CartPageProps> = ({
                             </span>
                             <button
                               onClick={() =>
-                                onUpdateQuantity(item.product.id, item.quantity + 1)
+                                onUpdateQuantity(item.product.id, item.quantity + 1, item.selectedSize, item.selectedColor)
                               }
                               className="px-2.5 py-1.5 hover:bg-[#202020] hover:text-[#D4FF00] transition-colors cursor-pointer text-gray-400"
                               title="Sumar una unidad"
@@ -336,7 +336,7 @@ export const CartPage: React.FC<CartPageProps> = ({
                           </div>
 
                           <button
-                            onClick={() => onRemoveItem(item.product.id)}
+                            onClick={() => onRemoveItem(item.product.id, item.selectedSize, item.selectedColor)}
                             className="inline-flex items-center gap-1 text-[11px] font-mono text-gray-400 hover:text-red-400 transition-colors cursor-pointer pt-0.5"
                           >
                             <Trash2 className="w-3 h-3" />

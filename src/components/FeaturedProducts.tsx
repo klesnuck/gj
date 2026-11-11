@@ -33,6 +33,11 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
 
   const handleQuickAdd = (product: Product, e: React.MouseEvent) => {
     e.stopPropagation()
+    // Si la prenda tiene tallas (ropa, playeras, sudaderas), abre el selector para elegir talla
+    if (product.category !== 'gorras') {
+      onSelectProduct(product)
+      return
+    }
     const color = selectedColors[product.id] || (product.colors && product.colors[0])
     onAddToCart(product, color)
 

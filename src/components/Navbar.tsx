@@ -1,18 +1,23 @@
 import { useState } from 'react'
 import { Search, ShoppingBag, Menu, X, ChevronDown } from 'lucide-react'
+import { getCapBrands } from '../lib/brands'
+import type { Product } from '../types/database.types'
 
 interface NavbarProps {
   cartCount: number
   onOpenCart: () => void
   onSelectCategory?: (category: string) => void
+  products?: Product[]
 }
 
-export const Navbar = ({ cartCount, onOpenCart, onSelectCategory }: NavbarProps) => {
+export const Navbar = ({ cartCount, onOpenCart, onSelectCategory, products = [] }: NavbarProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [capsDropdownOpen, setCapsDropdownOpen] = useState(false)
   const [mobileCapsOpen, setMobileCapsOpen] = useState(false)
+
+  const capBrands = getCapBrands(products)
 
   const handleNavClick = (category: string) => {
     if (onSelectCategory) {
@@ -89,12 +94,7 @@ export const Navbar = ({ cartCount, onOpenCart, onSelectCategory }: NavbarProps)
                     </div>
 
                     <div className="space-y-0.5">
-                      {[
-                        { id: 'gorras:gj', name: 'GJ Signature' },
-                        { id: 'gorras:new era', name: 'New Era' },
-                        { id: 'gorras:mitchell', name: 'Mitchell & Ness' },
-                        { id: 'gorras:47', name: '47 Brand' },
-                      ].map((brand) => (
+                      {capBrands.map((brand) => (
                         <button
                           key={brand.id}
                           onClick={() => handleNavClick(brand.id)}
@@ -213,16 +213,11 @@ export const Navbar = ({ cartCount, onOpenCart, onSelectCategory }: NavbarProps)
                   <div className="text-[10px] text-gray-400 uppercase tracking-widest pt-1 font-semibold">
                     Por marca:
                   </div>
-                  {[
-                    { id: 'gorras:gj', name: 'GJ Signature' },
-                    { id: 'gorras:new era', name: 'New Era' },
-                    { id: 'gorras:mitchell', name: 'Mitchell & Ness' },
-                    { id: 'gorras:47', name: '47 Brand' },
-                  ].map((brand) => (
+                  {capBrands.map((brand) => (
                     <button
                       key={brand.id}
                       onClick={() => handleNavClick(brand.id)}
-                      className="block text-left text-gray-400 hover:text-[#D4FF00] pl-2"
+                      className="block text-left text-gray-400 hover:text-[#D4FF00] pl-2 cursor-pointer"
                     >
                       {brand.name}
                     </button>

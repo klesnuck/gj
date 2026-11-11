@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X, Check, ShoppingBag, ArrowUpRight } from 'lucide-react'
 import type { Product } from '../types/database.types'
 import { resolveColorHex } from '../lib/colors'
@@ -17,7 +17,10 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 }) => {
   if (!product) return null
 
-  const isClothing = product.category === 'playeras' || product.category === 'hoodies'
+  const isClothing =
+    product.category === 'playeras' ||
+    product.category === 'hoodies' ||
+    (product.category as string) === 'ropa'
   const allSizes = isClothing ? ['S', 'M', 'L', 'XL'] : ['UNITALLA / AJUSTABLE']
   const sizeStocks = parseSizeStocks(product.specs, product.stock ?? 0)
 
@@ -39,6 +42,13 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     product.colors && product.colors[0] ? product.colors[0] : '#111111'
   )
   const [added, setAdded] = useState(false)
+
+  // Reset variant selection whenever opened product changes
+  useEffect(() => {
+    setSelectedSize(firstAvailable)
+    setSelectedColor(product.colors && product.colors[0] ? product.colors[0] : '#111111')
+    setActiveImageIndex(0)
+  }, [product.id, firstAvailable])
 
   // Multi-image gallery in QuickView
   const productImages =
