@@ -8,6 +8,7 @@ import { CartDrawer } from '../CartDrawer'
 import type { Product, CartItem, Coupon } from '../../types/database.types'
 import { resolveColorHex } from '../../lib/colors'
 import { getCapBrands } from '../../lib/brands'
+import { isProductSoldOut } from '../../lib/stock'
 
 interface CollectionPageProps {
   products: Product[]
@@ -92,6 +93,7 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
 
   const handleQuickAdd = (product: Product, e: React.MouseEvent) => {
     e.stopPropagation()
+    if (isProductSoldOut(product)) return
     // Si la prenda tiene tallas (ropa, playeras, sudaderas), abre el selector para elegir talla
     if (product.category !== 'gorras') {
       onSelectProduct(product)
@@ -255,29 +257,41 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
               const currentColor =
                 selectedColors[product.id] || (product.colors && product.colors[0])
               const isJustAdded = addedAnimation === product.id
+              const isSoldOut = isProductSoldOut(product)
 
               return (
                 <div
                   key={product.id}
-                  onClick={() => onSelectProduct(product)}
-                  className="group flex flex-col cursor-pointer transition-transform duration-300"
+                  onClick={() => !isSoldOut && onSelectProduct(product)}
+                  className={`group flex flex-col transition-all duration-300 ${
+                    isSoldOut ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'
+                  }`}
+                  aria-disabled={isSoldOut}
                 >
                   {/* Product Image Box */}
                   <div className="relative w-full aspect-square bg-[#141414] overflow-hidden border border-[#202020] group-hover:border-[#383838] transition-colors">
                     
                     {/* Badge */}
-                    {product.tag && (
-                      <div className="absolute top-3 left-3 z-20">
-                        <span
-                          className={`inline-block px-2.5 py-1 text-[10px] font-mono font-bold tracking-widest uppercase ${
-                            product.tag_type === 'lime'
-                              ? 'bg-[#D4FF00] text-black'
-                              : 'bg-white text-black'
-                          }`}
-                        >
-                          {product.tag}
+                    {isSoldOut ? (
+                      <div className="absolute top-3 left-3 z-30">
+                        <span className="inline-block px-2.5 py-1 text-[10px] font-mono font-black tracking-widest uppercase bg-red-600 text-white border border-red-500 shadow-md">
+                          AGOTADO
                         </span>
                       </div>
+                    ) : (
+                      product.tag && (
+                        <div className="absolute top-3 left-3 z-20">
+                          <span
+                            className={`inline-block px-2.5 py-1 text-[10px] font-mono font-bold tracking-widest uppercase ${
+                              product.tag_type === 'lime'
+                                ? 'bg-[#D4FF00] text-black'
+                                : 'bg-white text-black'
+                            }`}
+                          >
+                            {product.tag}
+                          </span>
+                        </div>
+                      )
                     )}
 
                     {/* Brand Pill */}
@@ -289,35 +303,48 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
                       </div>
                     )}
 
+                    {/* Center Watermark if Sold Out */}
+                    {isSoldOut && (
+                      <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex items-center justify-center z-25 pointer-events-none">
+                        <span className="px-3.5 py-1.5 bg-black/95 text-red-400 border border-red-500/80 font-mono font-black text-xs uppercase tracking-widest shadow-2xl">
+                          PIEZA AGOTADA
+                        </span>
+                      </div>
+                    )}
+
                     {/* Product Image */}
                     <img
                       src={product.image_url}
                       alt={product.title}
-                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                      className={`w-full h-full object-cover object-center transition-transform duration-500 ${
+                        isSoldOut ? 'grayscale opacity-50' : 'group-hover:scale-105'
+                      }`}
                       onError={(e) => {
                         (e.target as HTMLImageElement).src =
                           '/images/product-cap-black.jpg'
                       }}
                     />
 
-                    {/* Quick Add Button */}
-                    <div className="absolute bottom-3 right-3 z-20">
-                      <button
-                        onClick={(e) => handleQuickAdd(product, e)}
-                        aria-label={`Agregar ${product.title} a la bolsa`}
-                        className={`w-10 h-10 flex items-center justify-center transition-all duration-200 cursor-pointer ${
-                          isJustAdded
-                            ? 'bg-[#D4FF00] text-black scale-110'
-                            : 'bg-black/90 hover:bg-[#D4FF00] text-white hover:text-black border border-white/20 hover:border-transparent'
-                        }`}
-                      >
-                        {isJustAdded ? (
-                          <Check className="w-5 h-5 stroke-[2.5]" />
-                        ) : (
-                          <Plus className="w-5 h-5 stroke-[2.5]" />
-                        )}
-                      </button>
-                    </div>
+                    {/* Quick Add Button (only if in stock) */}
+                    {!isSoldOut && (
+                      <div className="absolute bottom-3 right-3 z-20">
+                        <button
+                          onClick={(e) => handleQuickAdd(product, e)}
+                          aria-label={`Agregar ${product.title} a la bolsa`}
+                          className={`w-10 h-10 flex items-center justify-center transition-all duration-200 cursor-pointer ${
+                            isJustAdded
+                              ? 'bg-[#D4FF00] text-black scale-110'
+                              : 'bg-black/90 hover:bg-[#D4FF00] text-white hover:text-black border border-white/20 hover:border-transparent'
+                          }`}
+                        >
+                          {isJustAdded ? (
+                            <Check className="w-5 h-5 stroke-[2.5]" />
+                          ) : (
+                            <Plus className="w-5 h-5 stroke-[2.5]" />
+                          )}
+                        </button>
+                      </div>
+                    )}
 
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                   </div>
@@ -326,12 +353,27 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
                   <div className="mt-4 flex flex-col space-y-1.5 flex-1 justify-between">
                     <div>
                       <div className="flex justify-between items-start gap-2">
-                        <h3 className="font-sans font-bold text-base text-white group-hover:text-[#D4FF00] transition-colors leading-snug">
+                        <h3
+                          className={`font-sans font-bold text-base transition-colors leading-snug ${
+                            isSoldOut ? 'text-gray-400' : 'text-white group-hover:text-[#D4FF00]'
+                          }`}
+                        >
                           {product.title}
                         </h3>
-                        <span className="font-mono text-sm font-semibold text-white shrink-0">
-                          ${product.price.toLocaleString('es-MX')}
-                        </span>
+                        <div className="text-right shrink-0">
+                          <span
+                            className={`font-mono text-sm font-semibold block ${
+                              isSoldOut ? 'text-gray-500 line-through' : 'text-white'
+                            }`}
+                          >
+                            ${product.price.toLocaleString('es-MX')}
+                          </span>
+                          {isSoldOut && (
+                            <span className="text-[10px] font-mono font-bold text-red-500 uppercase tracking-wider block">
+                              AGOTADO
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {product.specs && (

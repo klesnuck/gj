@@ -91,3 +91,23 @@ export function decrementProductStock(
   }
 }
 
+/**
+ * Returns true if product has 0 total stock or all its sizes are depleted.
+ */
+export function isProductSoldOut(product: Product): boolean {
+  const totalStock = product.stock ?? 0
+  if (totalStock <= 0) return true
+
+  // For clothing, check if sizes are parsed and all have 0 stock
+  if (product.category !== 'gorras' && product.specs && product.specs.includes('Tallas:')) {
+    const sizeStocks = parseSizeStocks(product.specs, totalStock)
+    const sizes = Object.values(sizeStocks)
+    if (sizes.length > 0) {
+      const sum = sizes.reduce((acc, qty) => acc + qty, 0)
+      if (sum <= 0) return true
+    }
+  }
+
+  return false
+}
+

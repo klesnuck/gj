@@ -41,7 +41,7 @@ import {
   toggleCoupon,
   deleteCoupon,
 } from './lib/supabase'
-import { decrementProductStock, parseSizeStocks } from './lib/stock'
+import { decrementProductStock, parseSizeStocks, isProductSoldOut } from './lib/stock'
 import { filterProductsByCategory } from './lib/brands'
 import type { Product, CartItem, Order, Customer, Coupon, OrderItem } from './types/database.types'
 
@@ -407,6 +407,11 @@ export function App() {
 
   // Cart operations
   const handleAddToCart = (product: Product, selectedColor?: string, selectedSize?: string) => {
+    if (isProductSoldOut(product)) {
+      alert(`El producto "${product.title}" está agotado.`)
+      return
+    }
+
     const isCap = product.category === 'gorras'
     const size = (selectedSize || (isCap ? 'Unitalla' : 'S')).trim()
     const color = (selectedColor || product.colors?.[0] || 'default').trim()
