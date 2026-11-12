@@ -184,10 +184,19 @@ export const ProductList = ({
 
                       {/* Stock */}
                       <td className="py-3 px-4 text-gray-300">
-                        <span className="font-bold text-white">{product.stock ?? 15}</span>{' '}
-                        <span className="text-gray-500">
-                          {isCap ? 'piezas (unitalla)' : 'unidades'}
-                        </span>
+                        {(product.stock ?? 0) <= 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-950/60 border border-red-800/60 text-red-400 font-mono text-[10px] font-bold uppercase rounded-sm">
+                            <AlertTriangle className="w-3 h-3" />
+                            Agotado (0)
+                          </span>
+                        ) : (
+                          <>
+                            <span className="font-bold text-white">{product.stock}</span>{' '}
+                            <span className="text-gray-500">
+                              {isCap ? 'piezas (unitalla)' : 'unidades'}
+                            </span>
+                          </>
+                        )}
                       </td>
 
                       {/* Tag */}

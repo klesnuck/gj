@@ -1,5 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Product, DropInfo, Order, Customer, Coupon, OrderItem } from '../types/database.types'
+import {
+  saveCustomBrand,
+  saveProductBrand,
+  getProductBrand,
+  saveProductImages,
+  getProductImages,
+} from './brands'
 
 const DEFAULT_SUPABASE_URL = 'https://cvuafxqixfjjjbwdjvuq.supabase.co'
 const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_Z9WaZfwZSbMT9mJk-TVrJA_VES1IG1v'
@@ -46,7 +53,7 @@ export async function fetchProducts(category?: string): Promise<Product[]> {
           slug: row.slug,
           title: row.title,
           category: row.category,
-          brand: row.brand || (row.category === 'gorras' ? 'GJ' : 'GJ'),
+          brand: row.brand || getProductBrand(row.id) || (row.category === 'gorras' ? 'GJ' : 'GJ'),
           price: Number(row.price),
           currency: row.currency || 'MXN',
           tag: row.tag || null,
@@ -55,7 +62,9 @@ export async function fetchProducts(category?: string): Promise<Product[]> {
           specs: row.specs || '',
           colors: Array.isArray(row.colors) ? row.colors : [],
           image_url: row.image_url,
-          images: Array.isArray(row.images) ? row.images : (row.image_url ? [row.image_url] : []),
+          images: Array.isArray(row.images) && row.images.length > 0
+            ? row.images
+            : (getProductImages(row.id) || (row.image_url ? [row.image_url] : [])),
           stock: row.stock ?? 10,
           is_featured: row.is_featured ?? true,
           created_at: row.created_at,
@@ -151,26 +160,67 @@ export async function createProduct(
         is_featured: newProduct.is_featured,
       }
 
-      if (productData.id && productData.id.includes('-') && productData.id.length > 20) {
-        // Update UUID existente
-        const { error } = await supabase.from('products').update(payload).eq('id', productData.id)
-        if (error) throw error
-      } else {
-        // Insert nuevo (con auto-recuperación si falta alguna columna en el esquema de Supabase)
-        let { error } = await supabase.from('products').insert([payload])
+      if (newProduct.brand) {
+        saveCustomBrand(newProduct.brand)
+        saveProductBrand(newProduct.id, newProduct.brand)
+      }
+      if (newProduct.images && newProduct.images.length > 0) {
+        saveProductImages(newProduct.id, newProduct.images)
+      }
+
+      const isExisting = Boolean(productData.id && (productData.id.includes('-') || productData.id.length > 15))
+
+      if (isExisting && productData.id) {
+        // UPDATE de producto existente con auto-recuperación de columnas no presentes en el esquema
+        let updateRes = await supabase.from('products').update(payload).eq('id', productData.id).select()
+        let error = updateRes.error
         let attempts = 0
-        while (error && error.message?.includes('in the schema cache') && attempts < 5) {
+        while (error && error.message?.includes('in the schema cache') && attempts < 8) {
           attempts++
           const match = error.message.match(/Could not find the '([^']+)' column/)
           if (match && match[1]) {
             delete payload[match[1]]
-            const retryRes = await supabase.from('products').insert([payload])
-            error = retryRes.error
+            updateRes = await supabase.from('products').update(payload).eq('id', productData.id).select()
+            error = updateRes.error
+          } else {
+            break
+          }
+        }
+
+        // Si no se encontró por ID o hubo error de sintaxis UUID, intentar por slug
+        if ((error && error.message?.includes('invalid input syntax for type uuid')) || (!error && updateRes.data?.length === 0)) {
+          let slugRes = await supabase.from('products').update(payload).eq('slug', newProduct.slug).select()
+          if (!slugRes.error && slugRes.data && slugRes.data.length > 0) {
+            error = null
+            newProduct.id = slugRes.data[0].id
+          } else if (slugRes.error) {
+            error = slugRes.error
+          }
+        }
+
+        if (error) throw error
+      } else {
+        // INSERT nuevo producto con auto-recuperación de columnas no presentes en el esquema
+        let insertRes = await supabase.from('products').insert([payload]).select()
+        let error = insertRes.error
+        let attempts = 0
+        while (error && error.message?.includes('in the schema cache') && attempts < 8) {
+          attempts++
+          const match = error.message.match(/Could not find the '([^']+)' column/)
+          if (match && match[1]) {
+            delete payload[match[1]]
+            insertRes = await supabase.from('products').insert([payload]).select()
+            error = insertRes.error
           } else {
             break
           }
         }
         if (error) throw error
+        if (insertRes.data && insertRes.data[0]?.id) {
+          newProduct.id = insertRes.data[0].id
+          if (newProduct.brand) saveProductBrand(newProduct.id, newProduct.brand)
+          if (newProduct.images) saveProductImages(newProduct.id, newProduct.images)
+        }
       }
       return { success: true, data: newProduct }
     } catch (err: any) {

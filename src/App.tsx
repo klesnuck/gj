@@ -543,6 +543,7 @@ export function App() {
           <>
             {isCreatingProduct ? (
               <ProductForm
+                key={editingProduct?.id || 'new-product'}
                 initialProduct={editingProduct}
                 onSaveProduct={handleSaveProduct}
                 onCancel={() => {

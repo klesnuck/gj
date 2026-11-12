@@ -97,6 +97,53 @@ export function saveCustomBrand(brandName: string): void {
 }
 
 /**
+ * Persists a product's brand locally as backup if the Supabase table lacks the 'brand' column.
+ */
+export function saveProductBrand(productId: string, brandName: string): void {
+  try {
+    const clean = brandName?.trim()
+    if (!clean || !productId) return
+    const stored = JSON.parse(localStorage.getItem('gj_product_brands') || '{}')
+    stored[productId] = clean
+    localStorage.setItem('gj_product_brands', JSON.stringify(stored))
+  } catch (e) {
+    console.warn(e)
+  }
+}
+
+export function getProductBrand(productId: string): string | null {
+  try {
+    const stored = JSON.parse(localStorage.getItem('gj_product_brands') || '{}')
+    return stored[productId] || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Persists a product's gallery images locally as backup if the Supabase table lacks the 'images' column.
+ */
+export function saveProductImages(productId: string, images: string[]): void {
+  try {
+    if (!productId || !images || images.length === 0) return
+    const stored = JSON.parse(localStorage.getItem('gj_product_images') || '{}')
+    stored[productId] = images
+    localStorage.setItem('gj_product_images', JSON.stringify(stored))
+  } catch (e) {
+    console.warn(e)
+  }
+}
+
+export function getProductImages(productId: string): string[] | null {
+  try {
+    const stored = JSON.parse(localStorage.getItem('gj_product_images') || '{}')
+    return stored[productId] || null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Filters a product array in-memory with 0ms latency by category or brand filter.
  */
 export function filterProductsByCategory(products: Product[], category?: string): Product[] {

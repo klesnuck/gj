@@ -43,12 +43,12 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   )
   const [added, setAdded] = useState(false)
 
-  // Reset variant selection whenever opened product changes
+  // Reset variant selection whenever opened product changes or stock is updated
   useEffect(() => {
     setSelectedSize(firstAvailable)
     setSelectedColor(product.colors && product.colors[0] ? product.colors[0] : '#111111')
     setActiveImageIndex(0)
-  }, [product.id, firstAvailable])
+  }, [product.id, product.stock, product.specs, firstAvailable])
 
   // Multi-image gallery in QuickView
   const productImages =
