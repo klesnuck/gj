@@ -95,15 +95,22 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
               </span>
             </div>
 
-            {/* Background Image */}
+            {/* Background Image (Foto completa en blanco y negro) */}
             <img
-              src="/images/category-caps.jpg"
+              src="/images/caps-showcase.jpg"
               alt="Colección Gorras Streetwear"
-              className="w-full h-full object-cover object-center grayscale contrast-125 group-hover:scale-105 group-hover:grayscale-0 transition-all duration-700 brightness-90"
+              className="w-full h-full object-cover object-center grayscale contrast-120 brightness-90 group-hover:scale-105 transition-transform duration-700 ease-out"
               onError={(e) => {
                 (e.target as HTMLImageElement).src =
-                  'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=800&q=80'
+                  '/images/category-caps.jpg'
               }}
+            />
+
+            {/* Silhouette Layer (Solo la silueta de la persona y gorra a color original en hover) */}
+            <img
+              src="/images/caps-silhouette.png"
+              alt="Silueta Gorra Streetwear"
+              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 ease-out"
             />
 
             {/* Gradient Overlay */}
