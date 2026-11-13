@@ -26,7 +26,7 @@ export const OrderConfirmationView: React.FC<OrderConfirmationViewProps> = ({
       {/* Top Bar */}
       <aside className="w-full bg-[#D4FF00] text-black py-1.5 px-4 text-[11px] font-mono font-bold tracking-wider uppercase select-none z-40 border-b border-black">
         <div className="max-w-7xl mx-auto flex items-center justify-center space-x-2 text-center">
-          <span>ENVÍO GRATIS EN COMPRAS DESDE $1,999 MXN · DROP 004</span>
+          <span>ENVÍO GRATIS EN COMPRAS DESDE $1,999 MXN · COMPRA CONFIRMADA</span>
         </div>
       </aside>
 

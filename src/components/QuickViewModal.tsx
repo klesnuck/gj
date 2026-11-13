@@ -136,7 +136,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
             
             <div className="space-y-3">
               <span className="text-xs font-mono tracking-widest text-[#D4FF00] uppercase block">
-                {product.category} · DROP 004
+                {product.brand ? `${product.brand} · ` : ''}{product.category}
               </span>
 
               <h3 className="font-display text-3xl sm:text-4xl uppercase tracking-tight text-white font-extrabold leading-none">

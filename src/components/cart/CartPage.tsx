@@ -90,7 +90,7 @@ export const CartPage: React.FC<CartPageProps> = ({
           <span className="inline-block w-2.5 h-2.5 bg-black text-[#D4FF00] text-[9px] font-black rounded-xs leading-none flex items-center justify-center">
             ✦
           </span>
-          <span>DROP 004 - YA DISPONIBLE</span>
+          <span>NUEVA COLECCIÓN - YA DISPONIBLE</span>
         </div>
       </aside>
 
@@ -196,7 +196,7 @@ export const CartPage: React.FC<CartPageProps> = ({
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-1">
             <span className="text-xs font-mono font-bold tracking-widest text-[#D4FF00] uppercase block">
-              TU SELECCIÓN / DROP 004
+              TU SELECCIÓN / STREETWEAR
             </span>
             <h1 className="font-display text-5xl sm:text-6xl md:text-7xl uppercase tracking-tight text-white font-black leading-none">
               TU BOLSA.{' '}

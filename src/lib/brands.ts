@@ -5,26 +5,16 @@ export interface BrandOption {
   name: string
 }
 
-export const DEFAULT_CAP_BRANDS: BrandOption[] = [
-  { id: 'gorras:gj', name: 'GJ Signature' },
-  { id: 'gorras:new era', name: 'New Era' },
-  { id: 'gorras:mitchell', name: 'Mitchell & Ness' },
-  { id: 'gorras:47', name: '47 Brand' },
-]
+// Marcas predeterminadas: Vacío por solicitud del usuario (sin marcas fijas hardcoded)
+export const DEFAULT_CAP_BRANDS: BrandOption[] = []
 
 /**
- * Returns all cap brands dynamically based on catalog products and saved custom brands.
+ * Retorna las marcas de gorras dinámicamente basadas en los productos del catálogo y marcas creadas.
  */
 export function getCapBrands(products: Product[]): BrandOption[] {
   const brandMap = new Map<string, string>()
 
-  // 1. Marcas predeterminadas
-  for (const b of DEFAULT_CAP_BRANDS) {
-    const key = b.id.replace('gorras:', '').toLowerCase().trim()
-    brandMap.set(key, b.name)
-  }
-
-  // 2. Marcas personalizadas guardadas
+  // 1. Marcas personalizadas guardadas por el admin
   try {
     const stored = JSON.parse(localStorage.getItem('gj_custom_brands') || '[]')
     if (Array.isArray(stored)) {
@@ -39,9 +29,9 @@ export function getCapBrands(products: Product[]): BrandOption[] {
     console.warn(e)
   }
 
-  // 3. Marcas de los productos registrados en el catálogo
+  // 2. Marcas de los productos registrados en el catálogo
   for (const p of products) {
-    if (p.category === 'gorras' && p.brand && p.brand.trim()) {
+    if (p.brand && p.brand.trim()) {
       const clean = p.brand.trim()
       brandMap.set(clean.toLowerCase(), clean)
     }
@@ -54,16 +44,22 @@ export function getCapBrands(products: Product[]): BrandOption[] {
 }
 
 /**
- * Returns all distinct brands for the Admin Product Form selector.
+ * Retorna todas las marcas conocidas para el selector del formulario admin (empieza vacío sin fijas).
  */
 export function getAllKnownBrands(products: Product[]): string[] {
-  const brandSet = new Set<string>(['GJ', 'New Era', 'Mitchell & Ness', '47 Brand'])
+  const brandSet = new Set<string>()
 
   try {
     const stored = JSON.parse(localStorage.getItem('gj_custom_brands') || '[]')
     if (Array.isArray(stored)) {
       for (const name of stored) {
-        if (typeof name === 'string' && name.trim()) brandSet.add(name.trim())
+        if (typeof name === 'string' && name.trim()) {
+          // Filtrar las marcas fijas que el usuario pidió eliminar si quedaron en localStorage
+          const clean = name.trim()
+          if (!['new era', 'mitchell & ness', '47 brand', 'mitchell'].includes(clean.toLowerCase())) {
+            brandSet.add(clean)
+          }
+        }
       }
     }
   } catch (e) {
@@ -80,7 +76,7 @@ export function getAllKnownBrands(products: Product[]): string[] {
 }
 
 /**
- * Persists a newly entered brand so it is immediately remembered for all future products and filters.
+ * Guarda una nueva marca personalizada para recordarla en futuros productos y filtros.
  */
 export function saveCustomBrand(brandName: string): void {
   try {
@@ -97,7 +93,7 @@ export function saveCustomBrand(brandName: string): void {
 }
 
 /**
- * Persists a product's brand locally as backup if the Supabase table lacks the 'brand' column.
+ * Respaldo local de marca de un producto.
  */
 export function saveProductBrand(productId: string, brandName: string): void {
   try {
@@ -121,7 +117,7 @@ export function getProductBrand(productId: string): string | null {
 }
 
 /**
- * Persists a product's gallery images locally as backup if the Supabase table lacks the 'images' column.
+ * Respaldo local de imágenes de un producto.
  */
 export function saveProductImages(productId: string, images: string[]): void {
   try {
@@ -144,7 +140,7 @@ export function getProductImages(productId: string): string[] | null {
 }
 
 /**
- * Filters a product array in-memory with 0ms latency by category or brand filter.
+ * Filtrado en memoria por categoría o marca sin latencia.
  */
 export function filterProductsByCategory(products: Product[], category?: string): Product[] {
   if (!category || category === 'todos') {
@@ -163,7 +159,7 @@ export function filterProductsByCategory(products: Product[], category?: string)
     )
   }
 
-  // 2. Gorras filtradas por marca (ej. gorras:new era, gorras:supreme, gorras:gj)
+  // 2. Gorras filtradas por marca (ej. gorras:supreme, gorras:gj, etc.)
   if (catLower.startsWith('gorras:')) {
     const brandTerm = catLower.replace('gorras:', '').trim()
     return products.filter((p) => {
@@ -174,25 +170,6 @@ export function filterProductsByCategory(products: Product[], category?: string)
     })
   }
 
-  // 3. Todas las gorras
-  if (catLower === 'gorras') {
-    return products.filter((p) => p.category === 'gorras')
-  }
-
-  // 4. Playeras específicas
-  if (catLower === 'playeras') {
-    return products.filter((p) => p.category === 'playeras')
-  }
-
-  // 5. Hoodies específicos
-  if (catLower === 'hoodies') {
-    return products.filter((p) => p.category === 'hoodies')
-  }
-
-  // 6. Accesorios
-  if (catLower === 'accesorios') {
-    return products.filter((p) => p.category === 'accesorios')
-  }
-
+  // 3. Categorías específicas
   return products.filter((p) => p.category.toLowerCase() === catLower)
 }

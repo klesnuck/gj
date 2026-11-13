@@ -13,11 +13,20 @@ import {
   Sparkles,
   Star,
   AlertTriangle,
+  Plus,
+  X,
 } from 'lucide-react'
 import type { Product } from '../../types/database.types'
 import { getColorHexFromName } from '../../lib/colors'
 import { parseSizeStocks } from '../../lib/stock'
 import { getAllKnownBrands, saveCustomBrand } from '../../lib/brands'
+import { saveBrand } from '../../lib/supabase'
+import {
+  getKnownCategories,
+  saveCustomCategory,
+  categoryHasSizes,
+  CategoryOption,
+} from '../../lib/categories'
 
 interface ProductFormProps {
   onSaveProduct: (productData: Partial<Product>) => Promise<boolean>
@@ -46,15 +55,47 @@ export const ProductForm = ({
   // Form State initialized from 0 (without preset mock descriptions or default hoodie)
   const [title, setTitle] = useState(initialProduct?.title || '')
   const [description, setDescription] = useState(initialProduct?.description || '')
-  const [category, setCategory] = useState<'gorras' | 'playeras' | 'hoodies' | 'accesorios'>(
-    (initialProduct?.category as any) || 'playeras'
+  const [category, setCategory] = useState<string>(
+    initialProduct?.category || 'playeras'
   )
-  const [brand, setBrand] = useState(initialProduct?.brand || 'GJ')
+  const [brand, setBrand] = useState(initialProduct?.brand || '')
   const [price, setPrice] = useState<number>(initialProduct?.price || 0)
   const [tag, setTag] = useState(initialProduct?.tag || '')
   const [status, setStatus] = useState<'borrador' | 'publicado'>('publicado')
   const [inOnlineStore, setInOnlineStore] = useState(true)
   const [isFeatured, setIsFeatured] = useState<boolean>(initialProduct?.is_featured ?? false)
+
+  // Categorías dinámicas y modal de nueva categoría
+  const [categoriesList, setCategoriesList] = useState<CategoryOption[]>(() => getKnownCategories())
+  const [showNewCategoryModal, setShowNewCategoryModal] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newCategoryHasSizes, setNewCategoryHasSizes] = useState(true)
+
+  // Marcas dinámicas y modal de nueva marca (inicia sin marcas fijas)
+  const [knownBrands, setKnownBrands] = useState<string[]>(() => getAllKnownBrands(products))
+  const [showNewBrandModal, setShowNewBrandModal] = useState(false)
+  const [newBrandInput, setNewBrandInput] = useState('')
+
+  const handleSaveNewCategory = () => {
+    const clean = newCategoryName.trim()
+    if (!clean) return
+    const saved = saveCustomCategory(clean, newCategoryHasSizes)
+    setCategoriesList(getKnownCategories())
+    setCategory(saved.id)
+    setNewCategoryName('')
+    setShowNewCategoryModal(false)
+  }
+
+  const handleSaveNewBrand = () => {
+    const clean = newBrandInput.trim()
+    if (!clean) return
+    saveCustomBrand(clean)
+    saveBrand(clean).catch(() => {})
+    setKnownBrands(getAllKnownBrands(products))
+    setBrand(clean)
+    setNewBrandInput('')
+    setShowNewBrandModal(false)
+  }
 
   // Multi-Image Gallery State (starts completely empty: 0 images)
   const [images, setImages] = useState<string[]>(() => {
@@ -72,8 +113,8 @@ export const ProductForm = ({
   const [savedSuccess, setSavedSuccess] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  // Unitalla vs Tallas State
-  const isCap = category === 'gorras'
+  // Unitalla vs Tallas State: gorras y categorías sin tallas son Unitalla
+  const isCap = category === 'gorras' || !categoryHasSizes(category)
 
   // Cap Unitalla Stock & SKU (starts at 0)
   const [capStock, setCapStock] = useState<number>(initialProduct?.stock || 0)
@@ -128,7 +169,7 @@ export const ProductForm = ({
   }, [price, isCap])
 
   // Change category cleanly without overwriting user data
-  const handleCategoryChange = (newCat: 'gorras' | 'playeras' | 'hoodies' | 'accesorios') => {
+  const handleCategoryChange = (newCat: string) => {
     setCategory(newCat)
   }
 
@@ -251,7 +292,7 @@ export const ProductForm = ({
         initialProduct?.slug ||
         (title ? title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : `prenda-${Date.now()}`),
       category,
-      brand: brand || 'GJ',
+      brand: brand || '',
       price: Number(price) || 0,
       currency: 'MXN',
       tag: tag || null,
@@ -565,27 +606,135 @@ export const ProductForm = ({
             {/* Category & Sale Price Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
 
+              {/* Categoría Selector */}
               <div className="space-y-1.5">
-                <label className="text-xs font-mono text-gray-400 uppercase tracking-wider flex items-center justify-between">
-                  <span>Categoría *</span>
-                  {isCap && (
-                    <span className="text-[#D4FF00] text-[10px] font-bold">
-                      MODO GORRA: UNITALLA
-                    </span>
-                  )}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">
+                    Categoría *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewCategoryModal(true)}
+                    className="text-[11px] font-mono text-[#D4FF00] hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Agregar categoría</span>
+                  </button>
+                </div>
+
                 <select
                   value={category}
-                  onChange={(e) => handleCategoryChange(e.target.value as any)}
+                  onChange={(e) => {
+                    if (e.target.value === '__add_new__') {
+                      setShowNewCategoryModal(true)
+                    } else {
+                      handleCategoryChange(e.target.value)
+                    }
+                  }}
                   className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-sans text-white focus:outline-none cursor-pointer"
                 >
-                  <option value="hoodies">Hoodies (Con tallas S, M, L, XL)</option>
-                  <option value="playeras">Playeras (Con tallas S, M, L, XL)</option>
-                  <option value="gorras">Gorras (Unitalla · Sin tallas)</option>
-                  <option value="accesorios">Accesorios</option>
+                  {categoriesList.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                  <option value="__add_new__" className="text-[#D4FF00] font-bold">
+                    + Agregar nueva categoría...
+                  </option>
                 </select>
+
+                {/* Sub-menú pequeño para crear nueva categoría */}
+                {showNewCategoryModal && (
+                  <div className="p-4 bg-[#161616] border border-[#D4FF00]/50 space-y-3 animate-in fade-in slide-in-from-top-2 mt-2">
+                    <div className="flex items-center justify-between pb-2 border-b border-[#262626]">
+                      <span className="text-xs font-mono font-bold text-[#D4FF00] uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        NUEVA CATEGORÍA
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowNewCategoryModal(false)
+                          setNewCategoryName('')
+                        }}
+                        className="text-gray-400 hover:text-white p-1"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-mono text-gray-300 block">
+                        Nombre de la categoría *
+                      </label>
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="Ej. Pantalones, Chamarras, Shorts, Joyería..."
+                        className="w-full bg-[#111] border border-[#333] focus:border-[#D4FF00] px-3 py-2 text-xs font-sans text-white focus:outline-none"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleSaveNewCategory()
+                          }
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-mono text-gray-300 block">
+                        ¿Cómo se venderá esta categoría?
+                      </label>
+                      <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                        <label className={`flex items-center gap-2 p-2.5 border cursor-pointer ${newCategoryHasSizes ? 'bg-[#D4FF00]/10 border-[#D4FF00] text-white' : 'bg-[#121212] border-[#2c2c2c] text-gray-400'}`}>
+                          <input
+                            type="radio"
+                            name="newCatSizes"
+                            checked={newCategoryHasSizes}
+                            onChange={() => setNewCategoryHasSizes(true)}
+                            className="accent-[#D4FF00]"
+                          />
+                          <span>Con tallas (S, M, L...)</span>
+                        </label>
+                        <label className={`flex items-center gap-2 p-2.5 border cursor-pointer ${!newCategoryHasSizes ? 'bg-[#D4FF00]/10 border-[#D4FF00] text-white' : 'bg-[#121212] border-[#2c2c2c] text-gray-400'}`}>
+                          <input
+                            type="radio"
+                            name="newCatSizes"
+                            checked={!newCategoryHasSizes}
+                            onChange={() => setNewCategoryHasSizes(false)}
+                            className="accent-[#D4FF00]"
+                          />
+                          <span>Unitalla / Sin tallas</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowNewCategoryModal(false)
+                          setNewCategoryName('')
+                        }}
+                        className="px-3 py-1.5 text-xs font-mono text-gray-400 hover:text-white border border-[#2b2b2b]"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveNewCategory}
+                        className="px-4 py-1.5 text-xs font-mono font-bold bg-[#D4FF00] text-black hover:bg-[#bfe600]"
+                      >
+                        Guardar Categoría
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
+              {/* Precio de venta */}
               <div className="space-y-1.5">
                 <label className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
                   Precio de venta *
@@ -597,7 +746,11 @@ export const ProductForm = ({
                     min="0"
                     placeholder="0"
                     value={price === 0 ? '' : price}
-                    onChange={(e) => setPrice(Math.max(0, Number(e.target.value) || 0))}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/^0+/, '')
+                      setPrice(raw === '' ? 0 : Math.max(0, parseInt(raw, 10)))
+                    }}
                     className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] pl-8 pr-4 py-2.5 text-sm font-mono text-white focus:outline-none transition-colors"
                   />
                 </div>
@@ -608,49 +761,113 @@ export const ProductForm = ({
 
             </div>
 
-            {/* Brand Row */}
-            <div className="space-y-1.5 pt-1">
-              <label className="text-xs font-mono text-gray-400 uppercase tracking-wider flex items-center justify-between">
-                <span>Marca del Producto *</span>
-                <span className="text-[#D4FF00] text-[10px] font-bold">
-                  {isCap ? 'FILTRABLE POR MARCA EN GORRAS' : 'MARCA DE LA PRENDA'}
-                </span>
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(() => {
-                  const knownBrands = getAllKnownBrands(products)
-                  return (
-                    <select
-                      value={knownBrands.includes(brand) ? brand : 'otro'}
-                      onChange={(e) => {
-                        if (e.target.value !== 'otro') {
-                          setBrand(e.target.value)
-                        }
-                      }}
-                      className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-sans text-white focus:outline-none cursor-pointer"
-                    >
-                      {knownBrands.map((b) => (
-                        <option key={b} value={b}>
-                          {b === 'GJ' ? 'GJ Signature / Oficial' : b}
-                        </option>
-                      ))}
-                      <option value="otro">+ Escribir otra marca...</option>
-                    </select>
-                  )
-                })()}
+            {/* Brand & Featured Tag Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
 
-                <input
-                  type="text"
-                  value={brand}
-                  onChange={(e) => setBrand(e.target.value)}
-                  placeholder="Nombre de la marca (ej. Supreme, Nike, Goorin Bros)..."
-                  className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-mono text-white focus:outline-none"
-                />
+              {/* Columna 1: Marca del Producto */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">
+                    Marca del Producto *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewBrandModal(true)}
+                    className="text-[11px] font-mono text-[#D4FF00] hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Agregar nueva marca</span>
+                  </button>
+                </div>
+
+                <select
+                  value={knownBrands.includes(brand) ? brand : brand ? brand : '__none__'}
+                  onChange={(e) => {
+                    if (e.target.value === '__add_new__') {
+                      setShowNewBrandModal(true)
+                    } else if (e.target.value !== '__none__') {
+                      setBrand(e.target.value)
+                    }
+                  }}
+                  className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-sans text-white focus:outline-none cursor-pointer"
+                >
+                  <option value="__none__" disabled={Boolean(brand)}>
+                    {brand ? `Marca: ${brand}` : 'Selecciona una marca...'}
+                  </option>
+                  {knownBrands.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                  <option value="__add_new__" className="text-[#D4FF00] font-bold">
+                    + Agregar nueva marca...
+                  </option>
+                </select>
+
+                {/* Sub-menú pequeño para crear nueva marca */}
+                {showNewBrandModal && (
+                  <div className="p-4 bg-[#161616] border border-[#D4FF00]/50 space-y-3 animate-in fade-in slide-in-from-top-2 mt-2">
+                    <div className="flex items-center justify-between pb-2 border-b border-[#262626]">
+                      <span className="text-xs font-mono font-bold text-[#D4FF00] uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        NUEVA MARCA
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowNewBrandModal(false)
+                          setNewBrandInput('')
+                        }}
+                        className="text-gray-400 hover:text-white p-1"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-mono text-gray-300 block">
+                        Nombre de la marca *
+                      </label>
+                      <input
+                        type="text"
+                        value={newBrandInput}
+                        onChange={(e) => setNewBrandInput(e.target.value)}
+                        placeholder="Ej. Supreme, Hellstar, Chrome Hearts, Nike, Essentials..."
+                        className="w-full bg-[#111] border border-[#333] focus:border-[#D4FF00] px-3 py-2 text-xs font-sans text-white focus:outline-none"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleSaveNewBrand()
+                          }
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowNewBrandModal(false)
+                          setNewBrandInput('')
+                        }}
+                        className="px-3 py-1.5 text-xs font-mono text-gray-400 hover:text-white border border-[#2b2b2b]"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveNewBrand}
+                        className="px-4 py-1.5 text-xs font-mono font-bold bg-[#D4FF00] text-black hover:bg-[#bfe600]"
+                      >
+                        Guardar Marca
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* Tag Configuration (Without label color) */}
-            <div className="pt-2">
+              {/* Columna 2: Etiqueta Destacada (Opcional) */}
               <div className="space-y-1.5">
                 <label className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
                   Etiqueta Destacada (Opcional)
@@ -666,6 +883,7 @@ export const ProductForm = ({
                   <option value="EDICIÓN LIMITADA">EDICIÓN LIMITADA</option>
                 </select>
               </div>
+
             </div>
 
             {/* Toggle: En "Los Más Buscados" (Portada) */}
@@ -741,8 +959,13 @@ export const ProductForm = ({
                       <input
                         type="number"
                         min="0"
-                        value={capStock}
-                        onChange={(e) => setCapStock(Math.max(0, Number(e.target.value)))}
+                        placeholder="0"
+                        value={capStock === 0 ? '' : capStock}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/^0+/, '')
+                          setCapStock(raw === '' ? 0 : Math.max(0, parseInt(raw, 10)))
+                        }}
                         className="w-full bg-[#181818] border border-[#303030] focus:border-[#D4FF00] px-4 py-2.5 text-base font-mono font-bold text-[#D4FF00] focus:outline-none"
                       />
                       <span className="text-xs font-mono text-gray-400 shrink-0">unidades</span>
@@ -915,11 +1138,14 @@ export const ProductForm = ({
                             <input
                               type="number"
                               min="0"
-                              value={v.stock}
-                              onChange={(e) =>
-                                handleVariantChange(i, 'stock', Math.max(0, Number(e.target.value)))
-                              }
-                              className="bg-[#161616] border border-[#2b2b2b] focus:border-[#D4FF00] focus:outline-none py-1 px-2 text-xs text-center text-white w-16"
+                              placeholder="0"
+                              value={v.stock === 0 ? '' : v.stock}
+                              onFocus={(e) => e.target.select()}
+                              onChange={(e) => {
+                                const raw = e.target.value.replace(/^0+/, '')
+                                handleVariantChange(i, 'stock', raw === '' ? 0 : Math.max(0, parseInt(raw, 10)))
+                              }}
+                              className="bg-[#161616] border border-[#2b2b2b] focus:border-[#D4FF00] focus:outline-none py-1 px-2 text-xs text-center text-white w-16 font-mono"
                             />
                           </td>
                           <td className="py-2.5 px-3 text-right text-[#D4FF00] font-semibold">

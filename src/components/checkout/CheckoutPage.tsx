@@ -141,7 +141,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           <span className="inline-block w-2.5 h-2.5 bg-black text-[#D4FF00] text-[9px] font-black rounded-xs leading-none flex items-center justify-center">
             ✦
           </span>
-          <span>DROP 004 - YA DISPONIBLE</span>
+          <span>NUEVA COLECCIÓN - YA DISPONIBLE</span>
         </div>
       </aside>
 
@@ -244,7 +244,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
             </h3>
 
             <p className="text-xs sm:text-sm font-mono text-gray-400 max-w-sm mx-auto leading-relaxed">
-              ¿Todavía sin prendas? Explora el Drop 004 antes de que se agote.
+              ¿Todavía sin prendas? Explora nuestro catálogo antes de que se agote.
             </p>
 
             <button

@@ -1,72 +1,102 @@
 -- ============================================================
--- GJ CLOTHING AND CAPS — Esquema Completo de Base de Datos
--- Ejecuta este script en el SQL Editor de tu proyecto Supabase
+-- GJ CLOTHING AND CAPS — Esquema Optimizado de Base de Datos
+-- Ejecuta este script completo en el SQL Editor de tu panel de Supabase
 -- ============================================================
 
--- 1. Habilitar extensión pgcrypto para generación de UUIDs
+-- 1. Habilitar extensión pgcrypto para UUIDs seguros
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- 2. Tabla de Drops
+-- 2. Tabla de Categorías (soporte dinámico para nuevas categorías)
+CREATE TABLE IF NOT EXISTS public.categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    slug TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    has_sizes BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Insertar categorías base limpias
+INSERT INTO public.categories (slug, name, has_sizes)
+VALUES
+    ('hoodies', 'Hoodies', true),
+    ('playeras', 'Playeras', true),
+    ('gorras', 'Gorras', false),
+    ('accesorios', 'Accesorios', false)
+ON CONFLICT (slug) DO UPDATE SET
+    name = EXCLUDED.name,
+    has_sizes = EXCLUDED.has_sizes;
+
+-- 3. Tabla de Marcas
+CREATE TABLE IF NOT EXISTS public.brands (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 4. Tabla de Drops
 CREATE TABLE IF NOT EXISTS public.drops (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    code TEXT UNIQUE NOT NULL, -- e.g. 'DROP 004'
-    name TEXT NOT NULL, -- e.g. 'UNDERGROUND ESSENTIALS'
-    tagline TEXT, -- e.g. 'BUILT FOR THE STREETS.'
+    code TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    tagline TEXT,
     volume TEXT DEFAULT 'GJ* / VOL. 004',
     description TEXT,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 3. Tabla de Productos (con soporte para marca e imágenes)
+-- 5. Tabla de Productos (Estructura óptima para imágenes, precios y variantes)
 CREATE TABLE IF NOT EXISTS public.products (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     slug TEXT UNIQUE NOT NULL,
     title TEXT NOT NULL,
-    category TEXT NOT NULL, -- 'gorras', 'playeras', 'hoodies', 'accesorios'
-    brand TEXT DEFAULT 'GJ', -- 'GJ', 'New Era', 'Mitchell & Ness', '47 Brand'
-    price NUMERIC(10, 2) NOT NULL,
+    category TEXT NOT NULL,
+    brand TEXT DEFAULT '',
+    price NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (price >= 0),
     currency TEXT DEFAULT 'MXN',
-    tag TEXT, -- 'BEST SELLER', 'NUEVO', 'EDICIÓN LIMITADA'
-    tag_type TEXT DEFAULT 'white', -- 'white' o 'lime'
+    tag TEXT,
+    tag_type TEXT DEFAULT 'lime',
     description TEXT,
-    specs TEXT, -- e.g. 'Negro / Bordado 3D / Ajustable'
+    specs TEXT,
     colors JSONB DEFAULT '[]'::jsonb,
-    image_url TEXT NOT NULL,
+    image_url TEXT NOT NULL DEFAULT '',
     images JSONB DEFAULT '[]'::jsonb,
-    stock INTEGER DEFAULT 25,
+    stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
     is_featured BOOLEAN DEFAULT true,
+    is_active BOOLEAN DEFAULT true,
     drop_id UUID REFERENCES public.drops(id) ON DELETE SET NULL,
-    created_at TIMESTAMPTZ DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Si la tabla products ya existía, asegurar que tenga las columnas brand e images:
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS brand TEXT DEFAULT 'GJ';
+-- Asegurar que columnas clave existan si la tabla ya había sido creada antes:
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS brand TEXT DEFAULT '';
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS images JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT true;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
--- 4. Tabla de Pedidos (Orders)
+-- 6. Tabla de Pedidos (Orders)
 CREATE TABLE IF NOT EXISTS public.orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_number TEXT UNIQUE NOT NULL,
     customer_name TEXT,
     customer_phone TEXT,
     customer_email TEXT NOT NULL,
-    shipping_type TEXT DEFAULT 'saltillo_local', -- 'saltillo_local' o 'paqueteria_nacional'
+    shipping_type TEXT DEFAULT 'saltillo_local',
     shipping_address JSONB,
-    total_amount NUMERIC(10, 2) NOT NULL,
+    total_amount NUMERIC(10, 2) NOT NULL DEFAULT 0 CHECK (total_amount >= 0),
     currency TEXT DEFAULT 'MXN',
-    status TEXT DEFAULT 'pendiente', -- 'pendiente', 'en_camino', 'entregado', 'cancelado'
-    payment_method TEXT, -- 'Tarjeta de crédito / débito', 'Mercado Pago'
-    items JSONB NOT NULL,
+    status TEXT DEFAULT 'pendiente',
+    payment_method TEXT,
+    items JSONB NOT NULL DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Asegurar columnas en orders:
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_phone TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS shipping_type TEXT DEFAULT 'saltillo_local';
 
--- 5. Tabla de Clientes (Customers)
+-- 7. Tabla de Clientes (Customers)
 CREATE TABLE IF NOT EXISTS public.customers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
@@ -79,12 +109,12 @@ CREATE TABLE IF NOT EXISTS public.customers (
     last_order_date TIMESTAMPTZ DEFAULT now()
 );
 
--- 6. Tabla de Cupones de Descuento (Coupons)
+-- 8. Tabla de Cupones de Descuento (Coupons)
 CREATE TABLE IF NOT EXISTS public.coupons (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code TEXT UNIQUE NOT NULL,
-    discount_type TEXT NOT NULL DEFAULT 'percentage', -- 'percentage' o 'fixed'
-    discount_value NUMERIC(10, 2) NOT NULL,
+    discount_type TEXT NOT NULL DEFAULT 'percentage',
+    discount_value NUMERIC(10, 2) NOT NULL DEFAULT 0,
     duration_label TEXT,
     expires_at TIMESTAMPTZ NOT NULL,
     is_active BOOLEAN DEFAULT true,
@@ -93,7 +123,7 @@ CREATE TABLE IF NOT EXISTS public.coupons (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 7. Tabla de Suscriptores al Newsletter
+-- 9. Tabla de Suscriptores al Newsletter
 CREATE TABLE IF NOT EXISTS public.newsletter_subscribers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email TEXT UNIQUE NOT NULL,
@@ -103,9 +133,51 @@ CREATE TABLE IF NOT EXISTS public.newsletter_subscribers (
 );
 
 -- ============================================================
+-- ÍNDICES DE RENDIMIENTO (Búsquedas instantáneas en tienda y admin)
+-- ============================================================
+CREATE INDEX IF NOT EXISTS idx_products_category ON public.products(category);
+CREATE INDEX IF NOT EXISTS idx_products_brand ON public.products(brand);
+CREATE INDEX IF NOT EXISTS idx_products_featured ON public.products(is_featured);
+CREATE INDEX IF NOT EXISTS idx_products_created_at ON public.products(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON public.orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_number ON public.orders(order_number);
+CREATE INDEX IF NOT EXISTS idx_customers_email ON public.customers(email);
+
+-- ============================================================
+-- STORAGE BUCKET PARA IMÁGENES DE PRODUCTOS
+-- ============================================================
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('product-images', 'product-images', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- Políticas de Storage
+DROP POLICY IF EXISTS "Allow public read product images" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public upload product images" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public update product images" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public delete product images" ON storage.objects;
+
+CREATE POLICY "Allow public read product images"
+ON storage.objects FOR SELECT TO anon, authenticated
+USING (bucket_id = 'product-images');
+
+CREATE POLICY "Allow public upload product images"
+ON storage.objects FOR INSERT TO anon, authenticated
+WITH CHECK (bucket_id = 'product-images');
+
+CREATE POLICY "Allow public update product images"
+ON storage.objects FOR UPDATE TO anon, authenticated
+USING (bucket_id = 'product-images');
+
+CREATE POLICY "Allow public delete product images"
+ON storage.objects FOR DELETE TO anon, authenticated
+USING (bucket_id = 'product-images');
+
+-- ============================================================
 -- POLÍTICAS DE ACCESO (ROW LEVEL SECURITY - RLS)
 -- ============================================================
 
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.brands ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.drops ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
@@ -113,57 +185,62 @@ ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.newsletter_subscribers ENABLE ROW LEVEL SECURITY;
 
--- Limpieza de políticas anteriores si existen
+-- Limpieza de políticas anteriores
+DROP POLICY IF EXISTS "Allow full categories access" ON public.categories;
+DROP POLICY IF EXISTS "Allow full brands access" ON public.brands;
+DROP POLICY IF EXISTS "Allow full drops access" ON public.drops;
+DROP POLICY IF EXISTS "Allow full products access" ON public.products;
+DROP POLICY IF EXISTS "Allow full orders access" ON public.orders;
+DROP POLICY IF EXISTS "Allow full customers access" ON public.customers;
+DROP POLICY IF EXISTS "Allow full coupons access" ON public.coupons;
+DROP POLICY IF EXISTS "Allow full newsletter access" ON public.newsletter_subscribers;
 DROP POLICY IF EXISTS "Allow public read access to drops" ON public.drops;
 DROP POLICY IF EXISTS "Allow public read access to products" ON public.products;
 DROP POLICY IF EXISTS "Allow public manage products" ON public.products;
 DROP POLICY IF EXISTS "Allow anonymous subscription to newsletter" ON public.newsletter_subscribers;
-DROP POLICY IF EXISTS "Allow anonymous order creation" ON public.orders;
-DROP POLICY IF EXISTS "Allow full orders access" ON public.orders;
-DROP POLICY IF EXISTS "Allow full customers access" ON public.customers;
-DROP POLICY IF EXISTS "Allow full coupons access" ON public.coupons;
 
--- Políticas para Drops
-CREATE POLICY "Allow public read access to drops"
-ON public.drops FOR SELECT TO anon, authenticated USING (true);
+-- Políticas universales para frontend y admin (Lectura, creación, edición y eliminación)
+CREATE POLICY "Allow full categories access"
+ON public.categories FOR ALL TO anon, authenticated
+USING (true) WITH CHECK (true);
 
--- Políticas para Products (lectura pública y gestión admin)
-CREATE POLICY "Allow public read access to products"
-ON public.products FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Allow full brands access"
+ON public.brands FOR ALL TO anon, authenticated
+USING (true) WITH CHECK (true);
 
-CREATE POLICY "Allow public manage products"
-ON public.products FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Allow full drops access"
+ON public.drops FOR ALL TO anon, authenticated
+USING (true) WITH CHECK (true);
 
--- Políticas para Orders (creación desde checkout, lectura y actualización desde admin)
+CREATE POLICY "Allow full products access"
+ON public.products FOR ALL TO anon, authenticated
+USING (true) WITH CHECK (true);
+
 CREATE POLICY "Allow full orders access"
-ON public.orders FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+ON public.orders FOR ALL TO anon, authenticated
+USING (true) WITH CHECK (true);
 
--- Políticas para Customers (gestión de clientes)
 CREATE POLICY "Allow full customers access"
-ON public.customers FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+ON public.customers FOR ALL TO anon, authenticated
+USING (true) WITH CHECK (true);
 
--- Políticas para Coupons (validación en carrito y gestión admin)
 CREATE POLICY "Allow full coupons access"
-ON public.coupons FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+ON public.coupons FOR ALL TO anon, authenticated
+USING (true) WITH CHECK (true);
 
--- Políticas para Newsletter
-CREATE POLICY "Allow anonymous subscription to newsletter"
-ON public.newsletter_subscribers FOR INSERT TO anon, authenticated
-WITH CHECK (email IS NOT NULL AND position('@' in email) > 1);
-
-CREATE POLICY "Allow read newsletter subscribers"
-ON public.newsletter_subscribers FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Allow full newsletter access"
+ON public.newsletter_subscribers FOR ALL TO anon, authenticated
+USING (true) WITH CHECK (true);
 
 -- ============================================================
--- DATOS INICIALES DEL DROP 004 (Solo si no existen)
+-- DATOS INICIALES
 -- ============================================================
-
 INSERT INTO public.drops (code, name, tagline, volume, description)
 VALUES (
-    'DROP 004',
+    'COLECCION_ORIGINAL',
     'UNDERGROUND ESSENTIALS',
     'BUILT FOR THE STREETS.',
-    'GJ* / VOL. 004',
+    'GJ* / VOL. 01',
     'Presentamos Underground Essentials. Texturas pesadas, tonos crudos y siluetas que no piden permiso.'
 )
 ON CONFLICT (code) DO NOTHING;

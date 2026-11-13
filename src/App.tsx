@@ -40,6 +40,7 @@ import {
   saveCoupon,
   toggleCoupon,
   deleteCoupon,
+  fetchBrands,
 } from './lib/supabase'
 import { decrementProductStock, parseSizeStocks, isProductSoldOut } from './lib/stock'
 import { filterProductsByCategory } from './lib/brands'
@@ -160,6 +161,7 @@ export function App() {
           fetchProducts('todos'),
           fetchCustomers(oData),
           fetchCoupons(),
+          fetchBrands(),
         ])
         if (isMounted) {
           setProducts(pData)
@@ -506,10 +508,6 @@ export function App() {
     handleOpenCategory('ropa')
   }
 
-  const handleExploreCaps = () => {
-    handleOpenCategory('gorras')
-  }
-
   // RENDER ADMIN VIEW
   if (currentView === 'admin') {
     return (
@@ -716,30 +714,30 @@ export function App() {
           setCurrentView('cart')
         }}
         onSelectCategory={handleOpenCategory}
+        onSelectProduct={(product) => setSelectedProduct(product)}
         products={products}
       />
 
       <main className="flex-1">
-        {/* 3. Hero Section (Drop 004 / Underground Essentials + Mascot) */}
+        {/* 3. Hero Section (Underground Essentials + Mascot) */}
         <Hero
           onShopDrop={handleShopDrop}
-          onExploreCaps={handleExploreCaps}
         />
 
         {/* 4. Marquee Endless Ticker */}
         <MarqueeTicker />
 
-        {/* 5. 01 / LA SELECCIÓN GJ - LOS MÁS BUSCADOS (Solo destacados o elegidos desde el admin) */}
+        {/* 5. 01 / ENCUENTRA TU ESENCIA - ELIGE TU CÓDIGO (Clothing, Caps & Accesorios) */}
+        <CategoriesBanner
+          onSelectCategory={handleOpenCategory}
+        />
+
+        {/* 6. 02 / LA SELECCIÓN GJ - LOS MÁS BUSCADOS (Solo destacados o elegidos desde el admin) */}
         <FeaturedProducts
           products={products}
           onOpenCollection={handleOpenCategory}
           onAddToCart={(product, color) => handleAddToCart(product, color)}
           onSelectProduct={(product) => setSelectedProduct(product)}
-        />
-
-        {/* 6. 02 / ENCUENTRA TU ESENCIA - ELIGE TU CÓDIGO (Clothing, Caps & Accesorios) */}
-        <CategoriesBanner
-          onSelectCategory={handleOpenCategory}
         />
 
         {/* 7. Newsletter (ENTRA AL CÍRCULO) */}

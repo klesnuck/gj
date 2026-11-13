@@ -9,6 +9,7 @@ import type { Product, CartItem, Coupon } from '../../types/database.types'
 import { resolveColorHex } from '../../lib/colors'
 import { getCapBrands } from '../../lib/brands'
 import { isProductSoldOut } from '../../lib/stock'
+import { categoryHasSizes, getKnownCategories } from '../../lib/categories'
 
 interface CollectionPageProps {
   products: Product[]
@@ -54,7 +55,11 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
   const [selectedColors, setSelectedColors] = useState<Record<string, string>>({})
   const [addedAnimation, setAddedAnimation] = useState<string | null>(null)
 
-  const isRopa = activeCategory.toLowerCase() === 'ropa'
+  const isRopa =
+    activeCategory.toLowerCase() === 'ropa' ||
+    activeCategory.toLowerCase() === 'playeras' ||
+    activeCategory.toLowerCase() === 'hoodies' ||
+    categoryHasSizes(activeCategory)
   const isGorra = activeCategory.toLowerCase().startsWith('gorras')
   const isAccesorios = activeCategory.toLowerCase() === 'accesorios'
 
@@ -67,9 +72,22 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
     })),
   ]
 
+  // Dynamic clothing sub-types (Toda la ropa, Playeras, Hoodies + categorías con tallas)
+  const ropaOptions = [
+    { id: 'ropa', label: 'Toda la ropa' },
+    { id: 'playeras', label: 'Playeras' },
+    { id: 'hoodies', label: 'Hoodies' },
+    ...getKnownCategories()
+      .filter((c) => c.hasSizes && c.id !== 'playeras' && c.id !== 'hoodies' && c.id !== 'ropa')
+      .map((c) => ({
+        id: c.id,
+        label: c.name,
+      })),
+  ]
+
   // Determine Title & Subtitle
   let collectionTitle = 'CATÁLOGO'
-  let collectionTag = 'COLECCIÓN / DROP 004'
+  let collectionTag = 'COLECCIÓN EXCLUSIVA'
   let collectionDesc = 'Explora la selección completa de streetwear.'
 
   if (isRopa) {
@@ -78,11 +96,11 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
     collectionDesc = 'Playeras heavyweight, sudaderas pesadas de 450 g y siluetas con corte boxy/relaxed.'
   } else if (isGorra) {
     collectionTitle = 'GORRAS'
-    collectionTag = 'HEADWEAR / DROP 004'
+    collectionTag = 'HEADWEAR / COLECCIÓN'
     collectionDesc = 'Siluetas insignia GJ, snapbacks, modelos 59FIFTY y coronas desestructuradas por marca.'
   } else if (isAccesorios) {
     collectionTitle = 'ACCESORIOS'
-    collectionTag = 'COMPLEMENTOS / DROP 004'
+    collectionTag = 'COMPLEMENTOS / ACCESORIOS'
     collectionDesc = 'Calcetines pesados crew, mosquetones tácticos y accesorios utilitarios para tu fit.'
   }
 
@@ -95,7 +113,7 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
     e.stopPropagation()
     if (isProductSoldOut(product)) return
     // Si la prenda tiene tallas (ropa, playeras, sudaderas), abre el selector para elegir talla
-    if (product.category !== 'gorras') {
+    if (categoryHasSizes(product.category)) {
       onSelectProduct(product)
       return
     }
@@ -119,6 +137,7 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
         cartCount={cartCount}
         onOpenCart={onOpenCart}
         onSelectCategory={onSelectCategory}
+        onSelectProduct={onSelectProduct}
         products={allProducts.length > 0 ? allProducts : products}
       />
 
@@ -211,11 +230,7 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
             </div>
 
             <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none pb-1 sm:pb-0">
-              {[
-                { id: 'ropa', label: 'Toda la ropa' },
-                { id: 'playeras', label: 'Playeras' },
-                { id: 'hoodies', label: 'Hoodies' },
-              ].map((sub) => {
+              {ropaOptions.map((sub) => {
                 const isActive = activeCategory.toLowerCase() === sub.id.toLowerCase()
                 return (
                   <button
@@ -245,7 +260,7 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
               Pronto agregaremos nuevas existencias de esta categoría en el siguiente Drop.
             </p>
             <button
-              onClick={() => onSelectCategory(isGorra ? 'gorras' : 'todos')}
+              onClick={() => onSelectCategory(isGorra ? 'gorras' : isRopa ? 'ropa' : 'todos')}
               className="mt-4 px-6 py-2.5 bg-[#D4FF00] text-black font-mono font-bold text-xs uppercase tracking-wider"
             >
               VER TODAS LAS PIEZAS

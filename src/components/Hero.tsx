@@ -3,10 +3,10 @@ import { ArrowUpRight } from 'lucide-react'
 
 interface HeroProps {
   onShopDrop: () => void
-  onExploreCaps: () => void
+  onExploreCaps?: () => void
 }
 
-export const Hero: React.FC<HeroProps> = ({ onShopDrop, onExploreCaps }) => {
+export const Hero: React.FC<HeroProps> = ({ onShopDrop }) => {
   return (
     <section className="relative w-full bg-[#090909] overflow-hidden pt-6 pb-12 sm:pt-10 sm:pb-16 md:py-16 lg:py-20 border-b border-[#1c1c1c]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -36,21 +36,13 @@ export const Hero: React.FC<HeroProps> = ({ onShopDrop, onExploreCaps }) => {
               No seguimos el hype. Lo llevamos puesto.
             </p>
 
-            {/* Action Buttons - Stacked on narrow phones, row on tablets and desktop */}
+            {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 pt-1 sm:pt-2 w-full sm:w-auto">
               <button
                 onClick={onShopDrop}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 sm:px-7 py-3.5 bg-[#D4FF00] hover:bg-[#bfe600] text-black font-mono font-bold text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 transform hover:-translate-y-0.5 shadow-[0_0_20px_rgba(212,255,0,0.25)] cursor-pointer"
               >
                 <span>VER LO MAS VENDIDO</span>
-                <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
-              </button>
-
-              <button
-                onClick={onExploreCaps}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 sm:px-7 py-3.5 bg-[#121212] hover:bg-[#1a1a1a] text-white hover:text-[#D4FF00] border border-[#2b2b2b] hover:border-[#D4FF00] font-mono font-bold text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 cursor-pointer"
-              >
-                <span>EXPLORAR GORRAS</span>
                 <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
               </button>
             </div>

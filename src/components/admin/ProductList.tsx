@@ -12,6 +12,7 @@ import {
   Star,
 } from 'lucide-react'
 import type { Product } from '../../types/database.types'
+import { getKnownCategories } from '../../lib/categories'
 
 interface ProductListProps {
   products: Product[]
@@ -57,7 +58,7 @@ export const ProductList = ({
 
   return (
     <div className="space-y-6 text-white relative">
-      
+
       {/* Toast Notification for Deleted Product */}
       {deletedToast && (
         <div className="fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 bg-[#121212] border border-[#D4FF00] text-white shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
@@ -70,7 +71,7 @@ export const ProductList = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1c1c1c]">
         <div>
           <span className="text-xs font-mono text-gray-500 tracking-widest uppercase block mb-1">
-            CATÁLOGO · DROP 004
+            CATÁLOGO DE PRODUCTOS
           </span>
           <h2 className="font-display text-4xl sm:text-5xl uppercase tracking-tight text-white font-extrabold leading-none">
             PRODUCTOS ({products.length})
@@ -105,15 +106,14 @@ export const ProductList = ({
 
         {/* Category Filter Pills */}
         <div className="flex items-center space-x-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-          {['todos', 'gorras', 'playeras', 'hoodies', 'accesorios'].map((cat) => (
+          {['todos', ...getKnownCategories().map((c) => c.id)].map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer ${
-                selectedCategory === cat
+              className={`px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer ${selectedCategory === cat
                   ? 'bg-white text-black font-bold'
                   : 'bg-[#141414] text-gray-400 hover:text-white border border-[#242424]'
-              }`}
+                }`}
             >
               {cat}
             </button>
@@ -203,11 +203,10 @@ export const ProductList = ({
                       <td className="py-3 px-4">
                         {product.tag ? (
                           <span
-                            className={`inline-block px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
-                              product.tag_type === 'lime'
+                            className={`inline-block px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${product.tag_type === 'lime'
                                 ? 'bg-[#D4FF00] text-black'
                                 : 'bg-white text-black'
-                            }`}
+                              }`}
                           >
                             {product.tag}
                           </span>
@@ -221,11 +220,10 @@ export const ProductList = ({
                         <button
                           type="button"
                           onClick={() => onToggleFeatured?.(product.id)}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider rounded-sm transition-all cursor-pointer ${
-                            product.is_featured
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider rounded-sm transition-all cursor-pointer ${product.is_featured
                               ? 'bg-[#D4FF00] text-black shadow-sm shadow-[#D4FF00]/25'
                               : 'bg-[#181818] text-gray-500 hover:text-white border border-[#282828] hover:border-gray-500'
-                          }`}
+                            }`}
                           title={
                             product.is_featured
                               ? 'En portada (Haz clic para quitar de Los más buscados)'
@@ -233,9 +231,8 @@ export const ProductList = ({
                           }
                         >
                           <Star
-                            className={`w-3 h-3 ${
-                              product.is_featured ? 'fill-black text-black' : 'text-gray-500'
-                            }`}
+                            className={`w-3 h-3 ${product.is_featured ? 'fill-black text-black' : 'text-gray-500'
+                              }`}
                           />
                           <span>{product.is_featured ? 'EN PORTADA' : 'NO'}</span>
                         </button>
@@ -244,7 +241,7 @@ export const ProductList = ({
                       {/* Actions */}
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end space-x-2">
-                          
+
                           {/* Ver en Tienda */}
                           {onViewProductInStore && (
                             <button
@@ -300,7 +297,7 @@ export const ProductList = ({
 
           {/* Dialog */}
           <div className="relative bg-[#101010] border border-red-900/60 max-w-md w-full p-6 text-white shadow-2xl z-10 animate-in fade-in zoom-in-95 duration-200">
-            
+
             {/* Close Button */}
             <button
               onClick={() => setProductToDelete(null)}

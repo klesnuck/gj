@@ -14,7 +14,7 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-4">
           <div>
             <span className="text-xs font-mono tracking-widest text-gray-500 uppercase block mb-1">
-              02 / ENCUENTRA TU ESENCIA
+              01 / ENCUENTRA TU ESENCIA
             </span>
             <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-white font-extrabold leading-none">
               ELIGE TU CÓDIGO

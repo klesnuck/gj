@@ -57,7 +57,7 @@ export const EditorialSection: React.FC<EditorialSectionProps> = ({ onDiscoverNe
             <div className="grid grid-cols-2 gap-6 pt-2 pb-2 border-y border-[#1e1e1e]">
               <div>
                 <div className="font-display text-lg sm:text-xl uppercase tracking-wider text-white font-bold">
-                  DROP 004
+                  EDICIÓN LIMITADA
                 </div>
                 <div className="text-xs font-mono text-gray-500 uppercase mt-0.5">
                   Edición independiente

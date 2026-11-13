@@ -59,7 +59,7 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#D4FF00] animate-pulse" />
               <span className="text-xs font-mono tracking-widest text-[#D4FF00] font-bold uppercase">
-                01 / SELECCIÓN GJ · LO MÁS VENDIDO
+                02 / SELECCIÓN GJ · LO MÁS VENDIDO
               </span>
             </div>
             <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-white font-extrabold leading-none">

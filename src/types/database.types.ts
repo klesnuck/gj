@@ -10,7 +10,7 @@ export interface Product {
   id: string
   slug: string
   title: string
-  category: 'gorras' | 'playeras' | 'hoodies' | 'accesorios' | 'ropa'
+  category: 'gorras' | 'playeras' | 'hoodies' | 'accesorios' | 'ropa' | string
   brand?: string
   price: number
   currency: string
