@@ -10,10 +10,10 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory, onOpenAdmin })
   return (
     <footer className="w-full bg-[#070707] text-white pt-16 sm:pt-20 pb-12 border-t border-[#1a1a1a] select-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Main Footer Links Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 pb-16 border-b border-[#1c1c1c]">
-          
+
           {/* Col 1: Brand & Identity (spans 2 cols on lg) */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center">
@@ -107,11 +107,6 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory, onOpenAdmin })
               <li>
                 <a href="#cambios" className="hover:text-[#D4FF00] transition-colors">
                   Cambios y devoluciones
-                </a>
-              </li>
-              <li>
-                <a href="#guia-tallas" className="hover:text-[#D4FF00] transition-colors">
-                  Guía de tallas
                 </a>
               </li>
               <li>

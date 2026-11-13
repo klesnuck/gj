@@ -9,7 +9,7 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
   return (
     <section className="w-full bg-[#090909] py-16 sm:py-24 border-b border-[#1c1c1c]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-4">
           <div>
@@ -32,7 +32,7 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
 
         {/* 2-Column Visual Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          
+
           {/* Card 1: CLOTHING */}
           <div
             onClick={() => onSelectCategory('ropa')}
@@ -45,15 +45,22 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
               </span>
             </div>
 
-            {/* Background Image */}
+            {/* Background Image (Foto completa en blanco y negro) */}
             <img
-              src="/images/category-clothing.jpg"
+              src="/images/clothing-essentials.jpg"
               alt="Colección Ropa Streetwear"
-              className="w-full h-full object-cover object-center grayscale contrast-125 group-hover:scale-105 group-hover:grayscale-0 transition-all duration-700 brightness-90"
+              className="w-full h-full object-cover object-center grayscale contrast-120 brightness-90 group-hover:scale-105 transition-transform duration-700 ease-out"
               onError={(e) => {
                 (e.target as HTMLImageElement).src =
-                  'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?auto=format&fit=crop&w=800&q=80'
+                  '/images/category-clothing.jpg'
               }}
+            />
+
+            {/* Silhouette Layer (Solo la silueta de la persona a color original en hover) */}
+            <img
+              src="/images/clothing-silhouette.png"
+              alt="Silueta Persona Streetwear"
+              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 ease-out"
             />
 
             {/* Gradient Overlay */}

@@ -2,9 +2,7 @@ import React from 'react'
 
 export const MarqueeTicker: React.FC = () => {
   const items = [
-    'SIN PERMISO',
-    'SIN COPIAS',
-    'SOLO IDENTIDAD',
+    'REVIVIENDO EL HYPE',
     'GJ CLOTHING AND CAPS',
   ]
 
