@@ -49,22 +49,22 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
             <img
               src="/images/clothing-essentials.jpg"
               alt="Colección Ropa Streetwear"
-              className="w-full h-full object-cover object-center grayscale contrast-120 brightness-90 group-hover:scale-105 transition-transform duration-700 ease-out"
+              className="w-full h-full object-cover object-center grayscale contrast-120 brightness-90 group-hover:brightness-40 group-hover:scale-102 transition-all duration-700 ease-out"
               onError={(e) => {
                 (e.target as HTMLImageElement).src =
                   '/images/category-clothing.jpg'
               }}
             />
 
-            {/* Silhouette Layer (Solo la silueta de la persona a color original en hover) */}
+            {/* Gradient Overlay (Detrás de la silueta para que resalte y no quede oscurecida) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/20 pointer-events-none z-0" />
+
+            {/* Silhouette Layer (Sobresale hacia el frente con escala 110%, elevación, sombra 3D y aura neon) */}
             <img
               src="/images/clothing-silhouette.png"
               alt="Silueta Persona Streetwear"
-              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 ease-out"
+              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none opacity-0 group-hover:opacity-100 group-hover:scale-110 group-hover:-translate-y-2 group-hover:contrast-115 group-hover:brightness-105 transition-all duration-700 ease-out z-10 [filter:drop-shadow(0_20px_30px_rgba(0,0,0,0.95))_drop-shadow(0_0_25px_rgba(212,255,0,0.35))]"
             />
-
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/20 pointer-events-none" />
 
             {/* Bottom Content */}
             <div className="absolute bottom-6 left-6 right-6 z-20 flex items-end justify-between">
@@ -99,22 +99,22 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
             <img
               src="/images/caps-showcase.jpg"
               alt="Colección Gorras Streetwear"
-              className="w-full h-full object-cover object-center grayscale contrast-120 brightness-90 group-hover:scale-105 transition-transform duration-700 ease-out"
+              className="w-full h-full object-cover object-center grayscale contrast-120 brightness-90 group-hover:brightness-40 group-hover:scale-102 transition-all duration-700 ease-out"
               onError={(e) => {
                 (e.target as HTMLImageElement).src =
                   '/images/category-caps.jpg'
               }}
             />
 
-            {/* Silhouette Layer (Solo la silueta de la persona y gorra a color original en hover) */}
+            {/* Gradient Overlay (Detrás de la silueta para que resalte y no quede oscurecida) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/20 pointer-events-none z-0" />
+
+            {/* Silhouette Layer (Sobresale hacia el frente con escala 110%, elevación, sombra 3D y aura neon) */}
             <img
               src="/images/caps-silhouette.png"
               alt="Silueta Gorra Streetwear"
-              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 ease-out"
+              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none opacity-0 group-hover:opacity-100 group-hover:scale-110 group-hover:-translate-y-2 group-hover:contrast-115 group-hover:brightness-105 transition-all duration-700 ease-out z-10 [filter:drop-shadow(0_20px_30px_rgba(0,0,0,0.95))_drop-shadow(0_0_25px_rgba(212,255,0,0.35))]"
             />
-
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/20 pointer-events-none" />
 
             {/* Bottom Content */}
             <div className="absolute bottom-6 left-6 right-6 z-20 flex items-end justify-between">
