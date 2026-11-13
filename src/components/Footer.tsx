@@ -31,7 +31,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory, onOpenAdmin })
             {/* Social Links */}
             <div className="flex items-center space-x-4 pt-2">
               <a
-                href="https://instagram.com"
+                href="https://www.instagram.com/gjboutique.slw?exln=MXZjaG51cm44d25hYw%3D%3D&utm_source=qr"
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Instagram"
@@ -135,7 +135,7 @@ export const Footer: React.FC<FooterProps> = ({ onSelectCategory, onOpenAdmin })
               </li>
               <li>
                 <a
-                  href="https://instagram.com"
+                  href="https://www.instagram.com/gjboutique.slw?exln=MXZjaG51cm44d25hYw%3D%3D&utm_source=qr"
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#D4FF00] transition-colors"

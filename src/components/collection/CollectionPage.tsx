@@ -139,6 +139,7 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
         onSelectCategory={onSelectCategory}
         onSelectProduct={onSelectProduct}
         products={allProducts.length > 0 ? allProducts : products}
+        activeCategory={activeCategory}
       />
 
       {/* Main Collection Container */}

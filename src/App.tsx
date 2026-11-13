@@ -716,6 +716,7 @@ export function App() {
         onSelectCategory={handleOpenCategory}
         onSelectProduct={(product) => setSelectedProduct(product)}
         products={products}
+        activeCategory={currentView === 'store' ? 'todos' : activeCategory}
       />
 
       <main className="flex-1">
