@@ -5,12 +5,11 @@ import {
   Check,
   Truck,
   CreditCard,
-  ExternalLink,
   MapPin,
   MessageCircle,
   AlertCircle,
-  ShieldCheck,
-  Sparkles,
+  Landmark,
+  Banknote,
 } from 'lucide-react'
 import type { CartItem, Coupon, Order } from '../../types/database.types'
 import {
@@ -20,8 +19,6 @@ import {
   tokenizeCard,
   createMercadoPagoPayment,
   getInstallmentOptions,
-  isMercadoPagoConfigured,
-  isSandboxKey,
   syncMercadoPagoConfigFromSupabase,
 } from '../../lib/mercadopago'
 
@@ -65,7 +62,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [country] = useState('México')
 
   const [shippingMethod, setShippingMethod] = useState<'paqueteria_nacional' | 'saltillo_local'>('saltillo_local')
-  const [paymentMethod, setPaymentMethod] = useState<'tarjeta' | 'mercadopago'>('tarjeta')
+  const [paymentMethod, setPaymentMethod] = useState<'tarjeta' | 'transferencia' | 'efectivo'>('tarjeta')
 
   // Card details
   const [cardHolder, setCardHolder] = useState('')
@@ -155,10 +152,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     setIsProcessing(true)
 
     try {
-      let finalPaymentMethodLabel =
-        paymentMethod === 'tarjeta'
-          ? 'Tarjeta de crédito / débito'
-          : 'Mercado Pago (OXXO / SPEI)'
+      let finalPaymentMethodLabel = 'Tarjeta de crédito / débito'
 
       if (paymentMethod === 'tarjeta') {
         const rawNumber = cardNumber.replace(/\D/g, '')
@@ -207,6 +201,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         const brandName = (tokenRes.brand || detectCardBrand(rawNumber) || 'tarjeta').toUpperCase()
         const installmentText = installments === 1 ? '1 exhibición' : `${installments} meses`
         finalPaymentMethodLabel = `Mercado Pago (${brandName} •••• ${tokenRes.lastFour || rawNumber.slice(-4)}) · ${installmentText} [ID: ${paymentRes.paymentId || 'APROBADO'}]`
+      } else if (paymentMethod === 'transferencia') {
+        finalPaymentMethodLabel = 'Transferencia electrónica (SPEI)'
+      } else if (paymentMethod === 'efectivo') {
+        finalPaymentMethodLabel = 'Pago en efectivo'
       }
 
       const fullAddress = `${street} ${interior ? `Int. ${interior}, ` : ''}${colonia}, C.P. ${zipCode}, ${city}, ${state}, ${country}`
@@ -831,88 +829,101 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         <span>Usar la dirección de entrega para la facturación</span>
                       </label>
 
-                      {/* Mercado Pago Security Trust Banner */}
-                      <div className="pt-3 border-t border-[#1c1c1c] space-y-2">
-                        <div className="flex items-center gap-2 text-[11px] font-mono text-gray-400">
-                          <ShieldCheck className="w-4 h-4 text-[#D4FF00] shrink-0" />
-                          <span>
-                            Cifrado SSL de 256 bits y tokenización directa vía Mercado Pago México.
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono">
-                          <span className="px-1.5 py-0.5 bg-[#1b1b1b] text-gray-300 font-bold border border-[#2b2b2b]">
-                            PCI-DSS NIVEL 1
-                          </span>
-                          <span className="px-1.5 py-0.5 bg-[#1b1b1b] text-gray-300 font-bold border border-[#2b2b2b]">
-                            MERCADO PAGO JS V2
-                          </span>
-                          {isMercadoPagoConfigured() ? (
-                            <span className="text-[#D4FF00] flex items-center gap-1 font-bold">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF00]"></span>
-                              {isSandboxKey() ? 'Modo Sandbox Activo' : 'Mercado Pago En Vivo'}
-                            </span>
-                          ) : (
-                            <span className="text-amber-400 flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                              Simulación Segura (Llave en Admin)
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
                     </div>
                   )}
                 </div>
 
-                {/* Option 2: Mercado Pago */}
+                {/* Option 2: Transferencia electrónica (SPEI) */}
                 <div
                   className={`border transition-all ${
-                    paymentMethod === 'mercadopago'
-                      ? 'border-[#D4FF00] bg-[#111111]'
+                    paymentMethod === 'transferencia'
+                      ? 'border-[#D4FF00] bg-[#111111] shadow-[0_0_15px_rgba(212,255,0,0.1)]'
                       : 'border-[#222222] bg-[#121212] hover:border-[#333]'
                   }`}
                 >
                   <label
-                    onClick={() => setPaymentMethod('mercadopago')}
+                    onClick={() => setPaymentMethod('transferencia')}
                     className="flex items-center justify-between p-4 cursor-pointer"
                   >
                     <div className="flex items-center space-x-3">
                       <input
                         type="radio"
                         name="payment_method"
-                        checked={paymentMethod === 'mercadopago'}
-                        onChange={() => setPaymentMethod('mercadopago')}
+                        checked={paymentMethod === 'transferencia'}
+                        onChange={() => setPaymentMethod('transferencia')}
                         className="accent-[#D4FF00] cursor-pointer"
                       />
-                      <span className="font-sans text-sm font-bold text-white">
-                        Mercado Pago (Checkout Pro · OXXO / SPEI / Saldo)
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <Landmark className="w-4 h-4 text-[#D4FF00]" />
+                        <span className="font-sans text-sm font-bold text-white">
+                          Transferencia electrónica (SPEI)
+                        </span>
+                      </div>
                     </div>
 
-                    <ExternalLink className="w-4 h-4 text-gray-500" />
+                    <span className="text-[10px] font-mono text-gray-400 tracking-wider uppercase">
+                      Cualquier banco · 24/7
+                    </span>
                   </label>
 
-                  {paymentMethod === 'mercadopago' && (
-                    <div className="p-4 pt-0 space-y-3 border-t border-[#1c1c1c] mt-1">
-                      <div className="p-3.5 bg-[#151515] border border-[#252525] text-xs font-mono text-gray-300 space-y-2">
+                  {paymentMethod === 'transferencia' && (
+                    <div className="p-4 pt-0 space-y-2 border-t border-[#1c1c1c] mt-1 text-xs font-mono text-gray-300">
+                      <div className="p-3.5 bg-[#151515] border border-[#252525] space-y-1.5">
                         <div className="flex items-center gap-2 text-white font-bold">
-                          <Sparkles className="w-4 h-4 text-[#D4FF00]" />
-                          <span>Pasarela Mercado Pago Checkout Pro</span>
+                          <MessageCircle className="w-4 h-4 text-[#25D366]" />
+                          <span>Confirmación y datos por WhatsApp</span>
                         </div>
                         <p className="text-gray-400 leading-relaxed text-[11px]">
-                          Al hacer clic en <strong className="text-white">"FINALIZAR COMPRA"</strong>, se confirmará tu orden y podrás pagar con tu cuenta de Mercado Pago, generar código para depósito en efectivo en OXXO, o realizar transferencia SPEI con acreditación en segundos.
+                          Al hacer clic en <strong className="text-white">"CONFIRMAR ORDEN"</strong>, tu pedido se registrará inmediatamente y te compartiremos los datos bancarios (CLABE interbancaria) para transferir y enviarnos tu comprobante por WhatsApp.
                         </p>
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          <span className="px-2 py-0.5 bg-black/60 border border-[#333] text-[10px] text-gray-300 font-mono">
-                            🏪 Efectivo en OXXO
-                          </span>
-                          <span className="px-2 py-0.5 bg-black/60 border border-[#333] text-[10px] text-gray-300 font-mono">
-                            ⚡ SPEI Inmediato
-                          </span>
-                          <span className="px-2 py-0.5 bg-black/60 border border-[#333] text-[10px] text-gray-300 font-mono">
-                            💳 Saldo Mercado Pago
-                          </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Option 3: Pago en efectivo */}
+                <div
+                  className={`border transition-all ${
+                    paymentMethod === 'efectivo'
+                      ? 'border-[#D4FF00] bg-[#111111] shadow-[0_0_15px_rgba(212,255,0,0.1)]'
+                      : 'border-[#222222] bg-[#121212] hover:border-[#333]'
+                  }`}
+                >
+                  <label
+                    onClick={() => setPaymentMethod('efectivo')}
+                    className="flex items-center justify-between p-4 cursor-pointer"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="radio"
+                        name="payment_method"
+                        checked={paymentMethod === 'efectivo'}
+                        onChange={() => setPaymentMethod('efectivo')}
+                        className="accent-[#D4FF00] cursor-pointer"
+                      />
+                      <div className="flex items-center space-x-2">
+                        <Banknote className="w-4 h-4 text-[#D4FF00]" />
+                        <span className="font-sans text-sm font-bold text-white">
+                          Pago en efectivo (OXXO / Entrega)
+                        </span>
+                      </div>
+                    </div>
+
+                    <span className="text-[10px] font-mono text-gray-400 tracking-wider uppercase">
+                      OXXO · Contra-entrega
+                    </span>
+                  </label>
+
+                  {paymentMethod === 'efectivo' && (
+                    <div className="p-4 pt-0 space-y-2 border-t border-[#1c1c1c] mt-1 text-xs font-mono text-gray-300">
+                      <div className="p-3.5 bg-[#151515] border border-[#252525] space-y-1.5">
+                        <div className="flex items-center gap-2 text-white font-bold">
+                          <MessageCircle className="w-4 h-4 text-[#25D366]" />
+                          <span>Confirmación y pago por WhatsApp</span>
                         </div>
+                        <p className="text-gray-400 leading-relaxed text-[11px]">
+                          Al hacer clic en <strong className="text-white">"CONFIRMAR ORDEN"</strong>, tu orden quedará guardada. Si elegiste entrega personal en Saltillo podrás pagar al momento de recibir, o bien te indicaremos cómo depositar en cualquier OXXO por WhatsApp.
+                        </p>
                       </div>
                     </div>
                   )}
@@ -1087,11 +1098,16 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 className="w-full inline-flex items-center justify-center gap-2 py-4 px-6 bg-[#D4FF00] hover:bg-[#bfe600] disabled:bg-gray-600 text-black font-mono font-black text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 transform hover:-translate-y-0.5 shadow-xl shadow-[#D4FF00]/20 cursor-pointer"
               >
                 {isProcessing ? (
-                  <span>PROCESANDO PAGO...</span>
-                ) : (
+                  <span>PROCESANDO...</span>
+                ) : paymentMethod === 'tarjeta' ? (
                   <>
                     <span>PAGAR ${finalTotal.toLocaleString('es-MX')} MXN</span>
                     <Lock className="w-4 h-4 stroke-[2.5]" />
+                  </>
+                ) : (
+                  <>
+                    <span>CONFIRMAR ORDEN · ${finalTotal.toLocaleString('es-MX')} MXN</span>
+                    <MessageCircle className="w-4 h-4 fill-black stroke-none" />
                   </>
                 )}
               </button>

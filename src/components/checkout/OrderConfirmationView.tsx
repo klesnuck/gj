@@ -13,12 +13,24 @@ export const OrderConfirmationView: React.FC<OrderConfirmationViewProps> = ({
 }) => {
   const isSaltillo = order.shippingType === 'saltillo_local'
   const waPhone = '528444923686'
-  const waText = encodeURIComponent(
-    `¡Hola gj.! Acabo de realizar el pedido *#${order.orderNumber}* por un total de *$${order.total.toLocaleString(
+  const isTransfer = (order.paymentMethod || '').toLowerCase().includes('transferencia')
+  const isCash = (order.paymentMethod || '').toLowerCase().includes('efectivo')
+
+  let messagePrompt = `¡Hola gj.! Acabo de pagar el pedido *#${order.orderNumber}* por un total de *$${order.total.toLocaleString(
+    'es-MX'
+  )} MXN* con tarjeta. Mi nombre es ${order.customerName}. Me gustaría confirmar los detalles de entrega.`
+
+  if (isTransfer) {
+    messagePrompt = `¡Hola gj.! Acabo de registrar el pedido *#${order.orderNumber}* por un total de *$${order.total.toLocaleString(
       'es-MX'
-    )} MXN*. Mi nombre es ${order.customerName}. Me gustaría confirmar los detalles de entrega.`
-  )
-  const waUrl = `https://wa.me/${waPhone}?text=${waText}`
+    )} MXN* con pago por *Transferencia electrónica*. Mi nombre es ${order.customerName}. Me gustaría que me proporcionen los datos bancarios / CLABE para transferir y enviarles mi comprobante.`
+  } else if (isCash) {
+    messagePrompt = `¡Hola gj.! Acabo de registrar el pedido *#${order.orderNumber}* por un total de *$${order.total.toLocaleString(
+      'es-MX'
+    )} MXN* con *Pago en efectivo*. Mi nombre es ${order.customerName}. Me gustaría coordinar los detalles del pago y la entrega.`
+  }
+
+  const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(messagePrompt)}`
 
   return (
     <div className="min-h-screen bg-[#070707] text-white flex flex-col font-sans selection:bg-[#D4FF00] selection:text-black">
@@ -118,13 +130,50 @@ export const OrderConfirmationView: React.FC<OrderConfirmationViewProps> = ({
             </div>
 
             <div className="flex items-baseline justify-between pt-1 text-sm">
-              <span className="text-white font-bold uppercase">Total Pagado:</span>
+              <span className="text-white font-bold uppercase">{isTransfer || isCash ? 'Total a Pagar:' : 'Total Pagado:'}</span>
               <span className="font-mono text-2xl font-black text-[#D4FF00]">
                 ${order.total.toLocaleString('es-MX')} MXN
               </span>
             </div>
 
           </div>
+
+          {/* Payment Method Action Callout */}
+          {isTransfer && (
+            <div className="p-4 bg-[#141d14] border border-[#22c55e]/40 max-w-xl mx-auto text-left space-y-1.5 text-xs font-mono text-[#86efac]">
+              <div className="font-bold text-white flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#22c55e]"></span>
+                <span>PAGO POR TRANSFERENCIA ELECTRÓNICA (SPEI)</span>
+              </div>
+              <p className="text-gray-300 text-[11px] leading-relaxed">
+                Tu pedido está registrado y tus piezas reservadas. Presiona el botón verde de abajo para enviarnos un WhatsApp y recibir la CLABE para realizar tu transferencia.
+              </p>
+            </div>
+          )}
+
+          {isCash && (
+            <div className="p-4 bg-[#1f1a10] border border-[#f59e0b]/40 max-w-xl mx-auto text-left space-y-1.5 text-xs font-mono text-[#fde047]">
+              <div className="font-bold text-white flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
+                <span>PAGO EN EFECTIVO (OXXO / ENTREGA PERSONAL)</span>
+              </div>
+              <p className="text-gray-300 text-[11px] leading-relaxed">
+                Tu pedido está registrado. Presiona el botón verde de abajo para coordinar por WhatsApp el pago en efectivo (al recibir o ficha para OXXO) y la entrega.
+              </p>
+            </div>
+          )}
+
+          {!isTransfer && !isCash && (
+            <div className="p-4 bg-[#121a14] border border-[#22c55e]/30 max-w-xl mx-auto text-left space-y-1.5 text-xs font-mono text-[#86efac]">
+              <div className="font-bold text-white flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#22c55e]"></span>
+                <span>PAGO CON TARJETA APROBADO</span>
+              </div>
+              <p className="text-gray-300 text-[11px] leading-relaxed">
+                Tu pago con tarjeta fue acreditado exitosamente. Presiona el botón de abajo para coordinar los detalles de entrega y rastreo de tu paquete por WhatsApp.
+              </p>
+            </div>
+          )}
 
           {/* WhatsApp Direct Action Button */}
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">

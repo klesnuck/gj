@@ -118,17 +118,19 @@ export function App() {
         setCurrentView('checkout')
       } else if (hash.startsWith('#cart')) {
         setCurrentView('cart')
+      } else if (hash.startsWith('#order-success')) {
+        setCurrentView('order-success')
       } else if (hash.startsWith('#coleccion')) {
         const cat = hash.replace('#coleccion/', '') || 'todos'
         setActiveCategory(cat)
         setCurrentView('collection')
-      } else if (currentView !== 'order-success') {
-        setCurrentView('store')
+      } else {
+        setCurrentView((prev) => (prev === 'order-success' ? 'order-success' : 'store'))
       }
     }
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
-  }, [currentView])
+  }, [])
 
   // Scroll to top on view changes
   useEffect(() => {
@@ -408,8 +410,8 @@ export function App() {
     // Reset Cart and display Step 03 Confirmation
     setCartItems([])
     setCompletedOrder(newOrder)
+    window.location.hash = 'order-success'
     setCurrentView('order-success')
-    window.location.hash = ''
 
     return newOrder
   }
@@ -662,7 +664,7 @@ export function App() {
   }
 
   // RENDER ORDER CONFIRMATION VIEW (Step 03: Confirmación)
-  if (currentView === 'order-success' && completedOrder) {
+  if ((currentView === 'order-success' || window.location.hash === '#order-success') && completedOrder) {
     return (
       <OrderConfirmationView
         order={completedOrder}
