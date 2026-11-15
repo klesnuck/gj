@@ -457,15 +457,11 @@ export async function createMercadoPagoPayment(payload: ProcessPaymentPayload): 
   if (methodId === 'mastercard') methodId = 'master'
   if (methodId === 'unknown') methodId = 'visa'
 
-  const idempotencyKey = `gj_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
-
   try {
-    const response = await fetch('https://api.mercadopago.com/v1/payments', {
+    const response = await fetch('/api/process-payment', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-        'X-Idempotency-Key': idempotencyKey,
       },
       body: JSON.stringify({
         token: payload.token,
@@ -478,17 +474,18 @@ export async function createMercadoPagoPayment(payload: ProcessPaymentPayload): 
           first_name: payload.payerName?.firstName?.trim() || undefined,
           last_name: payload.payerName?.lastName?.trim() || undefined,
         },
+        accessToken,
       }),
     })
 
-    const data = await response.json()
+    const data = await response.json().catch(() => null)
 
-    if (!response.ok) {
+    if (!response.ok || !data) {
       console.error('Error de Mercado Pago API:', data)
       const errorDetail =
         data?.message ||
         data?.cause?.[0]?.description ||
-        'Error de comunicación con la pasarela de Mercado Pago.'
+        'Error de comunicación con la pasarela de pagos. Por favor intenta de nuevo.'
       return {
         success: false,
         errorMessage: errorDetail,
