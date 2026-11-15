@@ -9,8 +9,19 @@ import {
   MapPin,
   MessageCircle,
   AlertCircle,
+  ShieldCheck,
+  Sparkles,
 } from 'lucide-react'
 import type { CartItem, Coupon, Order } from '../../types/database.types'
+import {
+  formatCardNumber,
+  formatCardExpiry,
+  detectCardBrand,
+  tokenizeCard,
+  getInstallmentOptions,
+  isMercadoPagoConfigured,
+  isSandboxKey,
+} from '../../lib/mercadopago'
 
 interface CheckoutPageProps {
   items: CartItem[]
@@ -60,6 +71,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   const [cardExpiry, setCardExpiry] = useState('')
   const [cardCvv, setCardCvv] = useState('')
   const [useShippingForBilling, setUseShippingForBilling] = useState(true)
+  const [installments, setInstallments] = useState(1)
 
   // Coupon code state
   const [couponCode, setCouponCode] = useState('')
@@ -110,9 +122,61 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       return
     }
 
+    if (paymentMethod === 'tarjeta') {
+      if (!cardHolder.trim()) {
+        setErrorMessage('Por favor ingresa el nombre del titular como aparece en la tarjeta.')
+        return
+      }
+      const rawNumber = cardNumber.replace(/\D/g, '')
+      if (rawNumber.length < 15 || rawNumber.length > 16) {
+        setErrorMessage('Por favor ingresa un número de tarjeta válido (15 o 16 dígitos).')
+        return
+      }
+      const [expMonth, expYear] = cardExpiry.split('/').map((s) => s.trim())
+      if (!expMonth || !expYear || expMonth.length !== 2 || (expYear.length !== 2 && expYear.length !== 4)) {
+        setErrorMessage('Por favor ingresa una fecha de vencimiento válida (MM / AA).')
+        return
+      }
+      if (cardCvv.trim().length < 3) {
+        setErrorMessage('Por favor ingresa un código de seguridad (CVV) válido de 3 o 4 dígitos.')
+        return
+      }
+    }
+
     setIsProcessing(true)
 
     try {
+      let finalPaymentMethodLabel =
+        paymentMethod === 'tarjeta'
+          ? 'Tarjeta de crédito / débito'
+          : 'Mercado Pago (OXXO / SPEI)'
+
+      if (paymentMethod === 'tarjeta') {
+        const rawNumber = cardNumber.replace(/\D/g, '')
+        const [expMonth, expYear] = cardExpiry.split('/').map((s) => s.trim())
+
+        const tokenRes = await tokenizeCard({
+          cardNumber: rawNumber,
+          cardholderName: cardHolder.trim(),
+          cardExpirationMonth: expMonth,
+          cardExpirationYear: expYear,
+          securityCode: cardCvv.trim(),
+        })
+
+        if (!tokenRes.success) {
+          setErrorMessage(
+            tokenRes.errorMessage ||
+              'No se pudo verificar la tarjeta con Mercado Pago. Verifica los datos ingresados.'
+          )
+          setIsProcessing(false)
+          return
+        }
+
+        const brandName = (tokenRes.brand || detectCardBrand(rawNumber) || 'tarjeta').toUpperCase()
+        const installmentText = installments === 1 ? '1 exhibición' : `${installments} meses`
+        finalPaymentMethodLabel = `Mercado Pago (${brandName} •••• ${tokenRes.lastFour || rawNumber.slice(-4)}) · ${installmentText}`
+      }
+
       const fullAddress = `${street} ${interior ? `Int. ${interior}, ` : ''}${colonia}, C.P. ${zipCode}, ${city}, ${state}, ${country}`
       const fullName = `${firstName} ${lastName}`.trim()
 
@@ -122,7 +186,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         customerPhone: phone,
         shippingType: shippingMethod,
         shippingAddress: fullAddress,
-        paymentMethod: paymentMethod === 'tarjeta' ? 'Tarjeta de crédito / débito' : 'Mercado Pago',
+        paymentMethod: finalPaymentMethodLabel,
         total: finalTotal,
       })
     } catch (err: any) {
@@ -606,9 +670,17 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       </div>
                     </div>
 
-                    <span className="text-[10px] font-mono text-gray-400 tracking-widest uppercase">
-                      VISA / Mastercard
-                    </span>
+                    <div className="flex items-center space-x-1.5">
+                      <span className="px-1.5 py-0.5 bg-[#1b1b1b] border border-[#2d2d2d] text-[9px] font-mono font-bold text-gray-300">
+                        VISA
+                      </span>
+                      <span className="px-1.5 py-0.5 bg-[#1b1b1b] border border-[#2d2d2d] text-[9px] font-mono font-bold text-gray-300">
+                        MC
+                      </span>
+                      <span className="px-1.5 py-0.5 bg-[#1b1b1b] border border-[#2d2d2d] text-[9px] font-mono font-bold text-gray-300">
+                        AMEX
+                      </span>
+                    </div>
                   </label>
 
                   {/* Expanded Card Inputs */}
@@ -625,22 +697,35 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                           value={cardHolder}
                           onChange={(e) => setCardHolder(e.target.value)}
                           placeholder="Nombre como aparece en la tarjeta"
-                          className="w-full bg-[#161616] border border-[#2b2b2b] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
+                          className="w-full bg-[#161616] border border-[#2b2b2b] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none uppercase"
                         />
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
-                          Número de tarjeta *
-                        </label>
-                        <input
-                          type="text"
-                          required={paymentMethod === 'tarjeta'}
-                          value={cardNumber}
-                          onChange={(e) => setCardNumber(e.target.value)}
-                          placeholder="0000 0000 0000 0000"
-                          className="w-full bg-[#161616] border border-[#2b2b2b] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
-                        />
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
+                            Número de tarjeta *
+                          </label>
+                          {detectCardBrand(cardNumber) !== 'unknown' && (
+                            <span className="text-[10px] font-mono font-bold text-[#D4FF00] uppercase tracking-wider px-2 py-0.5 bg-black/60 border border-[#333]">
+                              {detectCardBrand(cardNumber)} detectada
+                            </span>
+                          )}
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            required={paymentMethod === 'tarjeta'}
+                            value={cardNumber}
+                            maxLength={19}
+                            onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+                            placeholder="0000 0000 0000 0000"
+                            className="w-full bg-[#161616] border border-[#2b2b2b] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none pr-12"
+                          />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                            <CreditCard className="w-4 h-4 text-gray-500" />
+                          </div>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
@@ -652,7 +737,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                             type="text"
                             required={paymentMethod === 'tarjeta'}
                             value={cardExpiry}
-                            onChange={(e) => setCardExpiry(e.target.value)}
+                            maxLength={7}
+                            onChange={(e) => setCardExpiry(formatCardExpiry(e.target.value))}
                             placeholder="MM / AA"
                             className="w-full bg-[#161616] border border-[#2b2b2b] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
                           />
@@ -667,11 +753,40 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                             maxLength={4}
                             required={paymentMethod === 'tarjeta'}
                             value={cardCvv}
-                            onChange={(e) => setCardCvv(e.target.value)}
-                            placeholder="CVV (3 o 4 dígitos)"
+                            onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                            placeholder="3 o 4 dígitos"
                             className="w-full bg-[#161616] border border-[#2b2b2b] focus:border-[#D4FF00] px-4 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
                           />
                         </div>
+                      </div>
+
+                      {/* Installments selector */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
+                            Mensualidades / Cuotas
+                          </label>
+                          {installments > 1 && (
+                            <span className="text-[10px] font-mono font-bold text-[#D4FF00]">
+                              SIN INTERESES
+                            </span>
+                          )}
+                        </div>
+                        <select
+                          value={installments}
+                          onChange={(e) => setInstallments(Number(e.target.value))}
+                          className="w-full bg-[#161616] border border-[#2b2b2b] focus:border-[#D4FF00] px-3.5 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none cursor-pointer"
+                        >
+                          {getInstallmentOptions(finalTotal).map((opt) => (
+                            <option
+                              key={opt.installments}
+                              value={opt.installments}
+                              className="bg-[#121212] text-white"
+                            >
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <label className="flex items-center space-x-2.5 text-xs font-mono text-gray-400 pt-1 cursor-pointer select-none">
@@ -684,34 +799,92 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                         <span>Usar la dirección de entrega para la facturación</span>
                       </label>
 
+                      {/* Mercado Pago Security Trust Banner */}
+                      <div className="pt-3 border-t border-[#1c1c1c] space-y-2">
+                        <div className="flex items-center gap-2 text-[11px] font-mono text-gray-400">
+                          <ShieldCheck className="w-4 h-4 text-[#D4FF00] shrink-0" />
+                          <span>
+                            Cifrado SSL de 256 bits y tokenización directa vía Mercado Pago México.
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono">
+                          <span className="px-1.5 py-0.5 bg-[#1b1b1b] text-gray-300 font-bold border border-[#2b2b2b]">
+                            PCI-DSS NIVEL 1
+                          </span>
+                          <span className="px-1.5 py-0.5 bg-[#1b1b1b] text-gray-300 font-bold border border-[#2b2b2b]">
+                            MERCADO PAGO JS V2
+                          </span>
+                          {isMercadoPagoConfigured() ? (
+                            <span className="text-[#D4FF00] flex items-center gap-1 font-bold">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#D4FF00]"></span>
+                              {isSandboxKey() ? 'Modo Sandbox Activo' : 'Mercado Pago En Vivo'}
+                            </span>
+                          ) : (
+                            <span className="text-amber-400 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                              Simulación Segura (Llave en Admin)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
                     </div>
                   )}
                 </div>
 
                 {/* Option 2: Mercado Pago */}
-                <label
-                  onClick={() => setPaymentMethod('mercadopago')}
-                  className={`flex items-center justify-between p-4 border transition-all cursor-pointer ${
+                <div
+                  className={`border transition-all ${
                     paymentMethod === 'mercadopago'
                       ? 'border-[#D4FF00] bg-[#111111]'
                       : 'border-[#222222] bg-[#121212] hover:border-[#333]'
                   }`}
                 >
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      name="payment_method"
-                      checked={paymentMethod === 'mercadopago'}
-                      onChange={() => setPaymentMethod('mercadopago')}
-                      className="accent-[#D4FF00] cursor-pointer"
-                    />
-                    <span className="font-sans text-sm font-bold text-white">
-                      Mercado Pago (Tarjeta, OXXO, SPEI)
-                    </span>
-                  </div>
+                  <label
+                    onClick={() => setPaymentMethod('mercadopago')}
+                    className="flex items-center justify-between p-4 cursor-pointer"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="radio"
+                        name="payment_method"
+                        checked={paymentMethod === 'mercadopago'}
+                        onChange={() => setPaymentMethod('mercadopago')}
+                        className="accent-[#D4FF00] cursor-pointer"
+                      />
+                      <span className="font-sans text-sm font-bold text-white">
+                        Mercado Pago (Checkout Pro · OXXO / SPEI / Saldo)
+                      </span>
+                    </div>
 
-                  <ExternalLink className="w-4 h-4 text-gray-500" />
-                </label>
+                    <ExternalLink className="w-4 h-4 text-gray-500" />
+                  </label>
+
+                  {paymentMethod === 'mercadopago' && (
+                    <div className="p-4 pt-0 space-y-3 border-t border-[#1c1c1c] mt-1">
+                      <div className="p-3.5 bg-[#151515] border border-[#252525] text-xs font-mono text-gray-300 space-y-2">
+                        <div className="flex items-center gap-2 text-white font-bold">
+                          <Sparkles className="w-4 h-4 text-[#D4FF00]" />
+                          <span>Pasarela Mercado Pago Checkout Pro</span>
+                        </div>
+                        <p className="text-gray-400 leading-relaxed text-[11px]">
+                          Al hacer clic en <strong className="text-white">"FINALIZAR COMPRA"</strong>, se confirmará tu orden y podrás pagar con tu cuenta de Mercado Pago, generar código para depósito en efectivo en OXXO, o realizar transferencia SPEI con acreditación en segundos.
+                        </p>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          <span className="px-2 py-0.5 bg-black/60 border border-[#333] text-[10px] text-gray-300 font-mono">
+                            🏪 Efectivo en OXXO
+                          </span>
+                          <span className="px-2 py-0.5 bg-black/60 border border-[#333] text-[10px] text-gray-300 font-mono">
+                            ⚡ SPEI Inmediato
+                          </span>
+                          <span className="px-2 py-0.5 bg-black/60 border border-[#333] text-[10px] text-gray-300 font-mono">
+                            💳 Saldo Mercado Pago
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
               </div>
             </div>

@@ -9,6 +9,7 @@ import {
   Sliders,
   Menu,
   X,
+  CreditCard,
 } from 'lucide-react'
 
 interface AdminLayoutProps {
@@ -32,6 +33,7 @@ export const AdminLayout = ({
     { id: 'pedidos', label: 'Pedidos', icon: ShoppingBag },
     { id: 'clientes', label: 'Clientes', icon: Users },
     { id: 'descuentos', label: 'Descuentos', icon: Tag },
+    { id: 'pagos', label: 'Mercado Pago', icon: CreditCard, badge: 'PAGOS' },
   ]
 
   const breadcrumbMap: Record<string, { parent: string; current: string }> = {
@@ -40,6 +42,7 @@ export const AdminLayout = ({
     pedidos: { parent: 'Logística', current: 'Pedidos y Envíos' },
     clientes: { parent: 'Audiencia', current: 'Clientes y Contactos' },
     descuentos: { parent: 'Marketing', current: 'Cupones Temporales' },
+    pagos: { parent: 'Configuración', current: 'Pasarela Mercado Pago' },
   }
 
   const currentBreadcrumb =

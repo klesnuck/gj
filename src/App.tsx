@@ -18,6 +18,7 @@ import { ProductForm } from './components/admin/ProductForm'
 import { OrdersList } from './components/admin/OrdersList'
 import { CustomersList } from './components/admin/CustomersList'
 import { DiscountsView } from './components/admin/DiscountsView'
+import { MercadoPagoSettings } from './components/admin/MercadoPagoSettings'
 
 // Cart, Checkout & Collection Pages
 import { CartPage } from './components/cart/CartPage'
@@ -604,6 +605,9 @@ export function App() {
             onDeleteCoupon={handleDeleteCoupon}
           />
         )}
+
+        {/* 6. Mercado Pago Configuration Tab */}
+        {adminTab === 'pagos' && <MercadoPagoSettings />}
       </AdminLayout>
     )
   }
