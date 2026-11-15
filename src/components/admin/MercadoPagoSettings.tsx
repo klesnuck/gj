@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   CreditCard,
   ShieldCheck,
@@ -16,6 +16,8 @@ import {
   saveMercadoPagoPublicKey,
   getMercadoPagoAccessToken,
   saveMercadoPagoAccessToken,
+  saveMercadoPagoConfigToSupabase,
+  syncMercadoPagoConfigFromSupabase,
   isMercadoPagoConfigured,
   isSandboxKey,
   loadMercadoPagoSDK,
@@ -30,13 +32,31 @@ export const MercadoPagoSettings = () => {
     message: string
   } | null>(null)
 
+  // Al montar, sincronizar con la nube de Supabase para que funcione en cualquier dispositivo
+  useEffect(() => {
+    syncMercadoPagoConfigFromSupabase().then((cfg) => {
+      if (cfg && (cfg.publicKey || cfg.accessToken)) {
+        if (cfg.publicKey) setPublicKey(cfg.publicKey)
+        if (cfg.accessToken) setAccessToken(cfg.accessToken)
+      } else {
+        // Si la laptop ya tenía llaves guardadas en localStorage, respaldarlas automáticamente en la nube
+        const localPub = getMercadoPagoPublicKey()
+        const localAccess = getMercadoPagoAccessToken()
+        if (localPub || localAccess) {
+          saveMercadoPagoConfigToSupabase(localPub, localAccess).catch(() => {})
+        }
+      }
+    })
+  }, [])
+
   const isConfigured = isMercadoPagoConfigured()
   const isSandbox = isSandboxKey(publicKey)
 
-  const handleSave = (e?: React.FormEvent) => {
+  const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     saveMercadoPagoPublicKey(publicKey.trim())
     saveMercadoPagoAccessToken(accessToken.trim())
+    await saveMercadoPagoConfigToSupabase(publicKey.trim(), accessToken.trim())
     setSavedSuccess(true)
     setTimeout(() => setSavedSuccess(false), 3000)
   }
@@ -105,6 +125,7 @@ export const MercadoPagoSettings = () => {
       setAccessToken('')
       saveMercadoPagoPublicKey('')
       saveMercadoPagoAccessToken('')
+      saveMercadoPagoConfigToSupabase('', '').catch(() => {})
       setTestStatus(null)
     }
   }

@@ -9,6 +9,8 @@
  * 5. Modo Sandbox / Pruebas para desarrollo y modo Producción cuando se coloca la llave real.
  */
 
+import { supabase } from './supabase'
+
 declare global {
   interface Window {
     MercadoPago?: any
@@ -84,6 +86,70 @@ export function saveMercadoPagoAccessToken(token: string): void {
   } catch (e) {
     console.warn(e)
   }
+}
+
+const CONFIG_DROP_CODE = '__MERCADOPAGO_CONFIG__'
+
+/**
+ * Guarda las credenciales de Mercado Pago en la nube (Supabase)
+ * para que funcionen automáticamente en cualquier celular, laptop o cliente.
+ */
+export async function saveMercadoPagoConfigToSupabase(publicKey: string, accessToken: string): Promise<boolean> {
+  saveMercadoPagoPublicKey(publicKey)
+  saveMercadoPagoAccessToken(accessToken)
+
+  if (!supabase) return false
+
+  try {
+    const { error } = await supabase.from('drops').upsert({
+      code: CONFIG_DROP_CODE,
+      name: 'Mercado Pago Cloud Credentials',
+      tagline: publicKey.trim(),
+      description: accessToken.trim(),
+      volume: 'CONFIG',
+      is_active: false,
+    }, { onConflict: 'code' })
+
+    if (error) {
+      console.warn('Error al sincronizar Mercado Pago en Supabase:', error.message)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.warn('Error al guardar credenciales en Supabase:', err)
+    return false
+  }
+}
+
+/**
+ * Sincroniza las credenciales de Mercado Pago desde la nube (Supabase)
+ * para que cualquier dispositivo nuevo (como tu celular) las tenga al instante.
+ */
+export async function syncMercadoPagoConfigFromSupabase(): Promise<{ publicKey: string; accessToken: string } | null> {
+  if (!supabase) return null
+
+  try {
+    const { data, error } = await supabase
+      .from('drops')
+      .select('tagline, description')
+      .eq('code', CONFIG_DROP_CODE)
+      .maybeSingle()
+
+    if (!error && data) {
+      const pubKey = (data.tagline || '').trim()
+      const token = (data.description || '').trim()
+      if (pubKey) {
+        saveMercadoPagoPublicKey(pubKey)
+      }
+      if (token) {
+        saveMercadoPagoAccessToken(token)
+      }
+      return { publicKey: pubKey, accessToken: token }
+    }
+  } catch (err) {
+    console.warn('Error sincronizando credenciales MP desde Supabase:', err)
+  }
+  return null
 }
 
 /**

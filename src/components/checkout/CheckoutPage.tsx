@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   ArrowLeft,
   Lock,
@@ -22,6 +22,7 @@ import {
   getInstallmentOptions,
   isMercadoPagoConfigured,
   isSandboxKey,
+  syncMercadoPagoConfigFromSupabase,
 } from '../../lib/mercadopago'
 
 interface CheckoutPageProps {
@@ -84,6 +85,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   // Processing state
   const [isProcessing, setIsProcessing] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [, setMpConfigTick] = useState(0)
+
+  useEffect(() => {
+    syncMercadoPagoConfigFromSupabase().then(() => {
+      setMpConfigTick((t) => t + 1)
+    })
+  }, [])
 
   const totalItemCount = items.reduce((acc, it) => acc + it.quantity, 0)
   const subtotal = items.reduce((acc, it) => acc + it.product.price * it.quantity, 0)

@@ -45,6 +45,7 @@ import {
 } from './lib/supabase'
 import { decrementProductStock, parseSizeStocks, isProductSoldOut } from './lib/stock'
 import { filterProductsByCategory } from './lib/brands'
+import { syncMercadoPagoConfigFromSupabase } from './lib/mercadopago'
 import type { Product, CartItem, Order, Customer, Coupon, OrderItem } from './types/database.types'
 
 export function App() {
@@ -81,6 +82,11 @@ export function App() {
   // Live Datasets (Starting from 0, populated live from Supabase)
   const [orders, setOrders] = useState<Order[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
+
+  // Sincronizar credenciales de Mercado Pago desde Supabase para todos los dispositivos (móvil, laptop, clientes)
+  useEffect(() => {
+    syncMercadoPagoConfigFromSupabase().catch(() => {})
+  }, [])
 
   // Limpieza de datos mock antiguos almacenados en el localStorage del teléfono o navegador
   useEffect(() => {
