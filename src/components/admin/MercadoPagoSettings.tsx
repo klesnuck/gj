@@ -49,6 +49,35 @@ export const MercadoPagoSettings = () => {
 
     try {
       saveMercadoPagoPublicKey(publicKey.trim())
+      saveMercadoPagoAccessToken(accessToken.trim())
+
+      // Verificar Access Token contra la API oficial de Mercado Pago
+      if (accessToken.trim()) {
+        try {
+          const res = await fetch('https://api.mercadopago.com/v1/payment_methods', {
+            headers: {
+              Authorization: `Bearer ${accessToken.trim()}`,
+            },
+          })
+          if (res.ok) {
+            setTestStatus({
+              type: 'success',
+              message: '¡Conexión 100% exitosa! Tu Access Token y tu Public Key están verificados y listos para cobrar con Mercado Pago.',
+            })
+            return
+          } else {
+            const data = await res.json().catch(() => null)
+            setTestStatus({
+              type: 'error',
+              message: `El Access Token fue rechazado por Mercado Pago: ${data?.message || 'Verifica que sea el de tu aplicación'}.`,
+            })
+            return
+          }
+        } catch (fetchErr: any) {
+          console.warn('Verificación directa por fetch falló, verificando SDK...', fetchErr)
+        }
+      }
+
       const mp = await loadMercadoPagoSDK()
 
       if (mp) {

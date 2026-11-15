@@ -18,6 +18,7 @@ import {
   formatCardExpiry,
   detectCardBrand,
   tokenizeCard,
+  createMercadoPagoPayment,
   getInstallmentOptions,
   isMercadoPagoConfigured,
   isSandboxKey,
@@ -172,9 +173,32 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           return
         }
 
+        // 2. Procesar el cobro bancario real con la API de Mercado Pago
+        const paymentRes = await createMercadoPagoPayment({
+          token: tokenRes.token!,
+          transactionAmount: finalTotal,
+          installments: installments,
+          description: `Compra gj. CLOTHING AND CAPS (${totalItemCount} productos)`,
+          paymentMethodId: tokenRes.brand || detectCardBrand(rawNumber),
+          payerEmail: email,
+          payerName: {
+            firstName,
+            lastName,
+          },
+        })
+
+        if (!paymentRes.success) {
+          setErrorMessage(
+            paymentRes.errorMessage ||
+              'No se pudo procesar el cobro con la tarjeta. Verifica los datos o intenta con otra tarjeta.'
+          )
+          setIsProcessing(false)
+          return
+        }
+
         const brandName = (tokenRes.brand || detectCardBrand(rawNumber) || 'tarjeta').toUpperCase()
         const installmentText = installments === 1 ? '1 exhibición' : `${installments} meses`
-        finalPaymentMethodLabel = `Mercado Pago (${brandName} •••• ${tokenRes.lastFour || rawNumber.slice(-4)}) · ${installmentText}`
+        finalPaymentMethodLabel = `Mercado Pago (${brandName} •••• ${tokenRes.lastFour || rawNumber.slice(-4)}) · ${installmentText} [ID: ${paymentRes.paymentId || 'APROBADO'}]`
       }
 
       const fullAddress = `${street} ${interior ? `Int. ${interior}, ` : ''}${colonia}, C.P. ${zipCode}, ${city}, ${state}, ${country}`

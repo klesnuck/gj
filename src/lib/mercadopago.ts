@@ -310,3 +310,156 @@ export function getInstallmentOptions(totalAmount: number): {
 
   return options
 }
+
+export interface ProcessPaymentPayload {
+  token: string
+  transactionAmount: number
+  installments: number
+  description: string
+  paymentMethodId: CardBrand | string
+  payerEmail: string
+  payerName?: {
+    firstName?: string
+    lastName?: string
+  }
+}
+
+export interface ProcessPaymentResult {
+  success: boolean
+  status?: 'approved' | 'in_process' | 'rejected' | 'pending'
+  statusDetail?: string
+  paymentId?: string | number
+  errorMessage?: string
+}
+
+export function translateMercadoPagoStatusDetail(detail?: string): string {
+  switch (detail) {
+    case 'accredited':
+      return '¡Pago acreditado exitosamente!'
+    case 'cc_rejected_insufficient_amount':
+      return 'Fondos insuficientes en la tarjeta. Intenta con otra tarjeta.'
+    case 'cc_rejected_bad_filled_security_code':
+      return 'El código de seguridad (CVV) es incorrecto.'
+    case 'cc_rejected_bad_filled_date':
+      return 'La fecha de vencimiento es incorrecta.'
+    case 'cc_rejected_bad_filled_other':
+      return 'Revisa los datos de tu tarjeta e intenta nuevamente.'
+    case 'cc_rejected_call_for_authorize':
+      return 'Debes autorizar el pago con tu banco emisor e intentar de nuevo.'
+    case 'cc_rejected_card_disabled':
+      return 'Tu tarjeta no está habilitada para compras por internet. Llama a tu banco.'
+    case 'cc_rejected_duplicated_payment':
+      return 'Ya realizaste un pago por este valor. Si necesitas volver a pagar usa otra tarjeta.'
+    case 'cc_rejected_high_risk':
+      return 'El pago fue rechazado por las políticas de seguridad de Mercado Pago (no se permiten auto-compras con la misma cuenta del vendedor).'
+    case 'cc_rejected_max_attempts':
+      return 'Llegaste al límite de intentos permitidos con esta tarjeta. Elige otra.'
+    default:
+      return detail
+        ? `Pago no aprobado por el emisor (${detail}).`
+        : 'El pago no pudo ser completado. Por favor verifica tus datos o intenta con otra tarjeta.'
+  }
+}
+
+/**
+ * Procesa el cobro real enviando el token generado a la API oficial de Payments de Mercado Pago.
+ * Requiere el Access Token (APP_USR-... o TEST-...) configurado.
+ */
+export async function createMercadoPagoPayment(payload: ProcessPaymentPayload): Promise<ProcessPaymentResult> {
+  const accessToken = getMercadoPagoAccessToken()
+  const pubKey = getMercadoPagoPublicKey()
+
+  // Si no hay credenciales de Mercado Pago guardadas, simular cobro aprobado para demostración
+  if (!pubKey && !accessToken) {
+    return {
+      success: true,
+      status: 'approved',
+      statusDetail: 'accredited',
+      paymentId: `sim_${Date.now()}`,
+    }
+  }
+
+  if (!accessToken) {
+    return {
+      success: false,
+      errorMessage: 'Falta configurar el Access Token en el panel Admin (Mercado Pago) para autorizar los cobros.',
+    }
+  }
+
+  // Normalizar identificador de método de pago para Mercado Pago México
+  let methodId = (payload.paymentMethodId || 'visa').toLowerCase()
+  if (methodId === 'mastercard') methodId = 'master'
+  if (methodId === 'unknown') methodId = 'visa'
+
+  const idempotencyKey = `gj_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+
+  try {
+    const response = await fetch('https://api.mercadopago.com/v1/payments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'X-Idempotency-Key': idempotencyKey,
+      },
+      body: JSON.stringify({
+        token: payload.token,
+        transaction_amount: Number(payload.transactionAmount.toFixed(2)),
+        installments: payload.installments || 1,
+        description: payload.description,
+        payment_method_id: methodId,
+        payer: {
+          email: payload.payerEmail.trim().toLowerCase(),
+          first_name: payload.payerName?.firstName?.trim() || undefined,
+          last_name: payload.payerName?.lastName?.trim() || undefined,
+        },
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      console.error('Error de Mercado Pago API:', data)
+      const errorDetail =
+        data?.message ||
+        data?.cause?.[0]?.description ||
+        'Error de comunicación con la pasarela de Mercado Pago.'
+      return {
+        success: false,
+        errorMessage: errorDetail,
+      }
+    }
+
+    if (data.status === 'approved') {
+      return {
+        success: true,
+        status: 'approved',
+        statusDetail: data.status_detail,
+        paymentId: data.id,
+      }
+    }
+
+    if (data.status === 'in_process' || data.status === 'pending') {
+      return {
+        success: true,
+        status: data.status,
+        statusDetail: data.status_detail,
+        paymentId: data.id,
+      }
+    }
+
+    // Pago rechazado
+    return {
+      success: false,
+      status: data.status,
+      statusDetail: data.status_detail,
+      paymentId: data.id,
+      errorMessage: translateMercadoPagoStatusDetail(data.status_detail),
+    }
+  } catch (err: any) {
+    console.error('Excepción al conectar con Mercado Pago:', err)
+    return {
+      success: false,
+      errorMessage: err?.message || 'Error de red al procesar el pago con Mercado Pago.',
+    }
+  }
+}
