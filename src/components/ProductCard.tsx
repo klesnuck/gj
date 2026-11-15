@@ -151,18 +151,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         )}
 
-        {/* Main Product Image with subtle crossfade */}
-        <img
-          key={activeSrc}
-          src={activeSrc}
-          alt={product.title}
-          className={`w-full h-full object-cover object-center transition-all duration-300 ${
-            isSoldOut ? 'grayscale opacity-50' : 'group-hover:scale-105'
-          }`}
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = '/images/product-cap-black.jpg'
-          }}
-        />
+        {/* Main Product Image with subtle crossfade & uniform containment */}
+        <div className="w-full h-full p-2.5 sm:p-3 flex items-center justify-center">
+          <img
+            key={activeSrc}
+            src={activeSrc}
+            alt={product.title}
+            className={`max-w-full max-h-full w-auto h-auto object-contain object-center transition-all duration-300 ${
+              isSoldOut ? 'grayscale opacity-50' : 'group-hover:scale-105'
+            }`}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/images/product-cap-black.jpg'
+            }}
+          />
+        </div>
 
         {/* Interactive Carousel Controls (when product has multiple images) */}
         {hasMultipleImages && (
@@ -297,3 +299,4 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     </div>
   )
 }
+

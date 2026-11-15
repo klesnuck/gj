@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { X, Check, ShoppingBag, ArrowUpRight } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { X, Check, ShoppingBag, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Product } from '../types/database.types'
 import { resolveColorHex } from '../lib/colors'
 import { parseSizeStocks } from '../lib/stock'
@@ -55,6 +55,33 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     product.images && product.images.length > 0 ? product.images : [product.image_url]
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const currentImage = productImages[activeImageIndex] || product.image_url
+  const touchStartXRef = useRef<number | null>(null)
+
+  const handlePrevImage = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setActiveImageIndex((prev) => (prev - 1 + productImages.length) % productImages.length)
+  }
+
+  const handleNextImage = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setActiveImageIndex((prev) => (prev + 1) % productImages.length)
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || productImages.length <= 1) return
+    const touchEndX = e.changedTouches[0].clientX
+    const diff = touchStartXRef.current - touchEndX
+    if (diff > 35) {
+      setActiveImageIndex((prev) => (prev + 1) % productImages.length)
+    } else if (diff < -35) {
+      setActiveImageIndex((prev) => (prev - 1 + productImages.length) % productImages.length)
+    }
+    touchStartXRef.current = null
+  }
 
   const handleAdd = () => {
     if (isOutOfStock || !isSizeAvailable(selectedSize)) return
@@ -67,7 +94,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-3 sm:p-4">
       {/* Backdrop */}
       <div
         onClick={onClose}
@@ -80,7 +107,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-black/80 hover:bg-[#D4FF00] hover:text-black border border-white/20 flex items-center justify-center text-gray-300 transition-colors cursor-pointer"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 w-8 h-8 rounded-full bg-black/80 hover:bg-[#D4FF00] hover:text-black border border-white/20 flex items-center justify-center text-gray-300 transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
@@ -88,12 +115,16 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2">
           
           {/* Left: Product Image & Multi-Image Strip */}
-          <div className="flex flex-col border-b md:border-b-0 md:border-r border-[#222222] bg-[#141414]">
-            <div className="relative aspect-square overflow-hidden flex items-center justify-center">
+          <div className="flex flex-col border-b md:border-b-0 md:border-r border-[#222222] bg-[#111111]">
+            <div
+              className="relative w-full h-[250px] xs:h-[280px] sm:h-[330px] md:h-auto md:aspect-square overflow-hidden flex items-center justify-center bg-gradient-to-b from-[#161616] via-[#121212] to-[#0d0d0d] p-6 sm:p-8"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
               {product.tag && (
-                <div className="absolute top-4 left-4 z-10">
+                <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10">
                   <span
-                    className={`inline-block px-3 py-1 text-[11px] font-mono font-bold tracking-widest uppercase ${
+                    className={`inline-block px-2.5 py-1 text-[10px] sm:text-[11px] font-mono font-bold tracking-widest uppercase ${
                       product.tag_type === 'lime'
                         ? 'bg-[#D4FF00] text-black'
                         : 'bg-white text-black'
@@ -103,28 +134,61 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                   </span>
                 </div>
               )}
+
+              {/* Main Product Image centered with breathing room so it never touches borders */}
               <img
+                key={currentImage}
                 src={currentImage}
                 alt={product.title}
-                className="w-full h-full object-cover object-center transition-all duration-300"
+                className="max-h-full max-w-full w-auto h-auto object-contain object-center transition-all duration-300 filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.7)]"
               />
+
+              {/* Chevrons for multi-image navigation on preview */}
+              {productImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handlePrevImage}
+                    aria-label="Foto anterior"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/75 hover:bg-[#D4FF00] text-white hover:text-black border border-white/20 flex items-center justify-center z-20 transition-all cursor-pointer shadow-md"
+                  >
+                    <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleNextImage}
+                    aria-label="Foto siguiente"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/75 hover:bg-[#D4FF00] text-white hover:text-black border border-white/20 flex items-center justify-center z-20 transition-all cursor-pointer shadow-md"
+                  >
+                    <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                  </button>
+
+                  {/* Indicator count (e.g. 1/3) */}
+                  <div className="absolute bottom-2.5 right-2.5 z-10">
+                    <span className="px-2 py-0.5 bg-black/80 text-[9px] font-mono text-gray-300 border border-white/10 backdrop-blur-xs">
+                      {activeImageIndex + 1} / {productImages.length}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Thumbnail Navigation Strip if product has multiple images */}
             {productImages.length > 1 && (
-              <div className="flex items-center gap-2 p-3 bg-[#0c0c0c] border-t border-[#1c1c1c] overflow-x-auto scrollbar-none">
+              <div className="flex items-center gap-2 p-2.5 sm:p-3 bg-[#0a0a0a] border-t border-[#1c1c1c] overflow-x-auto scrollbar-none justify-center">
                 {productImages.map((img, i) => (
                   <button
                     key={i}
                     type="button"
                     onClick={() => setActiveImageIndex(i)}
-                    className={`w-12 h-12 rounded-sm overflow-hidden border transition-all cursor-pointer shrink-0 ${
+                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-sm overflow-hidden border p-1 bg-[#141414] flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                       i === activeImageIndex
-                        ? 'border-[#D4FF00] scale-105 shadow-md shadow-[#D4FF00]/20'
-                        : 'border-[#262626] opacity-60 hover:opacity-100'
+                        ? 'border-[#D4FF00] scale-105 shadow-md shadow-[#D4FF00]/25'
+                        : 'border-[#262626] opacity-60 hover:opacity-100 hover:border-[#444]'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <img src={img} alt="" className="max-w-full max-h-full w-auto h-auto object-contain" />
                   </button>
                 ))}
               </div>
