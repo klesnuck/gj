@@ -235,7 +235,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
           <span className="inline-block w-2.5 h-2.5 bg-black text-[#D4FF00] text-[9px] font-black rounded-xs leading-none flex items-center justify-center">
             ✦
           </span>
-          <span>NUEVA COLECCIÓN - YA DISPONIBLE</span>
+          <span>PIEZAS LIMITADAS EXCLUSIVAS</span>
         </div>
       </aside>
 

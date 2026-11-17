@@ -38,7 +38,7 @@ export const DiscountsView = ({
   const [discountValue, setDiscountValue] = useState<number>(15)
   const [minPurchase, setMinPurchase] = useState<number>(999)
   const [selectedDurationHours, setSelectedDurationHours] = useState<number>(72) // 72 hours default
-  const [customDateTime, setCustomDateTime] = useState<string>('')
+  const [customMinutes, setCustomMinutes] = useState<string>('')
 
   // Duration preset buttons
   const durationPresets = [
@@ -54,20 +54,26 @@ export const DiscountsView = ({
     if (!code.trim() || discountValue <= 0) return
 
     const cleanCode = code.trim().toUpperCase().replace(/\s+/g, '_')
+    const parsedMinutes = parseInt(customMinutes, 10)
     let expiresDate: Date
+    let durationLabel: string
 
-    if (customDateTime) {
-      expiresDate = new Date(customDateTime)
+    if (!isNaN(parsedMinutes) && parsedMinutes > 0) {
+      expiresDate = new Date(Date.now() + parsedMinutes * 60 * 1000)
+      if (parsedMinutes === 60) {
+        durationLabel = '1 Hora'
+      } else if (parsedMinutes > 60 && parsedMinutes % 60 === 0) {
+        durationLabel = `${parsedMinutes / 60} Horas`
+      } else {
+        durationLabel = `${parsedMinutes} Minutos`
+      }
     } else {
       expiresDate = new Date(Date.now() + selectedDurationHours * 3600 * 1000)
+      const preset = durationPresets.find((p) => p.hours === selectedDurationHours)
+      durationLabel = preset
+        ? preset.label.split(' ')[0] + ' ' + preset.label.split(' ')[1]
+        : `${selectedDurationHours} Horas`
     }
-
-    const preset = durationPresets.find((p) => p.hours === selectedDurationHours)
-    const durationLabel = customDateTime
-      ? `Hasta ${new Date(customDateTime).toLocaleDateString('es-MX')}`
-      : preset
-      ? preset.label.split(' ')[0] + ' ' + preset.label.split(' ')[1]
-      : `${selectedDurationHours} Horas`
 
     const newCoupon: Coupon = {
       id: `cp-${Date.now()}`,
@@ -88,7 +94,7 @@ export const DiscountsView = ({
 
     // Reset form
     setCode('')
-    setCustomDateTime('')
+    setCustomMinutes('')
     setCreatedSuccess(true)
     setTimeout(() => setCreatedSuccess(false), 3000)
   }
@@ -129,6 +135,9 @@ export const DiscountsView = ({
       return { text: `${days}d ${hours % 24}h restantes`, expired: false }
     }
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+    if (hours === 0) {
+      return { text: `${minutes}m restantes`, expired: false }
+    }
     return { text: `${hours}h ${minutes}m restantes`, expired: false }
   }
 
@@ -241,10 +250,10 @@ export const DiscountsView = ({
                     key={preset.hours}
                     onClick={() => {
                       setSelectedDurationHours(preset.hours)
-                      setCustomDateTime('')
+                      setCustomMinutes('')
                     }}
                     className={`py-2 px-2.5 text-left text-[11px] font-mono border transition-all cursor-pointer ${
-                      selectedDurationHours === preset.hours && !customDateTime
+                      selectedDurationHours === preset.hours && !customMinutes
                         ? 'border-[#D4FF00] bg-[#182109] text-[#D4FF00] font-bold shadow-sm'
                         : 'border-[#242424] bg-[#141414] text-gray-400 hover:text-white hover:border-[#383838]'
                     }`}
@@ -254,20 +263,42 @@ export const DiscountsView = ({
                 ))}
               </div>
 
-              {/* Custom Date/Time Picker */}
-              <div className="pt-2">
-                <span className="text-[10px] text-gray-500 uppercase block mb-1">
-                  O elige fecha y hora exacta de vencimiento:
+              {/* Custom Duration in Minutes */}
+              <div className="pt-2 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono text-gray-400 uppercase tracking-wider">
+                    O define duración en minutos:
+                  </span>
+                  {customMinutes && parseInt(customMinutes, 10) > 0 && (
+                    <span className="text-[10px] font-mono text-[#D4FF00] font-bold">
+                      {parseInt(customMinutes, 10)} min ({Math.round((parseInt(customMinutes, 10) / 60) * 10) / 10} hrs)
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="Ej. 30 (para 30 minutos) o 15, 45, 90..."
+                    value={customMinutes}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '')
+                      setCustomMinutes(val)
+                      if (val) {
+                        setSelectedDurationHours(0)
+                      }
+                    }}
+                    className={`w-full bg-[#141414] border focus:border-[#D4FF00] pl-3.5 pr-20 py-2.5 text-xs font-mono text-white focus:outline-none transition-colors ${
+                      customMinutes ? 'border-[#D4FF00] bg-[#182109]/40' : 'border-[#282828]'
+                    }`}
+                  />
+                  <span className="absolute right-3.5 top-2.5 text-[11px] font-mono font-bold text-gray-400">
+                    MINUTOS
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-gray-500 block">
+                  Escribe la cantidad de minutos deseada (ej. pon 30 y vencerá en exactamente 30 minutos).
                 </span>
-                <input
-                  type="datetime-local"
-                  value={customDateTime}
-                  onChange={(e) => {
-                    setCustomDateTime(e.target.value)
-                    setSelectedDurationHours(0)
-                  }}
-                  className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-3 py-2 text-xs text-white focus:outline-none"
-                />
               </div>
             </div>
 

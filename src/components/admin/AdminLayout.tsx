@@ -6,10 +6,8 @@ import {
   Users,
   Tag,
   ArrowUpRight,
-  Sliders,
   Menu,
   X,
-  CreditCard,
 } from 'lucide-react'
 
 interface AdminLayoutProps {
@@ -33,7 +31,6 @@ export const AdminLayout = ({
     { id: 'pedidos', label: 'Pedidos', icon: ShoppingBag },
     { id: 'clientes', label: 'Clientes', icon: Users },
     { id: 'descuentos', label: 'Descuentos', icon: Tag },
-    { id: 'pagos', label: 'Mercado Pago', icon: CreditCard, badge: 'PAGOS' },
   ]
 
   const breadcrumbMap: Record<string, { parent: string; current: string }> = {
@@ -131,15 +128,6 @@ export const AdminLayout = ({
               <div className="flex items-center space-x-3">
                 <ArrowUpRight className="w-4 h-4" />
                 <span>Ver tienda</span>
-              </div>
-            </button>
-
-            <button
-              className="w-full flex items-center justify-between px-3 py-2 text-xs font-mono text-gray-400 hover:text-white uppercase tracking-wider transition-colors cursor-pointer"
-            >
-              <div className="flex items-center space-x-3">
-                <Sliders className="w-4 h-4" />
-                <span>Configuración</span>
               </div>
             </button>
           </div>

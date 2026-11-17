@@ -485,7 +485,7 @@ export const Navbar = ({
             </button>
           </div>
           <div className="pt-4 border-t border-[#222] flex items-center justify-between text-xs font-mono text-gray-400">
-            <span>NUEVA COLECCIÓN DISPONIBLE</span>
+            <span>ENVÍOS A TODO MÉXICO</span>
             <span>MÉXICO / MXN $</span>
           </div>
         </div>
