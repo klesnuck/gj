@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Plus, Check, ChevronLeft, ChevronRight } from 'lucide-react'
-import type { Product } from '../types/database.types'
+import type { Product, Coupon } from '../types/database.types'
 import { resolveColorHex } from '../lib/colors'
 import { isProductSoldOut } from '../lib/stock'
 import { getProductImages } from '../lib/brands'
+import { getProductDiscount } from '../lib/discounts'
 
 interface ProductCardProps {
   product: Product
+  coupons?: Coupon[]
   currentColor?: string
   isJustAdded?: boolean
   onSelectProduct: (product: Product) => void
@@ -16,6 +18,7 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
+  coupons,
   currentColor,
   isJustAdded,
   onSelectProduct,
@@ -23,6 +26,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onColorClick,
 }) => {
   const isSoldOut = isProductSoldOut(product)
+  const discountInfo = getProductDiscount(product, coupons)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
   const touchStartXRef = useRef<number | null>(null)
@@ -110,11 +114,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Badge: Agotado o Tag Destacado */}
+        {/* Badge: Agotado, En Descuento o Tag Destacado */}
         {isSoldOut ? (
           <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-30">
             <span className="inline-block px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-mono font-black tracking-widest uppercase bg-red-600 text-white border border-red-500 shadow-md">
               AGOTADO
+            </span>
+          </div>
+        ) : discountInfo ? (
+          <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-20">
+            <span className="inline-block px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-mono font-black tracking-widest uppercase bg-[#D4FF00] text-black border border-black shadow-md">
+              EN DESCUENTO · {discountInfo.badgeLabel}
             </span>
           </div>
         ) : (
@@ -250,13 +260,29 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               {product.title}
             </h3>
             <div className="text-right shrink-0">
-              <span
-                className={`font-mono text-xs sm:text-sm font-semibold block ${
-                  isSoldOut ? 'text-gray-500 line-through' : 'text-white'
-                }`}
-              >
-                ${product.price.toLocaleString('es-MX')}
-              </span>
+              {discountInfo && !isSoldOut ? (
+                <div className="flex flex-col items-end">
+                  <span className="font-mono text-[10px] sm:text-xs text-gray-400 line-through block">
+                    ${discountInfo.originalPrice.toLocaleString('es-MX')}
+                  </span>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className="text-[9px] font-mono font-bold text-[#D4FF00] bg-[#182109] px-1 py-0.5 border border-[#D4FF00]/40">
+                      {discountInfo.badgeLabel}
+                    </span>
+                    <span className="font-mono text-xs sm:text-base font-black text-[#D4FF00] block">
+                      ${discountInfo.discountedPrice.toLocaleString('es-MX')}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <span
+                  className={`font-mono text-xs sm:text-sm font-semibold block ${
+                    isSoldOut ? 'text-gray-500 line-through' : 'text-white'
+                  }`}
+                >
+                  ${product.price.toLocaleString('es-MX')}
+                </span>
+              )}
               {isSoldOut && (
                 <span className="text-[9px] sm:text-[10px] font-mono font-bold text-red-500 uppercase tracking-wider block">
                   AGOTADO

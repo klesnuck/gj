@@ -14,6 +14,7 @@ export interface Product {
   subcategory?: string | null
   brand?: string
   price: number
+  original_price?: number
   currency: string
   tag?: string | null
   tag_type?: 'white' | 'lime' | null
@@ -97,4 +98,6 @@ export interface Coupon {
   minPurchase: number
   usesCount: number
   createdAt: string
+  appliesTo?: 'all' | 'specific'
+  productIds?: string[]
 }

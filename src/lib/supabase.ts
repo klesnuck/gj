@@ -678,11 +678,12 @@ export async function clearAllCustomers(): Promise<boolean> {
 // ============================================================
 
 export async function fetchCoupons(): Promise<Coupon[]> {
+  let list: Coupon[] = []
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase.from('coupons').select('*').order('created_at', { ascending: false })
       if (!error && data && data.length > 0) {
-        return data.map((row: any) => ({
+        list = data.map((row: any) => ({
           id: row.id,
           code: row.code,
           discountType: row.discount_type,
@@ -693,6 +694,12 @@ export async function fetchCoupons(): Promise<Coupon[]> {
           minPurchase: Number(row.min_purchase) || 0,
           usesCount: row.uses_count || 0,
           createdAt: row.created_at,
+          appliesTo: row.applies_to || 'all',
+          productIds: Array.isArray(row.product_ids)
+            ? row.product_ids
+            : typeof row.product_ids === 'string'
+            ? JSON.parse(row.product_ids)
+            : [],
         }))
       }
     } catch (err) {
@@ -701,27 +708,61 @@ export async function fetchCoupons(): Promise<Coupon[]> {
   }
 
   try {
-    return JSON.parse(localStorage.getItem('gj_admin_coupons') || '[]')
+    const local = JSON.parse(localStorage.getItem('gj_admin_coupons') || '[]')
+    if (list.length === 0 && Array.isArray(local) && local.length > 0) {
+      return local
+    }
+    // Si supabase trajo cupones, merge con metadata local de prendas si existe
+    if (list.length > 0 && Array.isArray(local) && local.length > 0) {
+      const localMap = new Map(local.map((c: any) => [c.code, c]))
+      list = list.map((item) => {
+        const cached = localMap.get(item.code)
+        if (cached && (!item.productIds || item.productIds.length === 0)) {
+          return {
+            ...item,
+            appliesTo: cached.appliesTo || item.appliesTo,
+            productIds: cached.productIds || item.productIds,
+          }
+        }
+        return item
+      })
+    }
+    return list
   } catch {
-    return []
+    return list
   }
 }
 
 export async function saveCoupon(coupon: Coupon): Promise<boolean> {
+  // Sync a localStorage para persistencia instantánea y offline
+  try {
+    const local = JSON.parse(localStorage.getItem('gj_admin_coupons') || '[]')
+    const filtered = local.filter((c: any) => c.id !== coupon.id && c.code !== coupon.code)
+    localStorage.setItem('gj_admin_coupons', JSON.stringify([coupon, ...filtered]))
+  } catch {}
+
   if (isSupabaseConfigured && supabase) {
     try {
-      await supabase.from('coupons').insert([
-        {
-          code: coupon.code,
-          discount_type: coupon.discountType,
-          discount_value: coupon.discountValue,
-          duration_label: coupon.durationLabel,
-          expires_at: coupon.expiresAt,
-          is_active: coupon.isActive,
-          min_purchase: coupon.minPurchase,
-          uses_count: coupon.usesCount,
-        },
-      ])
+      const payload: any = {
+        code: coupon.code,
+        discount_type: coupon.discountType,
+        discount_value: coupon.discountValue,
+        duration_label: coupon.durationLabel,
+        expires_at: coupon.expiresAt,
+        is_active: coupon.isActive,
+        min_purchase: coupon.minPurchase,
+        uses_count: coupon.usesCount,
+      }
+      if (coupon.appliesTo) payload.applies_to = coupon.appliesTo
+      if (coupon.productIds) payload.product_ids = coupon.productIds
+
+      const { error } = await supabase.from('coupons').insert([payload])
+      if (error) {
+        // En caso de que la tabla aún no tenga las columnas applies_to y product_ids
+        delete payload.applies_to
+        delete payload.product_ids
+        await supabase.from('coupons').insert([payload])
+      }
     } catch (err) {
       console.warn('Error al guardar coupon en Supabase:', err)
     }
@@ -730,6 +771,12 @@ export async function saveCoupon(coupon: Coupon): Promise<boolean> {
 }
 
 export async function toggleCoupon(couponId: string, isActive: boolean): Promise<boolean> {
+  try {
+    const local = JSON.parse(localStorage.getItem('gj_admin_coupons') || '[]')
+    const updated = local.map((c: any) => (c.id === couponId ? { ...c, isActive } : c))
+    localStorage.setItem('gj_admin_coupons', JSON.stringify(updated))
+  } catch {}
+
   if (isSupabaseConfigured && supabase) {
     try {
       await supabase.from('coupons').update({ is_active: isActive }).eq('id', couponId)
@@ -741,6 +788,12 @@ export async function toggleCoupon(couponId: string, isActive: boolean): Promise
 }
 
 export async function deleteCoupon(couponId: string): Promise<boolean> {
+  try {
+    const local = JSON.parse(localStorage.getItem('gj_admin_coupons') || '[]')
+    const filtered = local.filter((c: any) => c.id !== couponId)
+    localStorage.setItem('gj_admin_coupons', JSON.stringify(filtered))
+  } catch {}
+
   if (isSupabaseConfigured && supabase) {
     try {
       await supabase.from('coupons').delete().eq('id', couponId)

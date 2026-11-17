@@ -30,9 +30,6 @@ export const CartDrawer = ({
   if (!isOpen) return null
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
-  const freeShippingThreshold = 1999
-  const progressPercent = Math.min(100, Math.round((subtotal / freeShippingThreshold) * 100))
-  const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal)
 
   // Calculate discount
   let discountAmount = 0
@@ -106,28 +103,6 @@ export const CartDrawer = ({
             >
               <X className="w-5 h-5" />
             </button>
-          </div>
-
-          {/* Free Shipping Progress Meter */}
-          <div className="p-4 bg-[#141414] border-b border-[#202020]">
-            <div className="flex justify-between items-center text-xs font-mono mb-2">
-              <span className="text-gray-300">
-                {subtotal >= freeShippingThreshold ? (
-                  <span className="text-[#D4FF00] font-bold">¡TIENES ENVÍO GRATIS!</span>
-                ) : (
-                  <>
-                    FALTAN <span className="text-[#D4FF00] font-bold">${remainingForFreeShipping.toLocaleString('es-MX')} MXN</span> PARA ENVÍO GRATIS
-                  </>
-                )}
-              </span>
-              <span className="text-gray-500">{progressPercent}%</span>
-            </div>
-            <div className="w-full h-1.5 bg-[#252525] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#D4FF00] transition-all duration-300"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
           </div>
 
           {/* Cart Items List */}
@@ -223,9 +198,16 @@ export const CartDrawer = ({
                         </div>
 
                         {/* Price */}
-                        <span className="font-mono text-sm text-[#D4FF00] font-semibold">
-                          ${(item.product.price * item.quantity).toLocaleString('es-MX')}
-                        </span>
+                        <div className="text-right">
+                          {item.product.original_price && item.product.original_price > item.product.price && (
+                            <span className="text-[10px] font-mono text-gray-500 line-through block">
+                              ${(item.product.original_price * item.quantity).toLocaleString('es-MX')}
+                            </span>
+                          )}
+                          <span className="font-mono text-sm text-[#D4FF00] font-semibold">
+                            ${(item.product.price * item.quantity).toLocaleString('es-MX')}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -294,9 +276,7 @@ export const CartDrawer = ({
 
                 <div className="flex justify-between text-gray-400">
                   <span>Envío</span>
-                  <span className="text-white">
-                    {subtotal >= freeShippingThreshold ? 'GRATIS' : 'Calculado en checkout'}
-                  </span>
+                  <span className="text-white">Calculado en checkout</span>
                 </div>
 
                 <div className="flex justify-between text-base font-bold text-white pt-2 border-t border-[#262626]">

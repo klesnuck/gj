@@ -46,6 +46,7 @@ import {
 import { decrementProductStock, parseSizeStocks, isProductSoldOut } from './lib/stock'
 import { filterProductsByCategory } from './lib/brands'
 import { syncMercadoPagoConfigFromSupabase } from './lib/mercadopago'
+import { getEffectiveProduct } from './lib/discounts'
 import type { Product, CartItem, Order, Customer, Coupon, OrderItem } from './types/database.types'
 
 export function App() {
@@ -426,6 +427,7 @@ export function App() {
       return
     }
 
+    const itemProduct = getEffectiveProduct(product, coupons)
     const isCap = product.category === 'gorras'
     const size = (selectedSize || (isCap ? 'Unitalla' : 'S')).trim()
     const color = (selectedColor || product.colors?.[0] || 'default').trim()
@@ -456,6 +458,7 @@ export function App() {
         const next = [...prev]
         next[existingIndex] = {
           ...next[existingIndex],
+          product: itemProduct,
           quantity: currentQty + 1,
         }
         return next
@@ -463,7 +466,7 @@ export function App() {
         return [
           ...prev,
           {
-            product,
+            product: itemProduct,
             quantity: 1,
             selectedColor: color,
             selectedSize: size,
@@ -648,6 +651,7 @@ export function App() {
         {adminTab === 'descuentos' && (
           <DiscountsView
             coupons={coupons}
+            products={products}
             onAddCoupon={handleAddCoupon}
             onToggleCoupon={handleToggleCoupon}
             onDeleteCoupon={handleDeleteCoupon}
@@ -788,6 +792,7 @@ export function App() {
         {/* 6. 02 / LA SELECCIÓN GJ - LOS MÁS BUSCADOS (Solo destacados o elegidos desde el admin) */}
         <FeaturedProducts
           products={products}
+          coupons={coupons}
           onOpenCollection={handleOpenCategory}
           onAddToCart={(product, color) => handleAddToCart(product, color)}
           onSelectProduct={(product) => setSelectedProduct(product)}
@@ -826,6 +831,7 @@ export function App() {
       {/* Quick View Product Modal */}
       <QuickViewModal
         product={activeSelectedProduct}
+        coupons={coupons}
         onClose={() => setSelectedProduct(null)}
         onAddToCart={handleAddToCart}
       />

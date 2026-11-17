@@ -231,7 +231,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
       {/* Top Electric Lime Announcement Bar */}
       <aside className="w-full bg-[#D4FF00] text-black py-1.5 px-4 text-[11px] font-mono font-bold tracking-wider uppercase select-none z-40 border-b border-black">
         <div className="max-w-7xl mx-auto flex items-center justify-center space-x-2 text-center">
-          <span>ENVÍO GRATIS EN COMPRAS DESDE $1,999 MXN</span>
+          <span>¡HEMOS VUELTO!</span>
           <span className="inline-block w-2.5 h-2.5 bg-black text-[#D4FF00] text-[9px] font-black rounded-xs leading-none flex items-center justify-center">
             ✦
           </span>
@@ -611,7 +611,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </div>
 
                   <span className="text-xs font-mono font-bold text-[#D4FF00] tracking-wider uppercase shrink-0 ml-3">
-                    GRATIS
+                    INCLUIDO
                   </span>
                 </label>
 
@@ -649,7 +649,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </div>
 
                   <span className="text-xs font-mono font-bold text-[#D4FF00] tracking-wider uppercase shrink-0 ml-3">
-                    GRATIS
+                    INCLUIDO
                   </span>
                 </label>
 
@@ -1048,7 +1048,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
                 <div className="flex items-center justify-between text-gray-400">
                   <span>Envío {shippingMethod === 'saltillo_local' ? '(Saltillo)' : 'estándar'}</span>
-                  <span className="text-[#D4FF00] font-bold">GRATIS</span>
+                  <span className="text-[#D4FF00] font-bold">INCLUIDO</span>
                 </div>
 
                 {appliedCoupon && (
@@ -1087,7 +1087,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 </div>
                 <div className="text-[11px] font-mono text-[#D4FF00] flex items-center gap-1.5 pt-0.5 font-bold">
                   <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span>Envío gratis aplicado a tu pedido.</span>
+                  <span>Envío asegurado con seguimiento directo.</span>
                 </div>
               </div>
 

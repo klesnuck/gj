@@ -8,11 +8,14 @@ import {
   Sparkles,
   ToggleLeft,
   ToggleRight,
+  Search,
+  Tag,
 } from 'lucide-react'
-import type { Coupon } from '../../types/database.types'
+import type { Coupon, Product } from '../../types/database.types'
 
 interface DiscountsViewProps {
   coupons: Coupon[]
+  products?: Product[]
   onAddCoupon?: (coupon: Coupon) => void
   onToggleCoupon?: (couponId: string) => void
   onDeleteCoupon?: (couponId: string) => void
@@ -20,6 +23,7 @@ interface DiscountsViewProps {
 
 export const DiscountsView = ({
   coupons: initialCoupons,
+  products = [],
   onAddCoupon,
   onToggleCoupon,
   onDeleteCoupon,
@@ -36,9 +40,14 @@ export const DiscountsView = ({
   const [code, setCode] = useState('')
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage')
   const [discountValue, setDiscountValue] = useState<number>(15)
-  const [minPurchase, setMinPurchase] = useState<number>(999)
+  const [minPurchase, setMinPurchase] = useState<number>(0)
   const [selectedDurationHours, setSelectedDurationHours] = useState<number>(72) // 72 hours default
   const [customMinutes, setCustomMinutes] = useState<string>('')
+
+  // Scope states (Toda la tienda vs Prendas seleccionadas)
+  const [appliesTo, setAppliesTo] = useState<'all' | 'specific'>('all')
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([])
+  const [productSearch, setProductSearch] = useState('')
 
   // Duration preset buttons
   const durationPresets = [
@@ -49,9 +58,22 @@ export const DiscountsView = ({
     { label: '30 Días (1 mes)', hours: 720 },
   ]
 
+  const handleToggleProduct = (productId: string) => {
+    setSelectedProductIds((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    )
+  }
+
   const handleCreateCoupon = (e: React.FormEvent) => {
     e.preventDefault()
     if (!code.trim() || discountValue <= 0) return
+
+    if (appliesTo === 'specific' && selectedProductIds.length === 0) {
+      alert('Por favor selecciona al menos una prenda para aplicar el descuento específico.')
+      return
+    }
 
     const cleanCode = code.trim().toUpperCase().replace(/\s+/g, '_')
     const parsedMinutes = parseInt(customMinutes, 10)
@@ -86,6 +108,8 @@ export const DiscountsView = ({
       minPurchase,
       usesCount: 0,
       createdAt: 'Hoy',
+      appliesTo,
+      productIds: appliesTo === 'specific' ? selectedProductIds : [],
     }
 
     const updated = [newCoupon, ...coupons]
@@ -95,6 +119,7 @@ export const DiscountsView = ({
     // Reset form
     setCode('')
     setCustomMinutes('')
+    setSelectedProductIds([])
     setCreatedSuccess(true)
     setTimeout(() => setCreatedSuccess(false), 3000)
   }
@@ -231,6 +256,117 @@ export const DiscountsView = ({
                 placeholder="0 = Sin mínimo"
                 className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-3.5 py-2.5 text-xs text-white focus:outline-none"
               />
+            </div>
+
+            {/* Scope Selection: Toda la tienda vs Prendas seleccionadas */}
+            <div className="space-y-2 pt-2 border-t border-[#1c1c1c]">
+              <label className="text-gray-300 font-bold uppercase tracking-wider block flex items-center justify-between">
+                <span>Aplicar Descuento a: *</span>
+                {appliesTo === 'specific' && (
+                  <span className="text-[10px] font-mono text-[#D4FF00] font-bold">
+                    {selectedProductIds.length} seleccionada{selectedProductIds.length === 1 ? '' : 's'}
+                  </span>
+                )}
+              </label>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAppliesTo('all')}
+                  className={`py-2 px-3 text-xs font-mono font-bold uppercase border transition-all cursor-pointer ${
+                    appliesTo === 'all'
+                      ? 'border-[#D4FF00] bg-[#182109] text-[#D4FF00] shadow-sm'
+                      : 'border-[#242424] bg-[#141414] text-gray-400 hover:text-white hover:border-[#383838]'
+                  }`}
+                >
+                  🌐 Toda la Tienda
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAppliesTo('specific')}
+                  className={`py-2 px-3 text-xs font-mono font-bold uppercase border transition-all cursor-pointer ${
+                    appliesTo === 'specific'
+                      ? 'border-[#D4FF00] bg-[#182109] text-[#D4FF00] shadow-sm'
+                      : 'border-[#242424] bg-[#141414] text-gray-400 hover:text-white hover:border-[#383838]'
+                  }`}
+                >
+                  🎯 Prendas Específicas
+                </button>
+              </div>
+
+              {/* Product Picker if appliesTo === 'specific' */}
+              {appliesTo === 'specific' && (
+                <div className="mt-2.5 p-3 bg-[#0d0d0d] border border-[#222222] space-y-2.5 rounded-xs">
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-gray-500" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por nombre o marca..."
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      className="w-full bg-[#141414] border border-[#262626] focus:border-[#D4FF00] pl-8 pr-3 py-1.5 text-xs font-mono text-white focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
+                    {products
+                      .filter((p) =>
+                        p.title.toLowerCase().includes(productSearch.toLowerCase()) ||
+                        (p.brand && p.brand.toLowerCase().includes(productSearch.toLowerCase()))
+                      )
+                      .map((p) => {
+                        const isSelected = selectedProductIds.includes(p.id)
+                        return (
+                          <div
+                            key={p.id}
+                            onClick={() => handleToggleProduct(p.id)}
+                            className={`flex items-center justify-between p-2 border transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#182109] border-[#D4FF00]'
+                                : 'bg-[#121212] border-[#202020] hover:border-[#333]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <img
+                                src={p.image_url || '/images/product-cap-black.jpg'}
+                                alt={p.title}
+                                className="w-8 h-8 object-cover bg-black border border-[#262626] shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <span className={`text-xs font-sans font-bold truncate block ${
+                                  isSelected ? 'text-[#D4FF00]' : 'text-white'
+                                }`}>
+                                  {p.title}
+                                </span>
+                                <span className="text-[10px] font-mono text-gray-400">
+                                  {p.brand ? `${p.brand} · ` : ''}${p.category} · ${p.price.toLocaleString('es-MX')} MXN
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className={`w-4 h-4 border flex items-center justify-center shrink-0 ml-2 transition-colors ${
+                              isSelected
+                                ? 'bg-[#D4FF00] border-[#D4FF00] text-black'
+                                : 'border-gray-600 bg-[#161616]'
+                            }`}>
+                              {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                            </div>
+                          </div>
+                        )
+                      })}
+                  </div>
+
+                  {selectedProductIds.length === 0 ? (
+                    <p className="text-[10px] font-mono text-amber-400">
+                      ⚠ Haz clic sobre las prendas que tendrán este descuento.
+                    </p>
+                  ) : (
+                    <p className="text-[10px] font-mono text-gray-400">
+                      {selectedProductIds.length} prenda{selectedProductIds.length === 1 ? '' : 's'} tendrán el precio anterior tachado y el descuento resaltado en la tienda.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Core Feature: DURATION PICKER */}
@@ -380,6 +516,20 @@ export const DiscountsView = ({
                           <span className="text-gray-500">
                             {' '}
                             · Min. ${coupon.minPurchase.toLocaleString('es-MX')}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Scope Badge */}
+                      <div className="pt-1">
+                        {coupon.appliesTo === 'specific' && Array.isArray(coupon.productIds) && coupon.productIds.length > 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#182109] text-[#D4FF00] border border-[#D4FF00]/40 text-[10px] font-mono font-bold uppercase">
+                            <Tag className="w-3 h-3" />
+                            <span>{coupon.productIds.length} prenda{coupon.productIds.length === 1 ? '' : 's'} en oferta</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#181818] text-gray-400 border border-[#282828] text-[10px] font-mono uppercase">
+                            <span>🌐 Toda la tienda</span>
                           </span>
                         )}
                       </div>

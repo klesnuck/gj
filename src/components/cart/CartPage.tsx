@@ -49,10 +49,6 @@ export const CartPage: React.FC<CartPageProps> = ({
 
   const totalItemCount = items.reduce((acc, it) => acc + it.quantity, 0)
   const subtotal = items.reduce((acc, it) => acc + it.product.price * it.quantity, 0)
-  const freeShippingThreshold = 1999
-  const isFreeShipping = subtotal >= freeShippingThreshold
-  const progressPercent = Math.min(100, Math.round((subtotal / freeShippingThreshold) * 100))
-  const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal)
 
   // Calculate coupon discount
   let discountAmount = 0
@@ -86,7 +82,7 @@ export const CartPage: React.FC<CartPageProps> = ({
       {/* Top Electric Lime Announcement Bar */}
       <aside className="w-full bg-[#D4FF00] text-black py-1.5 px-4 text-[11px] font-mono font-bold tracking-wider uppercase select-none z-40 border-b border-black">
         <div className="max-w-7xl mx-auto flex items-center justify-center space-x-2 text-center">
-          <span>ENVÍO GRATIS EN COMPRAS DESDE $1,999 MXN</span>
+          <span>¡HEMOS VUELTO!</span>
           <span className="inline-block w-2.5 h-2.5 bg-black text-[#D4FF00] text-[9px] font-black rounded-xs leading-none flex items-center justify-center">
             ✦
           </span>
@@ -382,31 +378,6 @@ export const CartPage: React.FC<CartPageProps> = ({
                   RESUMEN DE COMPRA
                 </h3>
 
-                {/* Free Shipping Highlight Banner & Progress Bar */}
-                <div className="bg-[#13160e] border border-[#283212] p-4 space-y-2.5">
-                  <div className="flex items-center gap-2 text-xs font-mono text-[#D4FF00] font-bold">
-                    <Truck className="w-4 h-4 stroke-[2]" />
-                    <span>
-                      {isFreeShipping
-                        ? 'Tu envío va por nuestra cuenta.'
-                        : `Te faltan $${remainingForFreeShipping.toLocaleString('es-MX')} MXN para envío gratis.`}
-                    </span>
-                  </div>
-
-                  <div className="w-full h-1.5 bg-[#202020] overflow-hidden rounded-full">
-                    <div
-                      className="h-full bg-[#D4FF00] transition-all duration-500"
-                      style={{ width: `${progressPercent}%` }}
-                    />
-                  </div>
-
-                  <p className="text-[10px] font-mono text-gray-400">
-                    {isFreeShipping
-                      ? 'Superaste los $1,999 MXN. Envío estándar gratis.'
-                      : 'Compras a partir de $1,999 MXN reciben envío estándar gratis a todo México.'}
-                  </p>
-                </div>
-
                 {/* Subtotals Breakdown */}
                 <div className="space-y-3 text-xs font-mono">
                   <div className="flex items-center justify-between text-gray-300">
@@ -417,9 +388,9 @@ export const CartPage: React.FC<CartPageProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between text-gray-300">
-                    <span>Envío estándar</span>
-                    <span className="font-bold text-[#D4FF00]">
-                      {isFreeShipping ? 'GRATIS' : '$149 MXN'}
+                    <span>Envío</span>
+                    <span className="text-gray-400">
+                      Calculado en checkout
                     </span>
                   </div>
 
@@ -555,7 +526,7 @@ export const CartPage: React.FC<CartPageProps> = ({
                 DE NUESTRA CALLE A LA TUYA
               </h4>
               <p className="text-xs text-gray-400 font-sans mt-0.5">
-                Envíos a todo México. Gratis desde $1,999.
+                Envíos a todo México. Entregas locales y paquetería segura.
               </p>
             </div>
           </div>

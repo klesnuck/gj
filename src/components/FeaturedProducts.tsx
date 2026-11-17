@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import type { Product } from '../types/database.types'
+import type { Product, Coupon } from '../types/database.types'
 import { isProductSoldOut } from '../lib/stock'
 import { ProductCard } from './ProductCard'
 
 interface FeaturedProductsProps {
   products: Product[]
+  coupons?: Coupon[]
   onOpenCollection?: (category: string) => void
   onAddToCart: (product: Product, selectedColor?: string) => void
   onSelectProduct: (product: Product) => void
@@ -12,6 +13,7 @@ interface FeaturedProductsProps {
 
 export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
   products,
+  coupons,
   onAddToCart,
   onSelectProduct,
 }) => {
@@ -90,6 +92,7 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
                 <ProductCard
                   key={product.id}
                   product={product}
+                  coupons={coupons}
                   currentColor={currentColor}
                   isJustAdded={isJustAdded}
                   onSelectProduct={onSelectProduct}

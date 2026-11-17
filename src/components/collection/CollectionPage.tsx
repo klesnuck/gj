@@ -295,6 +295,7 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
                 <ProductCard
                   key={product.id}
                   product={product}
+                  coupons={coupons}
                   currentColor={currentColor}
                   isJustAdded={isJustAdded}
                   onSelectProduct={onSelectProduct}

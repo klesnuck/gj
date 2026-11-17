@@ -1,21 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { X, Check, ShoppingBag, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react'
-import type { Product } from '../types/database.types'
+import type { Product, Coupon } from '../types/database.types'
 import { resolveColorHex } from '../lib/colors'
 import { parseSizeStocks } from '../lib/stock'
+import { getProductDiscount } from '../lib/discounts'
 
 interface QuickViewModalProps {
   product: Product | null
+  coupons?: Coupon[]
   onClose: () => void
   onAddToCart: (product: Product, color?: string, size?: string) => void
 }
 
 export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   product,
+  coupons,
   onClose,
   onAddToCart,
 }) => {
   if (!product) return null
+
+  const discountInfo = getProductDiscount(product, coupons)
 
   const isClothing =
     product.category === 'playeras' ||
@@ -121,7 +126,13 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
             >
-              {product.tag && (
+              {discountInfo ? (
+                <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10">
+                  <span className="inline-block px-2.5 py-1 text-[10px] sm:text-[11px] font-mono font-black tracking-widest uppercase bg-[#D4FF00] text-black border border-black shadow-lg">
+                    EN DESCUENTO · {discountInfo.badgeLabel}
+                  </span>
+                </div>
+              ) : product.tag ? (
                 <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10">
                   <span
                     className={`inline-block px-2.5 py-1 text-[10px] sm:text-[11px] font-mono font-bold tracking-widest uppercase ${
@@ -133,7 +144,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                     {product.tag}
                   </span>
                 </div>
-              )}
+              ) : null}
 
               {/* Main Product Image centered with breathing room so it never touches borders */}
               <img
@@ -208,10 +219,27 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 {product.title}
               </h3>
 
-              <div className="font-mono text-2xl text-white font-bold">
-                ${product.price.toLocaleString('es-MX')}{' '}
-                <span className="text-xs font-normal text-gray-400">MXN</span>
-              </div>
+              {discountInfo ? (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-mono text-gray-500 line-through">
+                      ${discountInfo.originalPrice.toLocaleString('es-MX')} MXN
+                    </span>
+                    <span className="px-2 py-0.5 bg-[#182109] text-[#D4FF00] border border-[#D4FF00]/40 text-[10px] font-mono font-bold uppercase tracking-wider">
+                      {discountInfo.badgeLabel} DE DESCUENTO
+                    </span>
+                  </div>
+                  <div className="font-mono text-3xl font-black text-[#D4FF00]">
+                    ${discountInfo.discountedPrice.toLocaleString('es-MX')}{' '}
+                    <span className="text-xs font-normal text-gray-400">MXN</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="font-mono text-2xl text-white font-bold">
+                  ${product.price.toLocaleString('es-MX')}{' '}
+                  <span className="text-xs font-normal text-gray-400">MXN</span>
+                </div>
+              )}
 
               {product.specs && (
                 <div className="text-xs font-mono text-gray-400">
