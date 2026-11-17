@@ -35,14 +35,16 @@ export function getProductDiscount(
       if (!isNaN(expTime) && expTime <= now) continue
     }
 
-    const appliesTo = c.appliesTo || 'all'
+    // Solo mostramos precio anterior tachado y rebaja directa en catálogo
+    // si el cupón fue configurado para prendas seleccionadas/específicas.
+    // Los cupones para "toda la tienda" son códigos promocionales para ingresar en el checkout.
+    if (c.appliesTo !== 'specific') {
+      continue
+    }
 
-    // Si aplica a prendas seleccionadas, verificar si el id del producto está incluido
-    if (appliesTo === 'specific') {
-      const list = Array.isArray(c.productIds) ? c.productIds : []
-      if (!list.includes(product.id)) {
-        continue
-      }
+    const list = Array.isArray(c.productIds) ? c.productIds : []
+    if (!list.includes(product.id)) {
+      continue
     }
 
     // Calcular descuento
@@ -71,7 +73,7 @@ export function getProductDiscount(
       discountAmount,
       badgeLabel,
       couponCode: c.code,
-      appliesTo,
+      appliesTo: c.appliesTo || 'specific',
     }
   }
 
@@ -95,3 +97,4 @@ export function getEffectiveProduct(
     original_price: discount.originalPrice,
   }
 }
+

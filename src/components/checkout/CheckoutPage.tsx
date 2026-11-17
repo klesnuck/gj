@@ -96,11 +96,29 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
   // Calculate discount
   let discountAmount = 0
   if (appliedCoupon && appliedCoupon.isActive) {
-    if (subtotal >= appliedCoupon.minPurchase) {
-      if (appliedCoupon.discountType === 'percentage') {
-        discountAmount = Math.round((subtotal * appliedCoupon.discountValue) / 100)
-      } else {
-        discountAmount = Math.min(subtotal, appliedCoupon.discountValue)
+    const isExpired =
+      appliedCoupon.expiresAt && new Date(appliedCoupon.expiresAt).getTime() <= Date.now()
+    if (!isExpired) {
+      const isSpecific =
+        appliedCoupon.appliesTo === 'specific' &&
+        Array.isArray(appliedCoupon.productIds) &&
+        appliedCoupon.productIds.length > 0
+
+      const eligibleItems = isSpecific
+        ? items.filter((it) => appliedCoupon.productIds!.includes(it.product.id))
+        : items
+
+      const eligibleSubtotal = eligibleItems.reduce(
+        (sum, it) => sum + it.product.price * it.quantity,
+        0
+      )
+
+      if (subtotal >= (appliedCoupon.minPurchase || 0) && eligibleSubtotal > 0) {
+        if (appliedCoupon.discountType === 'percentage') {
+          discountAmount = Math.round((eligibleSubtotal * appliedCoupon.discountValue) / 100)
+        } else {
+          discountAmount = Math.min(eligibleSubtotal, appliedCoupon.discountValue)
+        }
       }
     }
   }

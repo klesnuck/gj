@@ -108,7 +108,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
       {/* Modal Dialog */}
       <div className="relative bg-[#0f0f0f] border border-[#262626] max-w-3xl w-full text-white shadow-2xl overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200">
-        
+
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -118,7 +118,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
         </button>
 
         <div className="grid grid-cols-1 md:grid-cols-2">
-          
+
           {/* Left: Product Image & Multi-Image Strip */}
           <div className="flex flex-col border-b md:border-b-0 md:border-r border-[#222222] bg-[#111111]">
             <div
@@ -135,11 +135,10 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
               ) : product.tag ? (
                 <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10">
                   <span
-                    className={`inline-block px-2.5 py-1 text-[10px] sm:text-[11px] font-mono font-bold tracking-widest uppercase ${
-                      product.tag_type === 'lime'
+                    className={`inline-block px-2.5 py-1 text-[10px] sm:text-[11px] font-mono font-bold tracking-widest uppercase ${product.tag_type === 'lime'
                         ? 'bg-[#D4FF00] text-black'
                         : 'bg-white text-black'
-                    }`}
+                      }`}
                   >
                     {product.tag}
                   </span>
@@ -193,11 +192,10 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                     key={i}
                     type="button"
                     onClick={() => setActiveImageIndex(i)}
-                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-sm overflow-hidden border p-1 bg-[#141414] flex items-center justify-center transition-all cursor-pointer shrink-0 ${
-                      i === activeImageIndex
+                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-sm overflow-hidden border p-1 bg-[#141414] flex items-center justify-center transition-all cursor-pointer shrink-0 ${i === activeImageIndex
                         ? 'border-[#D4FF00] scale-105 shadow-md shadow-[#D4FF00]/25'
                         : 'border-[#262626] opacity-60 hover:opacity-100 hover:border-[#444]'
-                    }`}
+                      }`}
                   >
                     <img src={img} alt="" className="max-w-full max-h-full w-auto h-auto object-contain" />
                   </button>
@@ -208,7 +206,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
           {/* Right: Product Details & Purchase Form */}
           <div className="p-6 sm:p-8 flex flex-col justify-between space-y-6">
-            
+
             <div className="space-y-3">
               <span className="text-xs font-mono tracking-widest text-[#D4FF00] uppercase block">
                 {product.brand ? `${product.brand} · ` : ''}{product.category}
@@ -265,9 +263,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                         key={i}
                         type="button"
                         onClick={() => setSelectedColor(c)}
-                        className={`w-6 h-6 rounded-full border border-white/20 transition-all ${
-                          selectedColor === c ? 'ring-2 ring-[#D4FF00] scale-110' : 'opacity-70 hover:opacity-100'
-                        }`}
+                        className={`w-6 h-6 rounded-full border border-white/20 transition-all ${selectedColor === c ? 'ring-2 ring-[#D4FF00] scale-110' : 'opacity-70 hover:opacity-100'
+                          }`}
                         style={{ backgroundColor: resolveColorHex(c, product.specs) }}
                       />
                     ))}
@@ -299,13 +296,12 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                         disabled={!isAvailable}
                         onClick={() => setSelectedSize(s)}
                         title={isAvailable ? `Talla ${s} (${stock} piezas disponibles)` : `Talla ${s} agotada`}
-                        className={`px-3.5 py-1.5 text-xs font-mono uppercase tracking-wider border transition-all ${
-                          !isAvailable
+                        className={`px-3.5 py-1.5 text-xs font-mono uppercase tracking-wider border transition-all ${!isAvailable
                             ? 'opacity-30 border-[#222222] bg-[#0e0e0e] text-gray-600 line-through cursor-not-allowed'
                             : isSelected
-                            ? 'border-[#D4FF00] bg-[#D4FF00]/10 text-[#D4FF00] font-bold shadow-sm shadow-[#D4FF00]/20'
-                            : 'border-[#2a2a2a] bg-[#141414] text-gray-300 hover:border-gray-500 hover:text-white cursor-pointer'
-                        }`}
+                              ? 'border-[#D4FF00] bg-[#D4FF00]/10 text-[#D4FF00] font-bold shadow-sm shadow-[#D4FF00]/20'
+                              : 'border-[#2a2a2a] bg-[#141414] text-gray-300 hover:border-gray-500 hover:text-white cursor-pointer'
+                          }`}
                       >
                         <span>{s}</span>
                         <span className={`text-[10px] ml-1.5 ${!isAvailable ? 'text-gray-600 no-underline' : 'text-gray-400 font-normal'}`}>
@@ -324,13 +320,12 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 type="button"
                 disabled={isOutOfStock}
                 onClick={handleAdd}
-                className={`w-full py-4 text-xs sm:text-sm font-mono font-bold uppercase tracking-wider flex items-center justify-center space-x-2 transition-all ${
-                  isOutOfStock
+                className={`w-full py-4 text-xs sm:text-sm font-mono font-bold uppercase tracking-wider flex items-center justify-center space-x-2 transition-all ${isOutOfStock
                     ? 'bg-[#181818] border border-[#262626] text-gray-500 cursor-not-allowed'
                     : added
-                    ? 'bg-[#D4FF00] text-black'
-                    : 'bg-[#D4FF00] hover:bg-[#bfe600] text-black shadow-lg shadow-[#D4FF00]/20 cursor-pointer'
-                }`}
+                      ? 'bg-[#D4FF00] text-black'
+                      : 'bg-[#D4FF00] hover:bg-[#bfe600] text-black shadow-lg shadow-[#D4FF00]/20 cursor-pointer'
+                  }`}
               >
                 {isOutOfStock ? (
                   <span>PIEZA AGOTADA / SIN STOCK</span>

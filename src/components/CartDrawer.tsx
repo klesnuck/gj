@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { X, Trash2, ArrowRight, ShoppingBag, Tag } from 'lucide-react'
+import { X, Trash2, ArrowRight, ShoppingBag } from 'lucide-react'
 import type { CartItem, Coupon } from '../types/database.types'
 
 interface CartDrawerProps {
@@ -19,63 +18,12 @@ export const CartDrawer = ({
   items,
   onUpdateQuantity,
   onRemoveItem,
-  coupons = [],
   onOpenFullCart,
   onProceedToCheckout,
 }: CartDrawerProps) => {
-  const [couponCodeInput, setCouponCodeInput] = useState('')
-  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null)
-  const [couponError, setCouponError] = useState<string | null>(null)
-
   if (!isOpen) return null
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
-
-  // Calculate discount
-  let discountAmount = 0
-  if (appliedCoupon && appliedCoupon.isActive) {
-    if (subtotal >= appliedCoupon.minPurchase) {
-      if (appliedCoupon.discountType === 'percentage') {
-        discountAmount = Math.round((subtotal * appliedCoupon.discountValue) / 100)
-      } else {
-        discountAmount = Math.min(subtotal, appliedCoupon.discountValue)
-      }
-    }
-  }
-
-  const finalTotal = Math.max(0, subtotal - discountAmount)
-
-  const handleApplyCoupon = (e: React.FormEvent) => {
-    e.preventDefault()
-    setCouponError(null)
-    const clean = couponCodeInput.trim().toUpperCase()
-    if (!clean) return
-
-    const found = coupons.find((c) => c.code === clean)
-    if (!found) {
-      setCouponError('Cupón no encontrado.')
-      return
-    }
-
-    if (!found.isActive) {
-      setCouponError('Este cupón ya no está activo.')
-      return
-    }
-
-    const now = Date.now()
-    if (new Date(found.expiresAt).getTime() < now) {
-      setCouponError('Este cupón ha expirado.')
-      return
-    }
-
-    if (subtotal < found.minPurchase) {
-      setCouponError(`Compra mínima requerida: $${found.minPurchase.toLocaleString('es-MX')} MXN`)
-      return
-    }
-
-    setAppliedCoupon(found)
-    setCouponCodeInput('')
-  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -220,59 +168,12 @@ export const CartDrawer = ({
           {items.length > 0 && (
             <div className="p-6 border-t border-[#1f1f1f] bg-[#121212] space-y-4">
 
-              {/* Coupon Code Input */}
-              <div className="space-y-1.5 pb-2 border-b border-[#1c1c1c]">
-                {appliedCoupon ? (
-                  <div className="flex items-center justify-between p-2.5 bg-[#182109] border border-[#2b3b12] text-xs font-mono">
-                    <div className="flex items-center space-x-2">
-                      <Tag className="w-3.5 h-3.5 text-[#D4FF00]" />
-                      <span className="font-bold text-[#D4FF00]">{appliedCoupon.code}</span>
-                      <span className="text-gray-300">
-                        ({appliedCoupon.discountType === 'percentage' ? `-${appliedCoupon.discountValue}%` : `-$${appliedCoupon.discountValue}`})
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => setAppliedCoupon(null)}
-                      className="text-gray-400 hover:text-red-400 text-[10px] uppercase font-bold"
-                    >
-                      Quitar
-                    </button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleApplyCoupon} className="flex gap-1.5">
-                    <input
-                      type="text"
-                      value={couponCodeInput}
-                      onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
-                      placeholder="Código de descuento..."
-                      className="flex-1 bg-[#181818] border border-[#282828] focus:border-[#D4FF00] px-3 py-1.5 text-xs font-mono text-white focus:outline-none uppercase"
-                    />
-                    <button
-                      type="submit"
-                      className="px-3 py-1.5 bg-[#202020] hover:bg-[#D4FF00] text-gray-300 hover:text-black font-mono font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
-                    >
-                      Aplicar
-                    </button>
-                  </form>
-                )}
-                {couponError && (
-                  <p className="text-[10px] font-mono text-red-400">{couponError}</p>
-                )}
-              </div>
-
               {/* Price Breakdown */}
               <div className="space-y-1.5 text-xs font-mono">
                 <div className="flex justify-between text-gray-400">
                   <span>Subtotal</span>
                   <span className="text-white">${subtotal.toLocaleString('es-MX')} MXN</span>
                 </div>
-
-                {discountAmount > 0 && (
-                  <div className="flex justify-between text-[#D4FF00] font-semibold">
-                    <span>Descuento aplicado</span>
-                    <span>-${discountAmount.toLocaleString('es-MX')} MXN</span>
-                  </div>
-                )}
 
                 <div className="flex justify-between text-gray-400">
                   <span>Envío</span>
@@ -281,7 +182,7 @@ export const CartDrawer = ({
 
                 <div className="flex justify-between text-base font-bold text-white pt-2 border-t border-[#262626]">
                   <span>TOTAL ESTIMADO</span>
-                  <span className="text-[#D4FF00]">${finalTotal.toLocaleString('es-MX')} MXN</span>
+                  <span className="text-[#D4FF00]">${subtotal.toLocaleString('es-MX')} MXN</span>
                 </div>
               </div>
 
@@ -301,7 +202,7 @@ export const CartDrawer = ({
               </button>
 
               <p className="text-[10px] font-mono text-center text-gray-500 uppercase">
-                PAGOS 100% SEGUROS Y CIFRADOS · ENVÍO CON SEGUIMIENTO
+                PAGOS 100% SEGUROS Y CIFRADOS · CUPONES EN CHECKOUT FINAL
               </p>
             </div>
           )}

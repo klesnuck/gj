@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -10,7 +10,6 @@ import {
   Lock,
   Plus,
   Minus,
-  AlertCircle,
   HelpCircle,
   Search,
   ShoppingBag,
@@ -23,9 +22,9 @@ interface CartPageProps {
   onRemoveItem: (productId: string, size?: string, color?: string) => void
   onContinueShopping: () => void
   onProceedToCheckout: () => void
-  appliedCoupon: Coupon | null
-  onApplyCoupon: (code: string) => { success: boolean; message: string }
-  onRemoveCoupon: () => void
+  appliedCoupon?: Coupon | null
+  onApplyCoupon?: (code: string) => { success: boolean; message: string }
+  onRemoveCoupon?: () => void
   onOpenAdmin?: () => void
 }
 
@@ -36,17 +35,9 @@ export const CartPage: React.FC<CartPageProps> = ({
   onContinueShopping,
   onProceedToCheckout,
   appliedCoupon,
-  onApplyCoupon,
   onRemoveCoupon,
   onOpenAdmin,
 }) => {
-  const [couponInput, setCouponInput] = useState('')
-  const [couponOpen, setCouponOpen] = useState(false)
-  const [couponFeedback, setCouponFeedback] = useState<{
-    type: 'success' | 'error'
-    text: string
-  } | null>(null)
-
   const totalItemCount = items.reduce((acc, it) => acc + it.quantity, 0)
   const subtotal = items.reduce((acc, it) => acc + it.product.price * it.quantity, 0)
 
@@ -63,18 +54,6 @@ export const CartPage: React.FC<CartPageProps> = ({
   }
 
   const finalTotal = Math.max(0, subtotal - discountAmount)
-
-  const handleApplyCouponSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setCouponFeedback(null)
-    const res = onApplyCoupon(couponInput.trim())
-    if (res.success) {
-      setCouponFeedback({ type: 'success', text: res.message })
-      setCouponInput('')
-    } else {
-      setCouponFeedback({ type: 'error', text: res.message })
-    }
-  }
 
   return (
     <div className="min-h-screen bg-[#070707] text-white flex flex-col font-sans selection:bg-[#D4FF00] selection:text-black">
@@ -450,56 +429,9 @@ export const CartPage: React.FC<CartPageProps> = ({
                   <span>Pago seguro y cifrado</span>
                 </div>
 
-                {/* Coupon Code Accordion */}
-                <div className="pt-3 border-t border-[#1a1a1a]">
-                  <button
-                    type="button"
-                    onClick={() => setCouponOpen(!couponOpen)}
-                    className="w-full flex items-center justify-between text-xs font-mono text-gray-300 hover:text-white cursor-pointer py-1"
-                  >
-                    <span>¿Tienes un código de descuento?</span>
-                    <span className="text-sm">{couponOpen ? '−' : '+'}</span>
-                  </button>
-
-                  {couponOpen && (
-                    <form
-                      onSubmit={handleApplyCouponSubmit}
-                      className="pt-3 space-y-2 animate-in fade-in duration-200"
-                    >
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={couponInput}
-                          onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                          placeholder="Ej. SALTILLO_LOCAL o DROP004"
-                          className="flex-1 bg-[#141414] border border-[#2b2b2b] focus:border-[#D4FF00] px-3 py-2 text-xs font-mono text-white placeholder-gray-600 focus:outline-none uppercase"
-                        />
-                        <button
-                          type="submit"
-                          className="px-4 py-2 bg-[#202020] hover:bg-[#D4FF00] hover:text-black text-white font-mono text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                        >
-                          APLICAR
-                        </button>
-                      </div>
-
-                      {couponFeedback && (
-                        <div
-                          className={`text-[11px] font-mono flex items-center gap-1.5 ${couponFeedback.type === 'success'
-                            ? 'text-[#D4FF00]'
-                            : 'text-red-400'
-                            }`}
-                        >
-                          {couponFeedback.type === 'success' ? (
-                            <Check className="w-3.5 h-3.5" />
-                          ) : (
-                            <AlertCircle className="w-3.5 h-3.5" />
-                          )}
-                          <span>{couponFeedback.text}</span>
-                        </div>
-                      )}
-                    </form>
-                  )}
-                </div>
+                <p className="text-[11px] font-mono text-center text-gray-500 pt-1">
+                  ¿Tienes un cupón? Podrás ingresarlo en el siguiente paso de pago.
+                </p>
 
                 {/* Payment Logos Footer */}
                 <div className="pt-3 border-t border-[#1a1a1a] text-center">

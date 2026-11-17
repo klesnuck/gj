@@ -279,23 +279,44 @@ export function App() {
     await saveCustomer(newCustomer)
   }
 
-  // Coupon handling for Cart & Checkout
+  // Coupon handling for Checkout (único paso donde se aplica cupón)
   const handleApplyCoupon = (code: string): { success: boolean; message: string } => {
     const clean = code.trim().toUpperCase()
     if (!clean) return { success: false, message: 'Ingresa un código de cupón.' }
 
-    const found = coupons.find((c) => c.code === clean)
+    const found = coupons.find((c) => c.code.trim().toUpperCase() === clean)
     if (!found) return { success: false, message: 'Cupón no encontrado.' }
     if (!found.isActive) return { success: false, message: 'Este cupón está inactivo actualmente.' }
-    if (new Date(found.expiresAt).getTime() < Date.now()) {
+    if (found.expiresAt && new Date(found.expiresAt).getTime() <= Date.now()) {
       return { success: false, message: 'Este cupón ha expirado.' }
+    }
+
+    const subtotal = cartItems.reduce((acc, it) => acc + it.product.price * it.quantity, 0)
+    if (found.minPurchase && found.minPurchase > 0 && subtotal < found.minPurchase) {
+      return {
+        success: false,
+        message: `Compra mínima requerida: $${found.minPurchase.toLocaleString('es-MX')} MXN (subtotal actual: $${subtotal.toLocaleString('es-MX')}).`,
+      }
+    }
+
+    if (found.appliesTo === 'specific' && Array.isArray(found.productIds) && found.productIds.length > 0) {
+      const hasItem = cartItems.some((it) => found.productIds!.includes(it.product.id))
+      if (!hasItem) {
+        return {
+          success: false,
+          message: 'Este cupón solo aplica a prendas seleccionadas que no están en tu carrito.',
+        }
+      }
     }
 
     setAppliedCoupon(found)
     return {
       success: true,
-      message: `¡Cupón ${found.code} aplicado! (${found.discountType === 'percentage' ? `${found.discountValue}% OFF` : `$${found.discountValue} MXN`
-        })`,
+      message: `¡Cupón ${found.code} aplicado! (${
+        found.discountType === 'percentage'
+          ? `${found.discountValue}% OFF`
+          : `$${found.discountValue.toLocaleString('es-MX')} MXN OFF`
+      })`,
     }
   }
 
