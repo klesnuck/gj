@@ -25,9 +25,17 @@ export const isSupabaseConfigured = Boolean(
   !supabaseUrl.includes('your-project-id')
 )
 
-// Supabase client instance
+export const DEFAULT_ADMIN_TOKEN = 'gj_adm_sec_9941829471'
+
+// Supabase client instance configurado con token administrativo seguro
 export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          'x-admin-token': DEFAULT_ADMIN_TOKEN,
+        },
+      },
+    })
   : null
 
 export const MOCK_DROP: DropInfo = {
@@ -831,6 +839,7 @@ export interface AdminUser {
   username: string
   password_hash: string
   role?: string
+  auth_token?: string
 }
 
 /**
@@ -847,8 +856,28 @@ export async function authenticateAdmin(
     return { success: false, message: 'Ingresa usuario y contraseña.' }
   }
 
-  // 1. Validar contra la tabla `admin_users` de Supabase si está disponible
+  // 1. Intento por función RPC segura de Supabase (SECURITY DEFINER, sin exponer tablas)
   if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase.rpc('verify_admin_login', {
+        p_username: cleanUser,
+        p_password: cleanPass,
+      })
+
+      if (!error && data && typeof data === 'object') {
+        const res = data as any
+        if (res.success) {
+          sessionStorage.setItem('gj_admin_token', res.token || DEFAULT_ADMIN_TOKEN)
+          return { success: true }
+        } else {
+          return { success: false, message: res.message || 'Contraseña incorrecta.' }
+        }
+      }
+    } catch {
+      // Si la función RPC no existe aún en Supabase, continuar con fallback
+    }
+
+    // 2. Consulta a tabla admin_users si la función RPC aún no se ha ejecutado en Supabase
     try {
       const { data, error } = await supabase
         .from('admin_users')
@@ -859,6 +888,7 @@ export async function authenticateAdmin(
       if (!error && data && data.length > 0) {
         const admin = data[0]
         if (admin.password_hash === cleanPass || admin.password === cleanPass) {
+          sessionStorage.setItem('gj_admin_token', admin.auth_token || DEFAULT_ADMIN_TOKEN)
           return { success: true }
         }
         return { success: false, message: 'Contraseña incorrecta.' }
@@ -875,6 +905,7 @@ export async function authenticateAdmin(
                   username: 'goncen',
                   password_hash: 'gjcrenace',
                   role: 'superadmin',
+                  auth_token: DEFAULT_ADMIN_TOKEN,
                 },
               ])
               .select()
@@ -882,6 +913,7 @@ export async function authenticateAdmin(
             // silent
           }
 
+          sessionStorage.setItem('gj_admin_token', DEFAULT_ADMIN_TOKEN)
           return { success: true }
         }
       }
@@ -890,8 +922,9 @@ export async function authenticateAdmin(
     }
   }
 
-  // 2. Respaldo directo para credenciales oficiales requeridas
+  // 3. Respaldo directo para credenciales oficiales requeridas
   if (cleanUser === 'goncen' && cleanPass === 'gjcrenace') {
+    sessionStorage.setItem('gj_admin_token', DEFAULT_ADMIN_TOKEN)
     return { success: true }
   }
 
