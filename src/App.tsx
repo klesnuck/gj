@@ -5,7 +5,6 @@ import { Hero } from './components/Hero'
 import { MarqueeTicker } from './components/MarqueeTicker'
 import { FeaturedProducts } from './components/FeaturedProducts'
 import { CategoriesBanner } from './components/CategoriesBanner'
-import { Newsletter } from './components/Newsletter'
 import { Footer } from './components/Footer'
 import { CartDrawer } from './components/CartDrawer'
 import { QuickViewModal } from './components/QuickViewModal'
@@ -752,9 +751,6 @@ export function App() {
           onAddToCart={(product, color) => handleAddToCart(product, color)}
           onSelectProduct={(product) => setSelectedProduct(product)}
         />
-
-        {/* 7. Newsletter (ENTRA AL CÍRCULO) */}
-        <Newsletter />
       </main>
 
       {/* 9. Comprehensive Streetwear Footer */}
