@@ -20,8 +20,8 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY
 
 export const isSupabaseConfigured = Boolean(
-  supabaseUrl && 
-  supabaseAnonKey && 
+  supabaseUrl &&
+  supabaseAnonKey &&
   !supabaseUrl.includes('your-project-id')
 )
 
@@ -131,7 +131,7 @@ export async function fetchProducts(category?: string): Promise<Product[]> {
         .filter((b) => b.length >= 2)
     ))
     for (const b of brandsInProducts) {
-      saveBrand(b).catch(() => {})
+      saveBrand(b).catch(() => { })
     }
   } catch {
     // silent
@@ -299,7 +299,7 @@ export async function createProduct(
 
       // Guardar respaldo local
       if (newProduct.brand && newProduct.brand.trim().length >= 2) {
-        saveBrand(newProduct.brand.trim()).catch(() => {})
+        saveBrand(newProduct.brand.trim()).catch(() => { })
       }
       try {
         const custom: Product[] = JSON.parse(localStorage.getItem('gj_custom_products') || '[]')

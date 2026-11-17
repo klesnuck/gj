@@ -210,7 +210,23 @@ export function saveCustomCategory(name: string, hasSizes: boolean): CategoryOpt
 export function categoryHasSizes(categoryId: string): boolean {
   const catLower = (categoryId || '').toLowerCase().trim()
   if (catLower === 'gorras' || catLower === 'accesorios') return false
-  if (catLower === 'ropa' || catLower === 'playeras' || catLower === 'hoodies') return true
+  if (
+    catLower === 'ropa' ||
+    catLower === 'playeras' ||
+    catLower === 'playera' ||
+    catLower === 'shorts' ||
+    catLower === 'short' ||
+    catLower === 'hoodies' ||
+    catLower === 'hoodie' ||
+    catLower === 'pantalones' ||
+    catLower === 'pantalon' ||
+    catLower === 'chamarras' ||
+    catLower === 'chamarra' ||
+    catLower === 'jerseys' ||
+    catLower === 'jersey' ||
+    catLower === 'conjuntos' ||
+    catLower === 'conjunto'
+  ) return true
 
   const known = getKnownCategories()
   const found = known.find((c) => c.id === catLower)

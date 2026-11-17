@@ -37,7 +37,11 @@ export const Navbar = ({
   const isRopaActive =
     currentCatLower === 'ropa' ||
     currentCatLower === 'playeras' ||
+    currentCatLower === 'playera' ||
+    currentCatLower === 'shorts' ||
+    currentCatLower === 'short' ||
     currentCatLower === 'hoodies' ||
+    currentCatLower === 'hoodie' ||
     categoryHasSizes(currentCatLower)
   const isGorrasActive = currentCatLower.startsWith('gorras')
   const isAccesoriosActive = currentCatLower === 'accesorios'

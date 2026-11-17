@@ -55,14 +55,6 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
   const [selectedColors, setSelectedColors] = useState<Record<string, string>>({})
   const [addedAnimation, setAddedAnimation] = useState<string | null>(null)
 
-  const isRopa =
-    activeCategory.toLowerCase() === 'ropa' ||
-    activeCategory.toLowerCase() === 'playeras' ||
-    activeCategory.toLowerCase() === 'hoodies' ||
-    categoryHasSizes(activeCategory)
-  const isGorra = activeCategory.toLowerCase().startsWith('gorras')
-  const isAccesorios = activeCategory.toLowerCase() === 'accesorios'
-
   // Dynamic cap brands
   const capBrandOptions = [
     { id: 'gorras', label: 'Todas las gorras' },
@@ -98,6 +90,19 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
 
     return list
   }, [allProducts, products])
+
+  const isRopa =
+    activeCategory.toLowerCase() === 'ropa' ||
+    activeCategory.toLowerCase() === 'playeras' ||
+    activeCategory.toLowerCase() === 'playera' ||
+    activeCategory.toLowerCase() === 'shorts' ||
+    activeCategory.toLowerCase() === 'short' ||
+    activeCategory.toLowerCase() === 'hoodies' ||
+    activeCategory.toLowerCase() === 'hoodie' ||
+    ropaOptions.some((opt) => opt.id.toLowerCase() === activeCategory.toLowerCase()) ||
+    categoryHasSizes(activeCategory)
+  const isGorra = activeCategory.toLowerCase().startsWith('gorras')
+  const isAccesorios = activeCategory.toLowerCase() === 'accesorios'
 
   // Determine Title & Subtitle
   let collectionTitle = 'CATÁLOGO'
