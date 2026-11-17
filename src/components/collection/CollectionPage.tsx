@@ -106,16 +106,16 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
 
   // Determine Title & Subtitle
   let collectionTitle = 'CATÁLOGO'
-  let collectionTag = 'COLECCIÓN EXCLUSIVA'
+  let collectionTag = 'CATÁLOGO OFICIAL / STREETWEAR'
   let collectionDesc = 'Explora la selección completa de streetwear.'
 
   if (isRopa) {
     collectionTitle = 'ROPA'
-    collectionTag = 'COLECCIÓN COMPLETA / APPAREL'
+    collectionTag = 'CATÁLOGO COMPLETO / APPAREL'
     collectionDesc = 'Playeras heavyweight, shorts y siluetas urbanas con corte boxy/relaxed.'
   } else if (isGorra) {
     collectionTitle = 'GORRAS'
-    collectionTag = 'HEADWEAR / COLECCIÓN'
+    collectionTag = 'HEADWEAR / PIEZAS'
     collectionDesc = 'Siluetas insignia GJ, snapbacks, modelos 59FIFTY y coronas desestructuradas por marca.'
   } else if (isAccesorios) {
     collectionTitle = 'ACCESORIOS'
@@ -173,8 +173,6 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
             >
               Inicio
             </button>
-            <span className="text-gray-600">/</span>
-            <span className="text-gray-400">Colección</span>
             <span className="text-gray-600">/</span>
             <span className="text-[#D4FF00] font-bold uppercase">{collectionTitle}</span>
           </div>

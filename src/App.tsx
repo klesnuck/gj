@@ -517,7 +517,21 @@ export function App() {
   const totalCartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0)
 
   const handleShopDrop = () => {
-    handleOpenCategory('ropa')
+    if (currentView !== 'store') {
+      setCurrentView('store')
+      window.location.hash = ''
+      setTimeout(() => {
+        const el = document.getElementById('lo-mas-buscado')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' })
+        }
+      }, 100)
+    } else {
+      const el = document.getElementById('lo-mas-buscado')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' })
+      }
+    }
   }
 
   // RENDER ADMIN VIEW

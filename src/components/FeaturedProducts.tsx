@@ -1,19 +1,17 @@
 import React, { useState } from 'react'
-import { ArrowUpRight } from 'lucide-react'
 import type { Product } from '../types/database.types'
 import { isProductSoldOut } from '../lib/stock'
 import { ProductCard } from './ProductCard'
 
 interface FeaturedProductsProps {
   products: Product[]
-  onOpenCollection: (category: string) => void
+  onOpenCollection?: (category: string) => void
   onAddToCart: (product: Product, selectedColor?: string) => void
   onSelectProduct: (product: Product) => void
 }
 
 export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
   products,
-  onOpenCollection,
   onAddToCart,
   onSelectProduct,
 }) => {
@@ -50,7 +48,7 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
   }
 
   return (
-    <section id="lo-mas-buscado" className="w-full bg-[#090909] py-16 sm:py-24 border-b border-[#1c1c1c]">
+    <section id="lo-mas-buscado" className="w-full bg-[#090909] py-16 sm:py-24 border-b border-[#1c1c1c] scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Section Header */}
@@ -68,16 +66,6 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
             <p className="text-xs sm:text-sm font-sans text-gray-400 max-w-lg pt-1">
               Las prendas y siluetas con mayor demanda de GJ.
             </p>
-          </div>
-
-          <div className="flex items-center space-x-4 mt-4 md:mt-0">
-            <button
-              onClick={() => onOpenCollection('todos')}
-              className="group inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#141414] hover:bg-[#D4FF00] text-gray-300 hover:text-black border border-[#262626] hover:border-[#D4FF00] text-xs font-mono font-bold tracking-wider uppercase transition-all duration-200 cursor-pointer"
-            >
-              <span>VER CATÁLOGO COMPLETO</span>
-              <ArrowUpRight className="w-4 h-4 stroke-[2.2] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-            </button>
           </div>
         </div>
 

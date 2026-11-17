@@ -413,7 +413,7 @@ export const Navbar = ({
                   : 'text-gray-300 hover:text-[#D4FF00]'
                 }`}
             >
-              {isRopaActive ? '• ' : ''}Ropa (Toda la colección)
+              {isRopaActive ? '• ' : ''}Ropa
             </button>
 
             {/* Mobile Gorras Accordion */}
