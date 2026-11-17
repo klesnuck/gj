@@ -8,6 +8,7 @@ import {
   ArrowUpRight,
   Menu,
   X,
+  LogOut,
 } from 'lucide-react'
 
 interface AdminLayoutProps {
@@ -15,6 +16,7 @@ interface AdminLayoutProps {
   onBackToStore: () => void
   activeTab?: string
   onTabChange?: (tab: string) => void
+  onLogout?: () => void
 }
 
 export const AdminLayout = ({
@@ -22,6 +24,7 @@ export const AdminLayout = ({
   onBackToStore,
   activeTab = 'resumen',
   onTabChange,
+  onLogout,
 }: AdminLayoutProps) => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
@@ -130,6 +133,18 @@ export const AdminLayout = ({
                 <span>Ver tienda</span>
               </div>
             </button>
+
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="w-full flex items-center justify-between px-3 py-2 text-xs font-mono text-red-400/80 hover:text-red-400 hover:bg-red-950/20 uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                <div className="flex items-center space-x-3">
+                  <LogOut className="w-4 h-4" />
+                  <span>Cerrar sesión</span>
+                </div>
+              </button>
+            )}
           </div>
 
         </div>
@@ -159,14 +174,23 @@ export const AdminLayout = ({
             <span className="text-white font-semibold">{currentBreadcrumb.current}</span>
           </div>
 
-          {/* Admin Avatar Badge */}
+          {/* Admin Avatar Badge & Logout */}
           <div className="flex items-center space-x-3">
             <span className="text-[11px] font-mono text-gray-400 uppercase tracking-widest hidden sm:inline">
-              ADMINISTRACIÓN
+              GONCEN
             </span>
             <div className="w-8 h-8 rounded-full bg-[#161616] border border-[#2b2b2b] flex items-center justify-center text-xs font-mono font-black text-[#D4FF00]">
               GJ
             </div>
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                title="Cerrar sesión"
+                className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-950/20 rounded-sm transition-colors cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </header>
 

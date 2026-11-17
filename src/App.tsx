@@ -11,6 +11,7 @@ import { QuickViewModal } from './components/QuickViewModal'
 
 // Admin Components
 import { AdminLayout } from './components/admin/AdminLayout'
+import { AdminLogin } from './components/admin/AdminLogin'
 import { DashboardOverview } from './components/admin/DashboardOverview'
 import { ProductList } from './components/admin/ProductList'
 import { ProductForm } from './components/admin/ProductForm'
@@ -57,6 +58,9 @@ export function App() {
     return 'store'
   })
   const [adminTab, setAdminTab] = useState<string>('resumen')
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('gj_admin_auth') === 'true'
+  })
   const [isCreatingProduct, setIsCreatingProduct] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
@@ -518,6 +522,18 @@ export function App() {
 
   // RENDER ADMIN VIEW
   if (currentView === 'admin') {
+    if (!isAdminAuthenticated) {
+      return (
+        <AdminLogin
+          onLoginSuccess={() => setIsAdminAuthenticated(true)}
+          onBackToStore={() => {
+            window.location.hash = ''
+            setCurrentView('store')
+          }}
+        />
+      )
+    }
+
     return (
       <AdminLayout
         activeTab={adminTab}
@@ -527,6 +543,12 @@ export function App() {
           setEditingProduct(null)
         }}
         onBackToStore={() => {
+          window.location.hash = ''
+          setCurrentView('store')
+        }}
+        onLogout={() => {
+          sessionStorage.removeItem('gj_admin_auth')
+          setIsAdminAuthenticated(false)
           window.location.hash = ''
           setCurrentView('store')
         }}

@@ -63,23 +63,23 @@ export const Navbar = ({
   const cleanQuery = searchQuery.trim().toLowerCase()
   const searchResults = cleanQuery
     ? products.filter((p) => {
-        const title = (p.title || '').toLowerCase()
-        const brand = (p.brand || '').toLowerCase()
-        const category = (p.category || '').toLowerCase()
-        const subcategory = (p.subcategory || '').toLowerCase()
-        const specs = (p.specs || '').toLowerCase()
-        const tag = (p.tag || '').toLowerCase()
-        const desc = (p.description || '').toLowerCase()
-        return (
-          title.includes(cleanQuery) ||
-          brand.includes(cleanQuery) ||
-          category.includes(cleanQuery) ||
-          subcategory.includes(cleanQuery) ||
-          specs.includes(cleanQuery) ||
-          tag.includes(cleanQuery) ||
-          desc.includes(cleanQuery)
-        )
-      })
+      const title = (p.title || '').toLowerCase()
+      const brand = (p.brand || '').toLowerCase()
+      const category = (p.category || '').toLowerCase()
+      const subcategory = (p.subcategory || '').toLowerCase()
+      const specs = (p.specs || '').toLowerCase()
+      const tag = (p.tag || '').toLowerCase()
+      const desc = (p.description || '').toLowerCase()
+      return (
+        title.includes(cleanQuery) ||
+        brand.includes(cleanQuery) ||
+        category.includes(cleanQuery) ||
+        subcategory.includes(cleanQuery) ||
+        specs.includes(cleanQuery) ||
+        tag.includes(cleanQuery) ||
+        desc.includes(cleanQuery)
+      )
+    })
     : []
 
   const handleSelectSearchResult = (product: Product) => {
@@ -118,21 +118,19 @@ export const Navbar = ({
           <nav className="hidden md:flex items-center space-x-8 text-sm tracking-wide">
             <button
               onClick={() => handleNavClick('todos')}
-              className={`transition-colors cursor-pointer ${
-                isNovedadesActive
+              className={`transition-colors cursor-pointer ${isNovedadesActive
                   ? 'text-[#D4FF00] font-bold'
                   : 'text-gray-300 hover:text-[#D4FF00] font-medium'
-              }`}
+                }`}
             >
               Novedades
             </button>
             <button
               onClick={() => handleNavClick('ropa')}
-              className={`transition-colors cursor-pointer ${
-                isRopaActive
+              className={`transition-colors cursor-pointer ${isRopaActive
                   ? 'text-[#D4FF00] font-bold'
                   : 'text-gray-300 hover:text-[#D4FF00] font-medium'
-              }`}
+                }`}
             >
               Ropa
             </button>
@@ -145,17 +143,15 @@ export const Navbar = ({
             >
               <button
                 onClick={() => setCapsDropdownOpen((prev) => !prev)}
-                className={`flex items-center gap-1.5 transition-colors cursor-pointer py-2 ${
-                  isGorrasActive
+                className={`flex items-center gap-1.5 transition-colors cursor-pointer py-2 ${isGorrasActive
                     ? 'text-[#D4FF00] font-bold'
                     : 'text-gray-300 hover:text-[#D4FF00] font-medium'
-                }`}
+                  }`}
               >
                 <span>Gorras</span>
                 <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                    capsDropdownOpen || isGorrasActive ? 'text-[#D4FF00]' : ''
-                  } ${capsDropdownOpen ? 'rotate-180' : ''}`}
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${capsDropdownOpen || isGorrasActive ? 'text-[#D4FF00]' : ''
+                    } ${capsDropdownOpen ? 'rotate-180' : ''}`}
                 />
               </button>
 
@@ -165,11 +161,10 @@ export const Navbar = ({
                   <div className="bg-[#121212] border border-[#262626] shadow-2xl py-2 px-1 backdrop-blur-md rounded-none">
                     <button
                       onClick={() => handleNavClick('gorras')}
-                      className={`w-full text-left px-3.5 py-2.5 text-xs font-mono font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${
-                        activeCategory === 'gorras'
+                      className={`w-full text-left px-3.5 py-2.5 text-xs font-mono font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${activeCategory === 'gorras'
                           ? 'bg-[#D4FF00] text-black font-bold'
                           : 'text-white hover:text-black hover:bg-[#D4FF00]'
-                      }`}
+                        }`}
                     >
                       <span>TODAS LAS GORRAS</span>
                       <span className="text-[10px] opacity-80 font-normal">VER TODO</span>
@@ -186,11 +181,10 @@ export const Navbar = ({
                         <button
                           key={brand.id}
                           onClick={() => handleNavClick(brand.id)}
-                          className={`w-full text-left px-3.5 py-2 text-xs font-mono uppercase tracking-wider transition-colors flex items-center justify-between group ${
-                            activeCategory === brand.id
+                          className={`w-full text-left px-3.5 py-2 text-xs font-mono uppercase tracking-wider transition-colors flex items-center justify-between group ${activeCategory === brand.id
                               ? 'text-[#D4FF00] font-bold bg-[#1a1a1a]'
                               : 'text-gray-300 hover:text-[#D4FF00] hover:bg-[#1a1a1a]'
-                          }`}
+                            }`}
                         >
                           <span>{brand.name}</span>
                           <span className="text-[10px] text-gray-400 group-hover:text-[#D4FF00] transition-colors">
@@ -206,11 +200,10 @@ export const Navbar = ({
 
             <button
               onClick={() => handleNavClick('accesorios')}
-              className={`transition-colors cursor-pointer ${
-                isAccesoriosActive
+              className={`transition-colors cursor-pointer ${isAccesoriosActive
                   ? 'text-[#D4FF00] font-bold'
                   : 'text-gray-300 hover:text-[#D4FF00] font-medium'
-              }`}
+                }`}
             >
               Accesorios
             </button>
@@ -406,21 +399,19 @@ export const Navbar = ({
           <div className="flex flex-col space-y-3 font-mono text-sm uppercase tracking-wider">
             <button
               onClick={() => handleNavClick('todos')}
-              className={`text-left py-1 transition-colors ${
-                isNovedadesActive
+              className={`text-left py-1 transition-colors ${isNovedadesActive
                   ? 'text-[#D4FF00] font-bold'
                   : 'text-gray-300 hover:text-[#D4FF00]'
-              }`}
+                }`}
             >
               {isNovedadesActive ? '• ' : ''}Novedades
             </button>
             <button
               onClick={() => handleNavClick('ropa')}
-              className={`text-left py-1 transition-colors ${
-                isRopaActive
+              className={`text-left py-1 transition-colors ${isRopaActive
                   ? 'text-[#D4FF00] font-bold'
                   : 'text-gray-300 hover:text-[#D4FF00]'
-              }`}
+                }`}
             >
               {isRopaActive ? '• ' : ''}Ropa (Toda la colección)
             </button>
@@ -429,17 +420,15 @@ export const Navbar = ({
             <div>
               <button
                 onClick={() => setMobileCapsOpen(!mobileCapsOpen)}
-                className={`w-full flex items-center justify-between text-left py-1 transition-colors ${
-                  isGorrasActive
+                className={`w-full flex items-center justify-between text-left py-1 transition-colors ${isGorrasActive
                     ? 'text-[#D4FF00] font-bold'
                     : 'text-gray-300 hover:text-[#D4FF00]'
-                }`}
+                  }`}
               >
                 <span>{isGorrasActive ? '• ' : ''}Gorras</span>
                 <ChevronDown
-                  className={`w-4 h-4 transition-transform duration-200 ${
-                    mobileCapsOpen || isGorrasActive ? 'rotate-180 text-[#D4FF00]' : ''
-                  }`}
+                  className={`w-4 h-4 transition-transform duration-200 ${mobileCapsOpen || isGorrasActive ? 'rotate-180 text-[#D4FF00]' : ''
+                    }`}
                 />
               </button>
 
@@ -447,9 +436,8 @@ export const Navbar = ({
                 <div className="pl-4 py-2 space-y-2.5 border-l border-[#262626] my-1 ml-1 text-xs">
                   <button
                     onClick={() => handleNavClick('gorras')}
-                    className={`block text-left font-bold ${
-                      activeCategory === 'gorras' ? 'text-[#D4FF00]' : 'text-white hover:text-[#D4FF00]'
-                    }`}
+                    className={`block text-left font-bold ${activeCategory === 'gorras' ? 'text-[#D4FF00]' : 'text-white hover:text-[#D4FF00]'
+                      }`}
                   >
                     • Ver todas las gorras
                   </button>
@@ -460,11 +448,10 @@ export const Navbar = ({
                     <button
                       key={brand.id}
                       onClick={() => handleNavClick(brand.id)}
-                      className={`block text-left pl-2 cursor-pointer ${
-                        activeCategory === brand.id
+                      className={`block text-left pl-2 cursor-pointer ${activeCategory === brand.id
                           ? 'text-[#D4FF00] font-bold'
                           : 'text-gray-400 hover:text-[#D4FF00]'
-                      }`}
+                        }`}
                     >
                       {brand.name}
                     </button>
@@ -475,11 +462,10 @@ export const Navbar = ({
 
             <button
               onClick={() => handleNavClick('accesorios')}
-              className={`text-left py-1 transition-colors ${
-                isAccesoriosActive
+              className={`text-left py-1 transition-colors ${isAccesoriosActive
                   ? 'text-[#D4FF00] font-bold'
                   : 'text-gray-300 hover:text-[#D4FF00]'
-              }`}
+                }`}
             >
               {isAccesoriosActive ? '• ' : ''}Accesorios
             </button>

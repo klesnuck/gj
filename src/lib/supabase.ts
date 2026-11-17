@@ -821,3 +821,79 @@ export async function saveBrand(brandName: string): Promise<boolean> {
     return false
   }
 }
+
+// ============================================================
+// ADMINISTRADORES / LOGIN
+// ============================================================
+
+export interface AdminUser {
+  id?: string
+  username: string
+  password_hash: string
+  role?: string
+}
+
+/**
+ * Autentica las credenciales de administración contra Supabase o respaldo seguro.
+ */
+export async function authenticateAdmin(
+  usernameInput: string,
+  passwordInput: string
+): Promise<{ success: boolean; message?: string }> {
+  const cleanUser = (usernameInput || '').trim().toLowerCase()
+  const cleanPass = (passwordInput || '').trim()
+
+  if (!cleanUser || !cleanPass) {
+    return { success: false, message: 'Ingresa usuario y contraseña.' }
+  }
+
+  // 1. Validar contra la tabla `admin_users` de Supabase si está disponible
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .ilike('username', cleanUser)
+        .limit(1)
+
+      if (!error && data && data.length > 0) {
+        const admin = data[0]
+        if (admin.password_hash === cleanPass || admin.password === cleanPass) {
+          return { success: true }
+        }
+        return { success: false, message: 'Contraseña incorrecta.' }
+      }
+
+      // Si la tabla existe pero el usuario 'goncen' no ha sido insertado aún, sincronizarlo
+      if (!error && (!data || data.length === 0)) {
+        if (cleanUser === 'goncen' && cleanPass === 'gjcrenace') {
+          try {
+            await supabase
+              .from('admin_users')
+              .insert([
+                {
+                  username: 'goncen',
+                  password_hash: 'gjcrenace',
+                  role: 'superadmin',
+                },
+              ])
+              .select()
+          } catch {
+            // silent
+          }
+
+          return { success: true }
+        }
+      }
+    } catch (err) {
+      console.warn('Verificación en Supabase admin_users:', err)
+    }
+  }
+
+  // 2. Respaldo directo para credenciales oficiales requeridas
+  if (cleanUser === 'goncen' && cleanPass === 'gjcrenace') {
+    return { success: true }
+  }
+
+  return { success: false, message: 'Usuario o contraseña incorrectos.' }
+}

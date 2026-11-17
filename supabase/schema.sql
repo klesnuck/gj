@@ -234,6 +234,29 @@ ON public.newsletter_subscribers FOR ALL TO anon, authenticated
 USING (true) WITH CHECK (true);
 
 -- ============================================================
+-- 10. Tabla de Administradores (Admin Users)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.admin_users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT DEFAULT 'admin',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow full admin_users access" ON public.admin_users;
+CREATE POLICY "Allow full admin_users access"
+ON public.admin_users FOR ALL TO anon, authenticated
+USING (true) WITH CHECK (true);
+
+-- Insertar usuario administrador
+INSERT INTO public.admin_users (username, password_hash, role)
+VALUES ('goncen', 'gjcrenace', 'superadmin')
+ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash;
+
+-- ============================================================
 -- DATOS INICIALES
 -- ============================================================
 INSERT INTO public.drops (code, name, tagline, volume, description)
