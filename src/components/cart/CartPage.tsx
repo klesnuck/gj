@@ -570,8 +570,13 @@ export const CartPage: React.FC<CartPageProps> = ({
             © 2026 GJ CLOTHING AND CAPS.
           </div>
           <div className="flex flex-wrap items-center space-x-6 text-[11px]">
-            <a href="#ayuda" className="hover:text-white transition-colors">
-              Ayuda
+            <a
+              href="https://wa.me/528444923686"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-white transition-colors"
+            >
+              Ayuda: 844 492 3686
             </a>
             <a href="#privacidad" className="hover:text-white transition-colors">
               Privacidad

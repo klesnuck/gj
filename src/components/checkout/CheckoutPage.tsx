@@ -533,21 +533,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     <label className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
                       Estado *
                     </label>
-                    <select
+                    <input
+                      type="text"
+                      required
                       value={state}
                       onChange={(e) => setState(e.target.value)}
-                      className="w-full bg-[#121212] border border-[#252525] focus:border-[#D4FF00] px-3 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none cursor-pointer"
-                    >
-                      <option value="Ciudad de México">Ciudad de México</option>
-                      <option value="Coahuila">Coahuila (Saltillo / Torreón)</option>
-                      <option value="Nuevo León">Nuevo León (Monterrey)</option>
-                      <option value="Jalisco">Jalisco (Guadalajara)</option>
-                      <option value="Querétaro">Querétaro</option>
-                      <option value="Puebla">Puebla</option>
-                      <option value="Estado de México">Estado de México</option>
-                      <option value="Guanajuato">Guanajuato</option>
-                      <option value="Yucatán">Yucatán</option>
-                    </select>
+                      placeholder="Ej. Coahuila, Nuevo León..."
+                      className="w-full bg-[#121212] border border-[#252525] focus:border-[#D4FF00] px-3.5 py-2.5 text-xs sm:text-sm font-mono text-white focus:outline-none"
+                    />
                   </div>
 
                   <div className="space-y-1.5">
@@ -611,7 +604,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   </div>
 
                   <span className="text-xs font-mono font-bold text-[#D4FF00] tracking-wider uppercase shrink-0 ml-3">
-                    INCLUIDO
+                    A COTIZAR
                   </span>
                 </label>
 
@@ -1047,8 +1040,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 </div>
 
                 <div className="flex items-center justify-between text-gray-400">
-                  <span>Envío {shippingMethod === 'saltillo_local' ? '(Saltillo)' : 'estándar'}</span>
-                  <span className="text-[#D4FF00] font-bold">INCLUIDO</span>
+                  <span>Envío {shippingMethod === 'saltillo_local' ? '(Saltillo)' : 'nacional'}</span>
+                  <span className="text-[#D4FF00] font-bold">
+                    {shippingMethod === 'saltillo_local' ? 'INCLUIDO' : 'A COTIZAR'}
+                  </span>
                 </div>
 
                 {appliedCoupon && (
@@ -1117,9 +1112,20 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </p>
 
               {/* Help Box */}
-              <div className="p-3 bg-[#141414] border border-[#222222] flex items-center gap-2.5 text-[11px] font-mono text-gray-400">
-                <MessageCircle className="w-4 h-4 text-gray-500 shrink-0" />
-                <span>¿Necesitas ayuda con tu pedido? <a href="mailto:hola@gjclothing.mx" className="text-white underline">hola@gjclothing.mx</a></span>
+              <div className="p-3.5 bg-[#141414] border border-[#222222] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+                <div className="flex items-center gap-2 text-gray-300">
+                  <MessageCircle className="w-4 h-4 text-[#D4FF00] shrink-0" />
+                  <span>¿Necesitas ayuda con tu pedido?</span>
+                </div>
+                <a
+                  href="https://wa.me/528444923686"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#182109] hover:bg-[#D4FF00] text-[#D4FF00] hover:text-black border border-[#D4FF00]/40 font-bold transition-all text-xs"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>844 492 3686</span>
+                </a>
               </div>
 
               {/* Streetwear Branding Banner */}
@@ -1147,8 +1153,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
             © 2026 GJ CLOTHING AND CAPS.
           </div>
           <div className="flex items-center space-x-6 text-[11px]">
-            <a href="#ayuda" className="hover:text-white transition-colors">
-              Ayuda
+            <a
+              href="https://wa.me/528444923686"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-white transition-colors"
+            >
+              Ayuda: 844 492 3686
             </a>
             <a href="#privacidad" className="hover:text-white transition-colors">
               Privacidad
