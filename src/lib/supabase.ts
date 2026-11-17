@@ -556,6 +556,24 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
   return true
 }
 
+export async function clearAllOrders(): Promise<boolean> {
+  try {
+    localStorage.removeItem('gj_admin_orders')
+  } catch (e) {
+    console.warn(e)
+  }
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+      return true
+    } catch (err) {
+      console.warn('Error al borrar pedidos en Supabase:', err)
+    }
+  }
+  return true
+}
+
 // ============================================================
 // CLIENTES (CUSTOMERS)
 // ============================================================
@@ -632,6 +650,24 @@ export async function saveCustomer(customer: Customer): Promise<boolean> {
       ], { onConflict: 'email' })
     } catch (err) {
       console.warn('Error al upsert customer en Supabase:', err)
+    }
+  }
+  return true
+}
+
+export async function clearAllCustomers(): Promise<boolean> {
+  try {
+    localStorage.removeItem('gj_admin_customers')
+  } catch (e) {
+    console.warn(e)
+  }
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from('customers').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+      return true
+    } catch (err) {
+      console.warn('Error al borrar clientes en Supabase:', err)
     }
   }
   return true

@@ -614,6 +614,10 @@ export function App() {
           <OrdersList
             orders={orders}
             onUpdateOrderStatus={handleUpdateOrderStatus}
+            onClearOrders={() => {
+              setOrders([])
+              setCustomers([])
+            }}
           />
         )}
 
@@ -622,6 +626,7 @@ export function App() {
           <CustomersList
             customers={customers}
             onAddCustomer={handleAddCustomer}
+            onClearCustomers={() => setCustomers([])}
           />
         )}
 

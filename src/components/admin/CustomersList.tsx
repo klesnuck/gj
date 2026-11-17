@@ -6,19 +6,34 @@ import {
   Phone,
   Plus,
   X,
+  Trash2,
 } from 'lucide-react'
 import type { Customer } from '../../types/database.types'
+import { clearAllCustomers } from '../../lib/supabase'
 
 interface CustomersListProps {
   customers: Customer[]
   onAddCustomer?: (customer: Customer) => void
+  onClearCustomers?: () => void
 }
 
-export const CustomersList = ({ customers: initialCustomers, onAddCustomer }: CustomersListProps) => {
+export const CustomersList = ({ customers: initialCustomers, onAddCustomer, onClearCustomers }: CustomersListProps) => {
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers)
   const [search, setSearch] = useState('')
   const [cityFilter, setCityFilter] = useState<'all' | 'saltillo' | 'otras'>('all')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleClearAll = async () => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar TODOS los clientes? Esta acción no se puede deshacer.')) {
+      return
+    }
+    setIsDeleting(true)
+    await clearAllCustomers()
+    setCustomers([])
+    onClearCustomers?.()
+    setIsDeleting(false)
+  }
 
   useEffect(() => {
     setCustomers(initialCustomers)
@@ -87,13 +102,27 @@ export const CustomersList = ({ customers: initialCustomers, onAddCustomer }: Cu
           </h1>
         </div>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#D4FF00] hover:bg-[#bfe600] text-black font-mono text-xs font-bold uppercase tracking-wider transition-colors shadow-lg shadow-[#D4FF00]/15 cursor-pointer shrink-0"
-        >
-          <Plus className="w-4 h-4 stroke-[3]" />
-          <span>+ REGISTRAR CLIENTE</span>
-        </button>
+        <div className="flex items-center gap-3">
+          {customers.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              disabled={isDeleting}
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-red-950/40 hover:bg-red-900/60 border border-red-800/60 hover:border-red-500 text-red-400 font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer shrink-0"
+              title="Eliminar todos los clientes de la base de datos"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>{isDeleting ? 'Borrando...' : 'Borrar todos'}</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#D4FF00] hover:bg-[#bfe600] text-black font-mono text-xs font-bold uppercase tracking-wider transition-colors shadow-lg shadow-[#D4FF00]/15 cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4 stroke-[3]" />
+            <span>+ REGISTRAR CLIENTE</span>
+          </button>
+        </div>
       </div>
 
       {/* Metrics Row */}

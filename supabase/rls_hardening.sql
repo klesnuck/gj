@@ -217,3 +217,4 @@ CREATE POLICY "newsletter_admin_manage"
 ON public.newsletter_subscribers FOR ALL TO anon, authenticated
 USING (public.is_admin_request())
 WITH CHECK (public.is_admin_request());
+

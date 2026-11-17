@@ -7,19 +7,34 @@ import {
   MessageCircle,
   Eye,
   X,
+  Trash2,
 } from 'lucide-react'
 import type { Order } from '../../types/database.types'
+import { clearAllOrders } from '../../lib/supabase'
 
 interface OrdersListProps {
   orders: Order[]
   onUpdateOrderStatus?: (orderId: string, newStatus: Order['status']) => void
+  onClearOrders?: () => void
 }
 
-export const OrdersList = ({ orders: initialOrders, onUpdateOrderStatus }: OrdersListProps) => {
+export const OrdersList = ({ orders: initialOrders, onUpdateOrderStatus, onClearOrders }: OrdersListProps) => {
   const [orders, setOrders] = useState<Order[]>(initialOrders)
   const [search, setSearch] = useState('')
   const [shippingFilter, setShippingFilter] = useState<'all' | 'saltillo_local' | 'paqueteria_nacional'>('all')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleClearAll = async () => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar TODOS los pedidos? Esta acción no se puede deshacer.')) {
+      return
+    }
+    setIsDeleting(true)
+    await clearAllOrders()
+    setOrders([])
+    onClearOrders?.()
+    setIsDeleting(false)
+  }
 
   useEffect(() => {
     setOrders(initialOrders)
@@ -61,16 +76,31 @@ export const OrdersList = ({ orders: initialOrders, onUpdateOrderStatus }: Order
           </h1>
         </div>
 
-        {/* Search */}
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-500" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por cliente, teléfono o dirección..."
-            className="w-full bg-[#131313] border border-[#242424] focus:border-[#D4FF00] pl-9 pr-4 py-2 text-xs font-mono text-white focus:outline-none"
-          />
+        {/* Actions & Search */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          {orders.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              disabled={isDeleting}
+              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-red-950/40 hover:bg-red-900/60 border border-red-800/60 hover:border-red-500 text-red-400 font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer shrink-0"
+              title="Eliminar todos los pedidos de la base de datos"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>{isDeleting ? 'Borrando...' : 'Borrar todos'}</span>
+            </button>
+          )}
+
+          {/* Search */}
+          <div className="relative w-full sm:w-72">
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-500" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por cliente, teléfono..."
+              className="w-full bg-[#131313] border border-[#242424] focus:border-[#D4FF00] pl-9 pr-4 py-2 text-xs font-mono text-white focus:outline-none"
+            />
+          </div>
         </div>
       </div>
 
