@@ -159,6 +159,27 @@ export function filterProductsByCategory(products: Product[], category?: string)
     )
   }
 
+  // Subcategorías de ropa específicas (Playeras, Hoodies, Shorts, Pantalones...)
+  if (catLower === 'playeras') {
+    return products.filter(
+      (p) =>
+        p.category === 'playeras' ||
+        p.subcategory?.toLowerCase().includes('playera')
+    )
+  }
+  if (catLower === 'hoodies') {
+    return products.filter(
+      (p) =>
+        p.category === 'hoodies' ||
+        p.subcategory?.toLowerCase().includes('hoodie')
+    )
+  }
+  if (catLower === 'shorts' || catLower === 'short') {
+    return products.filter(
+      (p) => p.subcategory?.toLowerCase().includes('short')
+    )
+  }
+
   // 2. Gorras filtradas por marca (ej. gorras:supreme, gorras:gj, etc.)
   if (catLower.startsWith('gorras:')) {
     const brandTerm = catLower.replace('gorras:', '').trim()
@@ -170,6 +191,10 @@ export function filterProductsByCategory(products: Product[], category?: string)
     })
   }
 
-  // 3. Categorías específicas
-  return products.filter((p) => p.category.toLowerCase() === catLower)
+  // 3. Subcategoría directa o Categorías específicas
+  return products.filter(
+    (p) =>
+      p.category.toLowerCase() === catLower ||
+      (p.subcategory && p.subcategory.toLowerCase() === catLower)
+  )
 }

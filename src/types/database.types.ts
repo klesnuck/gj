@@ -11,6 +11,7 @@ export interface Product {
   slug: string
   title: string
   category: 'gorras' | 'playeras' | 'hoodies' | 'accesorios' | 'ropa' | string
+  subcategory?: string | null
   brand?: string
   price: number
   currency: string

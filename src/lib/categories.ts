@@ -4,16 +4,45 @@ export interface CategoryOption {
   hasSizes: boolean
 }
 
-// Categorías base limpias (sin textos de "(Con tallas...)" ni "(Unitalla...)")
+// 3 Categorías principales solicitadas: Ropa, Gorras y Accesorios
 export const BASE_CATEGORIES: CategoryOption[] = [
-  { id: 'hoodies', name: 'Hoodies', hasSizes: true },
-  { id: 'playeras', name: 'Playeras', hasSizes: true },
+  { id: 'ropa', name: 'Ropa', hasSizes: true },
   { id: 'gorras', name: 'Gorras', hasSizes: false },
   { id: 'accesorios', name: 'Accesorios', hasSizes: false },
 ]
 
+// Subcategorías sugeridas por defecto para cada categoría principal
+export const DEFAULT_SUBCATEGORIES: Record<string, string[]> = {
+  ropa: [
+    'Playera',
+    'Short',
+    'Hoodie / Sudadera',
+    'Pantalón / Pants',
+    'Chamarra / Jacket',
+    'Jersey',
+    'Conjunto',
+  ],
+  gorras: [
+    'Snapback',
+    'Fitted (Cerrada)',
+    'Trucker',
+    'Curva / Dad Hat',
+    'Gorro / Beanie',
+    'Vintage',
+  ],
+  accesorios: [
+    'Calcetas / Socks',
+    'Llavero',
+    'Pin / Badge',
+    'Cadena / Joyería',
+    'Bolso / Shoulder Bag',
+    'Mochila',
+    'Sticker',
+  ],
+}
+
 /**
- * Obtiene todas las categorías (base + personalizadas agregadas por el admin).
+ * Obtiene todas las categorías principales (Ropa, Gorras, Accesorios + posibles personalizadas).
  */
 export function getKnownCategories(): CategoryOption[] {
   const catMap = new Map<string, CategoryOption>()
@@ -28,11 +57,14 @@ export function getKnownCategories(): CategoryOption[] {
       for (const item of stored) {
         if (item && item.name && typeof item.name === 'string') {
           const id = item.id || item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-          catMap.set(id, {
-            id,
-            name: item.name.trim(),
-            hasSizes: Boolean(item.hasSizes),
-          })
+          // No duplicar si ya es una de las principales
+          if (!catMap.has(id)) {
+            catMap.set(id, {
+              id,
+              name: item.name.trim(),
+              hasSizes: Boolean(item.hasSizes),
+            })
+          }
         }
       }
     }
@@ -44,7 +76,97 @@ export function getKnownCategories(): CategoryOption[] {
 }
 
 /**
- * Guarda una nueva categoría personalizada para que esté disponible de inmediato en todo el catálogo.
+ * Obtiene la lista de subcategorías conocidas para una categoría dada (sugerencias + personalizadas guardadas).
+ */
+export function getSubcategoriesForCategory(category: string): string[] {
+  const cleanCat = (category || 'ropa').toLowerCase().trim()
+  const normalizedCat = cleanCat === 'playeras' || cleanCat === 'hoodies' ? 'ropa' : cleanCat
+
+  const defaults = DEFAULT_SUBCATEGORIES[normalizedCat] || []
+  const list = new Set<string>(defaults)
+
+  try {
+    const stored = JSON.parse(localStorage.getItem(`gj_custom_subcategories_${normalizedCat}`) || '[]')
+    if (Array.isArray(stored)) {
+      for (const item of stored) {
+        if (typeof item === 'string' && item.trim()) {
+          list.add(item.trim())
+        }
+      }
+    }
+  } catch (e) {
+    console.warn(e)
+  }
+
+  return Array.from(list)
+}
+
+/**
+ * Guarda una nueva subcategoría personalizada para que esté disponible en futuros productos.
+ */
+export function saveCustomSubcategory(category: string, subcategory: string): void {
+  const cleanCat = (category || 'ropa').toLowerCase().trim()
+  const normalizedCat = cleanCat === 'playeras' || cleanCat === 'hoodies' ? 'ropa' : cleanCat
+  const cleanSub = subcategory.trim()
+  if (!cleanSub || cleanSub.length < 2) return
+
+  try {
+    const key = `gj_custom_subcategories_${normalizedCat}`
+    const stored: string[] = JSON.parse(localStorage.getItem(key) || '[]')
+    const list = new Set(Array.isArray(stored) ? stored : [])
+    list.add(cleanSub)
+    localStorage.setItem(key, JSON.stringify(Array.from(list)))
+  } catch (e) {
+    console.warn(e)
+  }
+}
+
+/**
+ * Respaldo local de subcategoría para un producto.
+ */
+export function saveProductSubcategory(productId: string, subcategory: string): void {
+  try {
+    if (!productId || !subcategory) return
+    const stored = JSON.parse(localStorage.getItem('gj_product_subcategories') || '{}')
+    stored[productId] = subcategory.trim()
+    localStorage.setItem('gj_product_subcategories', JSON.stringify(stored))
+  } catch (e) {
+    console.warn(e)
+  }
+}
+
+/**
+ * Obtiene la subcategoría respaldada localmente para un producto.
+ */
+export function getProductSubcategory(productId: string): string | null {
+  try {
+    const stored = JSON.parse(localStorage.getItem('gj_product_subcategories') || '{}')
+    return stored[productId] || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Normaliza categorías legacy ('playeras', 'hoodies') a la nueva estructura:
+ * categoria: 'ropa' y subcategoria: 'Playera' | 'Hoodie'.
+ */
+export function normalizeProductCategory(category: string, existingSubcategory?: string | null): {
+  category: string
+  subcategory?: string | null
+} {
+  const catLower = (category || '').toLowerCase().trim()
+  if (catLower === 'playeras') {
+    return { category: 'ropa', subcategory: existingSubcategory || 'Playera' }
+  }
+  if (catLower === 'hoodies') {
+    return { category: 'ropa', subcategory: existingSubcategory || 'Hoodie / Sudadera' }
+  }
+  return { category: catLower || 'ropa', subcategory: existingSubcategory || null }
+}
+
+/**
+ * Guarda una nueva categoría personalizada.
  */
 export function saveCustomCategory(name: string, hasSizes: boolean): CategoryOption {
   const cleanName = name.trim()
@@ -73,10 +195,9 @@ export function saveCustomCategory(name: string, hasSizes: boolean): CategoryOpt
 export function categoryHasSizes(categoryId: string): boolean {
   const catLower = (categoryId || '').toLowerCase().trim()
   if (catLower === 'gorras' || catLower === 'accesorios') return false
-  if (catLower === 'playeras' || catLower === 'hoodies' || catLower === 'ropa') return true
+  if (catLower === 'ropa' || catLower === 'playeras' || catLower === 'hoodies') return true
 
   const known = getKnownCategories()
   const found = known.find((c) => c.id === catLower)
   return found ? found.hasSizes : false
 }
-

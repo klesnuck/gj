@@ -24,10 +24,10 @@ import { getAllKnownBrands, saveCustomBrand } from '../../lib/brands'
 import { saveBrand } from '../../lib/supabase'
 import { applyStudioBlackBackground } from '../../lib/studioPhoto'
 import {
-  getKnownCategories,
-  saveCustomCategory,
   categoryHasSizes,
-  CategoryOption,
+  getSubcategoriesForCategory,
+  saveCustomSubcategory,
+  normalizeProductCategory,
 } from '../../lib/categories'
 
 interface ProductFormProps {
@@ -54,12 +54,19 @@ export const ProductForm = ({
 }: ProductFormProps) => {
   const isEditing = Boolean(initialProduct)
 
-  // Form State initialized from 0 (without preset mock descriptions or default hoodie)
+  // Normalizar categoría y subcategoría inicial si viene de producto previo
+  const initialNorm = initialProduct
+    ? normalizeProductCategory(initialProduct.category, initialProduct.subcategory)
+    : { category: 'ropa', subcategory: 'Playera' }
+
+  // Form State initialized from 0
   const [title, setTitle] = useState(initialProduct?.title || '')
   const [description, setDescription] = useState(initialProduct?.description || '')
-  const [category, setCategory] = useState<string>(
-    initialProduct?.category || 'playeras'
-  )
+  const [category, setCategory] = useState<string>(initialNorm.category || 'ropa')
+  const [subcategory, setSubcategory] = useState<string>(initialNorm.subcategory || 'Playera')
+  const [hasSizes, setHasSizes] = useState<boolean>(() => {
+    return categoryHasSizes(initialNorm.category || 'ropa')
+  })
   const [brand, setBrand] = useState(initialProduct?.brand || '')
   const [price, setPrice] = useState<number>(initialProduct?.price || 0)
   const [tag, setTag] = useState(initialProduct?.tag || '')
@@ -67,26 +74,30 @@ export const ProductForm = ({
   const [inOnlineStore, setInOnlineStore] = useState(true)
   const [isFeatured, setIsFeatured] = useState<boolean>(initialProduct?.is_featured ?? false)
 
-  // Categorías dinámicas y modal de nueva categoría
-  const [categoriesList, setCategoriesList] = useState<CategoryOption[]>(() => getKnownCategories())
-  const [showNewCategoryModal, setShowNewCategoryModal] = useState(false)
-  const [newCategoryName, setNewCategoryName] = useState('')
-  const [newCategoryHasSizes, setNewCategoryHasSizes] = useState(true)
+  // Subcategorías dinámicas para la categoría activa
+  const [availableSubcategories, setAvailableSubcategories] = useState<string[]>(() =>
+    getSubcategoriesForCategory(initialNorm.category || 'ropa')
+  )
+
+  const handleCategorySelect = (newCat: string) => {
+    setCategory(newCat)
+    const catSizes = categoryHasSizes(newCat)
+    setHasSizes(catSizes)
+
+    // Cargar subcategorías de la nueva categoría
+    const subs = getSubcategoriesForCategory(newCat)
+    setAvailableSubcategories(subs)
+
+    // Si la subcategoría actual no pertenece a la nueva categoría, sugerir la primera
+    if (!subs.some((s) => s.toLowerCase() === subcategory.toLowerCase())) {
+      setSubcategory(subs[0] || '')
+    }
+  }
 
   // Marcas dinámicas y modal de nueva marca (inicia sin marcas fijas)
   const [knownBrands, setKnownBrands] = useState<string[]>(() => getAllKnownBrands(products))
   const [showNewBrandModal, setShowNewBrandModal] = useState(false)
   const [newBrandInput, setNewBrandInput] = useState('')
-
-  const handleSaveNewCategory = () => {
-    const clean = newCategoryName.trim()
-    if (!clean) return
-    const saved = saveCustomCategory(clean, newCategoryHasSizes)
-    setCategoriesList(getKnownCategories())
-    setCategory(saved.id)
-    setNewCategoryName('')
-    setShowNewCategoryModal(false)
-  }
 
   const handleSaveNewBrand = () => {
     const clean = newBrandInput.trim()
@@ -118,8 +129,8 @@ export const ProductForm = ({
   const [savedSuccess, setSavedSuccess] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  // Unitalla vs Tallas State: gorras y categorías sin tallas son Unitalla
-  const isCap = category === 'gorras' || !categoryHasSizes(category)
+  // Unitalla vs Tallas State: gorras, accesorios o sin tallas son Unitalla
+  const isCap = !hasSizes || category === 'gorras' || category === 'accesorios'
 
   // Cap Unitalla Stock & SKU (starts at 0)
   const [capStock, setCapStock] = useState<number>(initialProduct?.stock || 0)
@@ -172,11 +183,6 @@ export const ProductForm = ({
       setVariants((prev) => prev.map((v) => ({ ...v, price })))
     }
   }, [price, isCap])
-
-  // Change category cleanly without overwriting user data
-  const handleCategoryChange = (newCat: string) => {
-    setCategory(newCat)
-  }
 
   // Stock calculation: If gorra, takes capStock directly; if clothes, sums variants
   const totalStock = isCap
@@ -352,6 +358,7 @@ export const ProductForm = ({
         initialProduct?.slug ||
         (title ? title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : `prenda-${Date.now()}`),
       category,
+      subcategory: subcategory ? subcategory.trim() : null,
       brand: brand || '',
       price: Number(price) || 0,
       currency: 'MXN',
@@ -373,6 +380,9 @@ export const ProductForm = ({
     if (ok) {
       if (brand && brand.trim()) {
         saveCustomBrand(brand.trim())
+      }
+      if (subcategory && subcategory.trim()) {
+        saveCustomSubcategory(category, subcategory.trim())
       }
       setStatus(newStatus)
       setSavedSuccess(true)
@@ -734,160 +744,143 @@ export const ProductForm = ({
               </div>
             </div>
 
-            {/* Category & Sale Price Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            {/* Categoría Principal & Subcategoría */}
+            <div className="space-y-4 pt-2 pb-1 border-b border-[#1f1f1f]">
 
-              {/* Categoría Selector */}
-              <div className="space-y-1.5">
+              {/* Categoría Principal: Ropa, Gorras, Accesorios */}
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-mono text-gray-400 uppercase tracking-wider">
-                    Categoría *
+                  <label className="text-xs font-mono text-gray-300 uppercase tracking-wider font-bold">
+                    Categoría Principal *
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowNewCategoryModal(true)}
-                    className="text-[11px] font-mono text-[#D4FF00] hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>Agregar categoría</span>
-                  </button>
+                  <span className="text-[10px] font-mono text-[#D4FF00] uppercase tracking-wider">
+                    Selecciona una: Ropa · Gorras · Accesorios
+                  </span>
                 </div>
 
-                <select
-                  value={category}
-                  onChange={(e) => {
-                    if (e.target.value === '__add_new__') {
-                      setShowNewCategoryModal(true)
-                    } else {
-                      handleCategoryChange(e.target.value)
-                    }
-                  }}
-                  className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-sans text-white focus:outline-none cursor-pointer"
-                >
-                  {categoriesList.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                  <option value="__add_new__" className="text-[#D4FF00] font-bold">
-                    + Agregar nueva categoría...
-                  </option>
-                </select>
-
-                {/* Sub-menú pequeño para crear nueva categoría */}
-                {showNewCategoryModal && (
-                  <div className="p-4 bg-[#161616] border border-[#D4FF00]/50 space-y-3 animate-in fade-in slide-in-from-top-2 mt-2">
-                    <div className="flex items-center justify-between pb-2 border-b border-[#262626]">
-                      <span className="text-xs font-mono font-bold text-[#D4FF00] uppercase tracking-wider flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        NUEVA CATEGORÍA
-                      </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {[
+                    { id: 'ropa', label: 'Ropa', tag: 'APPAREL', desc: 'Playeras, shorts, hoodies, pants...' },
+                    { id: 'gorras', label: 'Gorras', tag: 'HEADWEAR', desc: 'Snapback, fitted, trucker, curvas...' },
+                    { id: 'accesorios', label: 'Accesorios', tag: 'COMPLEMENTS', desc: 'Calcetas, llaveros, pines, cadenas...' },
+                  ].map((catOpt) => {
+                    const isSelected = category === catOpt.id
+                    return (
                       <button
+                        key={catOpt.id}
                         type="button"
-                        onClick={() => {
-                          setShowNewCategoryModal(false)
-                          setNewCategoryName('')
-                        }}
-                        className="text-gray-400 hover:text-white p-1"
+                        onClick={() => handleCategorySelect(catOpt.id)}
+                        className={`p-3.5 text-left border transition-all cursor-pointer flex flex-col justify-between group ${
+                          isSelected
+                            ? 'bg-[#D4FF00] text-black border-[#D4FF00] shadow-lg shadow-[#D4FF00]/15'
+                            : 'bg-[#141414] text-gray-300 border-[#262626] hover:border-gray-500 hover:text-white'
+                        }`}
                       >
-                        <X className="w-4 h-4" />
+                        <div className="flex items-center justify-between w-full">
+                          <span className="font-mono text-xs sm:text-sm font-black uppercase tracking-wider">
+                            {catOpt.label}
+                          </span>
+                          <span className={`text-[9px] font-mono px-1.5 py-0.5 uppercase tracking-widest ${
+                            isSelected ? 'bg-black text-[#D4FF00] font-bold' : 'bg-black/60 text-gray-400 border border-white/10'
+                          }`}>
+                            {catOpt.tag}
+                          </span>
+                        </div>
+                        <p className={`text-[11px] font-sans mt-2 line-clamp-1 ${isSelected ? 'text-black/85 font-medium' : 'text-gray-400'}`}>
+                          {catOpt.desc}
+                        </p>
                       </button>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-mono text-gray-300 block">
-                        Nombre de la categoría *
-                      </label>
-                      <input
-                        type="text"
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder="Ej. Pantalones, Chamarras, Shorts, Joyería..."
-                        className="w-full bg-[#111] border border-[#333] focus:border-[#D4FF00] px-3 py-2 text-xs font-sans text-white focus:outline-none"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault()
-                            handleSaveNewCategory()
-                          }
-                        }}
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-mono text-gray-300 block">
-                        ¿Cómo se venderá esta categoría?
-                      </label>
-                      <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                        <label className={`flex items-center gap-2 p-2.5 border cursor-pointer ${newCategoryHasSizes ? 'bg-[#D4FF00]/10 border-[#D4FF00] text-white' : 'bg-[#121212] border-[#2c2c2c] text-gray-400'}`}>
-                          <input
-                            type="radio"
-                            name="newCatSizes"
-                            checked={newCategoryHasSizes}
-                            onChange={() => setNewCategoryHasSizes(true)}
-                            className="accent-[#D4FF00]"
-                          />
-                          <span>Con tallas (S, M, L...)</span>
-                        </label>
-                        <label className={`flex items-center gap-2 p-2.5 border cursor-pointer ${!newCategoryHasSizes ? 'bg-[#D4FF00]/10 border-[#D4FF00] text-white' : 'bg-[#121212] border-[#2c2c2c] text-gray-400'}`}>
-                          <input
-                            type="radio"
-                            name="newCatSizes"
-                            checked={!newCategoryHasSizes}
-                            onChange={() => setNewCategoryHasSizes(false)}
-                            className="accent-[#D4FF00]"
-                          />
-                          <span>Unitalla / Sin tallas</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowNewCategoryModal(false)
-                          setNewCategoryName('')
-                        }}
-                        className="px-3 py-1.5 text-xs font-mono text-gray-400 hover:text-white border border-[#2b2b2b]"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleSaveNewCategory}
-                        className="px-4 py-1.5 text-xs font-mono font-bold bg-[#D4FF00] text-black hover:bg-[#bfe600]"
-                      >
-                        Guardar Categoría
-                      </button>
-                    </div>
-                  </div>
-                )}
+                    )
+                  })}
+                </div>
               </div>
 
-              {/* Precio de venta */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-mono text-gray-400 uppercase tracking-wider block">
-                  Precio de venta *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-sm font-mono text-gray-400">$</span>
+              {/* Subcategoría & Precio de venta */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 pt-1">
+
+                {/* Subcategoría (7 cols) */}
+                <div className="sm:col-span-7 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-mono text-gray-300 uppercase tracking-wider font-bold">
+                      Subcategoría *
+                    </label>
+                    <span className="text-[10px] font-mono text-gray-500">
+                      {category === 'ropa'
+                        ? 'Ej. Playera, Short, Hoodie...'
+                        : category === 'gorras'
+                        ? 'Ej. Snapback, Trucker...'
+                        : 'Ej. Calcetas, Llavero...'}
+                    </span>
+                  </div>
+
+                  {/* Input editable de subcategoría */}
                   <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={price === 0 ? '' : price}
-                    onFocus={(e) => e.target.select()}
-                    onChange={(e) => {
-                      const raw = e.target.value.replace(/^0+/, '')
-                      setPrice(raw === '' ? 0 : Math.max(0, parseInt(raw, 10)))
-                    }}
-                    className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] pl-8 pr-4 py-2.5 text-sm font-mono text-white focus:outline-none transition-colors"
+                    type="text"
+                    value={subcategory}
+                    onChange={(e) => setSubcategory(e.target.value)}
+                    placeholder={
+                      category === 'ropa'
+                        ? 'Ej. Playera, Short, Hoodie, Pantalón...'
+                        : category === 'gorras'
+                        ? 'Ej. Snapback, Fitted, Trucker, Curva...'
+                        : 'Ej. Calcetas, Llavero, Pin, Cadena...'
+                    }
+                    className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-sans text-white focus:outline-none"
                   />
+
+                  {/* Quick Chips sugeridas para la categoría seleccionada */}
+                  <div className="space-y-1 pt-1">
+                    <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider block">
+                      Sugerencias rápidas (da clic para seleccionar):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {availableSubcategories.map((subName) => {
+                        const isSubSelected = subcategory.trim().toLowerCase() === subName.trim().toLowerCase()
+                        return (
+                          <button
+                            key={subName}
+                            type="button"
+                            onClick={() => setSubcategory(subName)}
+                            className={`px-2.5 py-1 text-[11px] font-mono uppercase tracking-wider border transition-all cursor-pointer ${
+                              isSubSelected
+                                ? 'bg-[#D4FF00] text-black font-bold border-[#D4FF00]'
+                                : 'bg-[#101010] border-[#262626] text-gray-300 hover:text-white hover:border-gray-400'
+                            }`}
+                          >
+                            {subName}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
                 </div>
-                <span className="text-[10px] font-mono text-gray-500 block">
-                  MXN · IVA incluido
-                </span>
+
+                {/* Precio de venta (5 cols) */}
+                <div className="sm:col-span-5 space-y-2">
+                  <label className="text-xs font-mono text-gray-300 uppercase tracking-wider font-bold block">
+                    Precio de venta *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-2.5 text-sm font-mono text-gray-400">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={price === 0 ? '' : price}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/^0+/, '')
+                        setPrice(raw === '' ? 0 : Math.max(0, parseInt(raw, 10)))
+                      }}
+                      className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] pl-8 pr-14 py-2.5 text-base font-mono font-bold text-white focus:outline-none transition-colors"
+                    />
+                    <span className="absolute right-3.5 top-3 text-xs font-mono text-gray-500">MXN</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-gray-500 block">
+                    Precio visible para tus clientes en la tienda online.
+                  </span>
+                </div>
+
               </div>
 
             </div>
@@ -1066,14 +1059,16 @@ export const ProductForm = ({
                   </div>
                   <div className="text-xs font-mono space-y-1">
                     <div className="text-white font-bold uppercase tracking-wider flex items-center gap-2">
-                      <span>TALLA ÚNICA AJUSTABLE</span>
+                      <span>{category === 'gorras' ? 'GORRA UNITALLA AJUSTABLE' : 'PRODUCTO UNITALLA'}</span>
                       <span className="text-[10px] px-1.5 py-0.2 bg-[#D4FF00] text-black font-extrabold">
                         ONE SIZE
                       </span>
                     </div>
                     <p className="text-gray-400 font-sans leading-relaxed text-[11px]">
-                      Las gorras cuentan con broche metálico / velcro ajustable universal, por lo que{' '}
-                      <strong className="text-gray-200">no requieren selección de tallas (S, M, L, XL)</strong>. Ingresa únicamente cuántas piezas tienes en stock para este modelo.
+                      {category === 'gorras'
+                        ? 'Las gorras cuentan con broche ajustable universal, por lo que no requieren selección de tallas (S, M, L, XL).'
+                        : 'Este producto se maneja como Unitalla o talla única, por lo que no requiere selección de tallas.'}{' '}
+                      Ingresa únicamente cuántas piezas tienes en stock para este modelo.
                     </p>
                   </div>
                 </div>

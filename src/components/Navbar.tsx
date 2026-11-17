@@ -62,6 +62,7 @@ export const Navbar = ({
         const title = (p.title || '').toLowerCase()
         const brand = (p.brand || '').toLowerCase()
         const category = (p.category || '').toLowerCase()
+        const subcategory = (p.subcategory || '').toLowerCase()
         const specs = (p.specs || '').toLowerCase()
         const tag = (p.tag || '').toLowerCase()
         const desc = (p.description || '').toLowerCase()
@@ -69,6 +70,7 @@ export const Navbar = ({
           title.includes(cleanQuery) ||
           brand.includes(cleanQuery) ||
           category.includes(cleanQuery) ||
+          subcategory.includes(cleanQuery) ||
           specs.includes(cleanQuery) ||
           tag.includes(cleanQuery) ||
           desc.includes(cleanQuery)

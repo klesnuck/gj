@@ -39,9 +39,13 @@ export const ProductList = ({
   const filtered = products.filter((p) => {
     const matchesSearch =
       p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.slug.toLowerCase().includes(search.toLowerCase())
+      p.slug.toLowerCase().includes(search.toLowerCase()) ||
+      (p.subcategory || '').toLowerCase().includes(search.toLowerCase()) ||
+      (p.brand || '').toLowerCase().includes(search.toLowerCase())
     const matchesCat =
-      selectedCategory === 'todos' || p.category.toLowerCase() === selectedCategory.toLowerCase()
+      selectedCategory === 'todos' ||
+      p.category.toLowerCase() === selectedCategory.toLowerCase() ||
+      (p.subcategory && p.subcategory.toLowerCase() === selectedCategory.toLowerCase())
     return matchesSearch && matchesCat
   })
 
@@ -172,9 +176,16 @@ export const ProductList = ({
                         </div>
                       </td>
 
-                      {/* Category */}
-                      <td className="py-3 px-4 text-gray-400 uppercase font-bold">
-                        {product.category}
+                      {/* Category & Subcategory */}
+                      <td className="py-3 px-4 text-gray-300 uppercase font-bold">
+                        <div>
+                          <span>{product.category}</span>
+                          {product.subcategory && (
+                            <div className="text-[10px] text-[#D4FF00] font-mono font-normal">
+                              {product.subcategory}
+                            </div>
+                          )}
+                        </div>
                       </td>
 
                       {/* Price */}

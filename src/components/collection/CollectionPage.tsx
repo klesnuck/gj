@@ -72,10 +72,11 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
     })),
   ]
 
-  // Dynamic clothing sub-types (Toda la ropa, Playeras, Hoodies + categorías con tallas)
+  // Dynamic clothing sub-types (Toda la ropa, Playeras, Shorts, Hoodies...)
   const ropaOptions = [
     { id: 'ropa', label: 'Toda la ropa' },
     { id: 'playeras', label: 'Playeras' },
+    { id: 'shorts', label: 'Shorts' },
     { id: 'hoodies', label: 'Hoodies' },
     ...getKnownCategories()
       .filter((c) => c.hasSizes && c.id !== 'playeras' && c.id !== 'hoodies' && c.id !== 'ropa')

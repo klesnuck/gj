@@ -7,6 +7,11 @@ import {
   saveProductImages,
   getProductImages,
 } from './brands'
+import {
+  saveProductSubcategory,
+  getProductSubcategory,
+  normalizeProductCategory,
+} from './categories'
 
 const DEFAULT_SUPABASE_URL = 'https://cvuafxqixfjjjbwdjvuq.supabase.co'
 const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_Z9WaZfwZSbMT9mJk-TVrJA_VES1IG1v'
@@ -48,27 +53,34 @@ export async function fetchProducts(category?: string): Promise<Product[]> {
       const { data, error } = await query
       if (error) throw error
       if (data && data.length > 0) {
-        productsList = data.map((row: any) => ({
-          id: row.id,
-          slug: row.slug,
-          title: row.title,
-          category: row.category,
-          brand: row.brand || getProductBrand(row.id) || (row.category === 'gorras' ? 'GJ' : 'GJ'),
-          price: Number(row.price),
-          currency: row.currency || 'MXN',
-          tag: row.tag || null,
-          tag_type: row.tag_type || 'white',
-          description: row.description || '',
-          specs: row.specs || '',
-          colors: Array.isArray(row.colors) ? row.colors : [],
-          image_url: row.image_url,
-          images: Array.isArray(row.images) && row.images.length > 0
-            ? row.images
-            : (getProductImages(row.id) || (row.image_url ? [row.image_url] : [])),
-          stock: row.stock ?? 10,
-          is_featured: row.is_featured ?? true,
-          created_at: row.created_at,
-        }))
+        productsList = data.map((row: any) => {
+          const norm = normalizeProductCategory(
+            row.category,
+            row.subcategory || getProductSubcategory(row.id)
+          )
+          return {
+            id: row.id,
+            slug: row.slug,
+            title: row.title,
+            category: norm.category,
+            subcategory: norm.subcategory || null,
+            brand: row.brand || getProductBrand(row.id) || (row.category === 'gorras' ? 'GJ' : 'GJ'),
+            price: Number(row.price),
+            currency: row.currency || 'MXN',
+            tag: row.tag || null,
+            tag_type: row.tag_type || 'white',
+            description: row.description || '',
+            specs: row.specs || '',
+            colors: Array.isArray(row.colors) ? row.colors : [],
+            image_url: row.image_url,
+            images: Array.isArray(row.images) && row.images.length > 0
+              ? row.images
+              : (getProductImages(row.id) || (row.image_url ? [row.image_url] : [])),
+            stock: row.stock ?? 10,
+            is_featured: row.is_featured ?? true,
+            created_at: row.created_at,
+          }
+        })
       }
     } catch (err) {
       console.warn('Supabase fetchProducts error:', err)
@@ -176,6 +188,7 @@ export async function createProduct(
         slug: newProduct.slug,
         title: newProduct.title,
         category: newProduct.category,
+        subcategory: newProduct.subcategory || null,
         brand: newProduct.brand,
         price: newProduct.price,
         currency: newProduct.currency,
@@ -193,6 +206,9 @@ export async function createProduct(
       if (newProduct.brand) {
         saveCustomBrand(newProduct.brand)
         saveProductBrand(newProduct.id, newProduct.brand)
+      }
+      if (newProduct.subcategory) {
+        saveProductSubcategory(newProduct.id, newProduct.subcategory)
       }
       if (newProduct.images && newProduct.images.length > 0) {
         saveProductImages(newProduct.id, newProduct.images)
@@ -249,6 +265,7 @@ export async function createProduct(
         if (insertRes.data && insertRes.data[0]?.id) {
           newProduct.id = insertRes.data[0].id
           if (newProduct.brand) saveProductBrand(newProduct.id, newProduct.brand)
+          if (newProduct.subcategory) saveProductSubcategory(newProduct.id, newProduct.subcategory)
           if (newProduct.images) saveProductImages(newProduct.id, newProduct.images)
         }
       }
