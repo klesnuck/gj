@@ -72,20 +72,20 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
     })),
   ]
 
-  // Dynamic clothing sub-types (Toda la ropa, Playeras, Shorts, Hoodies...) sin duplicados
+  // Dynamic clothing sub-types (Toda la ropa, Playeras, Shorts...) sin duplicados
   const ropaOptions = React.useMemo(() => {
     const list: { id: string; label: string }[] = [
       { id: 'ropa', label: 'Toda la ropa' },
       { id: 'playeras', label: 'Playeras' },
       { id: 'shorts', label: 'Shorts' },
-      { id: 'hoodies', label: 'Hoodies' },
     ]
-    const seen = new Set<string>(['ropa', 'playeras', 'playera', 'shorts', 'short', 'hoodies', 'hoodie'])
+    const seen = new Set<string>(['ropa', 'playeras', 'playera', 'shorts', 'short'])
 
     const catalog = allProducts.length > 0 ? allProducts : products
     for (const p of catalog) {
       if (p.subcategory && p.subcategory.trim()) {
         const clean = p.subcategory.trim()
+        if (clean.toLowerCase().includes('sudadera')) continue
         const rawId = clean.toLowerCase().replace(/[^a-z0-9]+/g, '-')
         const baseKey = rawId.replace(/s$/, '')
         if (!seen.has(baseKey)) {
@@ -107,7 +107,7 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
   if (isRopa) {
     collectionTitle = 'ROPA'
     collectionTag = 'COLECCIÓN COMPLETA / APPAREL'
-    collectionDesc = 'Playeras heavyweight, sudaderas pesadas de 450 g y siluetas con corte boxy/relaxed.'
+    collectionDesc = 'Playeras heavyweight, shorts y siluetas urbanas con corte boxy/relaxed.'
   } else if (isGorra) {
     collectionTitle = 'GORRAS'
     collectionTag = 'HEADWEAR / COLECCIÓN'

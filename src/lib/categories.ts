@@ -16,9 +16,8 @@ export const DEFAULT_SUBCATEGORIES: Record<string, string[]> = {
   ropa: [
     'Playera',
     'Short',
-    'Hoodie / Sudadera',
-    'Pantalón / Pants',
-    'Chamarra / Jacket',
+    'Pantalón',
+    'Chamarra',
     'Jersey',
     'Conjunto',
   ],
@@ -90,7 +89,9 @@ export function getSubcategoriesForCategory(category: string): string[] {
     if (Array.isArray(stored)) {
       for (const item of stored) {
         if (typeof item === 'string' && item.trim()) {
-          list.add(item.trim())
+          const cleanItem = item.trim()
+          if (cleanItem.toLowerCase().includes('sudadera')) continue
+          list.add(cleanItem)
         }
       }
     }
@@ -98,7 +99,7 @@ export function getSubcategoriesForCategory(category: string): string[] {
     console.warn(e)
   }
 
-  return Array.from(list)
+  return Array.from(list).filter((item) => !item.toLowerCase().includes('sudadera'))
 }
 
 /**
@@ -171,7 +172,7 @@ export function normalizeProductCategory(category: string, existingSubcategory?:
     return { category: 'ropa', subcategory: 'Playera' }
   }
   if (catLower === 'hoodies') {
-    return { category: 'ropa', subcategory: 'Hoodie / Sudadera' }
+    return { category: 'ropa', subcategory: 'Hoodie' }
   }
   if (catLower.includes('short')) {
     return { category: 'ropa', subcategory: 'Short' }

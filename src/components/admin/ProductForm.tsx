@@ -718,7 +718,7 @@ export const ProductForm = ({
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ej. Gorra GJ Signature o Hoodie No Signal"
+                placeholder="Ej. Gorra GJ Signature o Playera Boxy Fit"
                 className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-sans text-white focus:outline-none transition-colors"
               />
             </div>
@@ -812,7 +812,7 @@ export const ProductForm = ({
                     </label>
                     <span className="text-[10px] font-mono text-gray-500">
                       {category === 'ropa'
-                        ? 'Ej. Playera, Short, Hoodie...'
+                        ? 'Ej. Playera, Short, Pantalón...'
                         : category === 'gorras'
                         ? 'Ej. Snapback, Trucker...'
                         : 'Ej. Calcetas, Llavero...'}
@@ -826,7 +826,7 @@ export const ProductForm = ({
                     onChange={(e) => setSubcategory(e.target.value)}
                     placeholder={
                       category === 'ropa'
-                        ? 'Ej. Playera, Short, Hoodie, Pantalón...'
+                        ? 'Ej. Playera, Short, Pantalón...'
                         : category === 'gorras'
                         ? 'Ej. Snapback, Fitted, Trucker, Curva...'
                         : 'Ej. Calcetas, Llavero, Pin, Cadena...'
