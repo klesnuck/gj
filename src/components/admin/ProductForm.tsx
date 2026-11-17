@@ -55,15 +55,17 @@ export const ProductForm = ({
   const isEditing = Boolean(initialProduct)
 
   // Normalizar categoría y subcategoría inicial si viene de producto previo
+  const initialSubFromSpecs = initialProduct?.specs?.match(/\[sub:([^\]]+)\]/)?.[1]?.trim()
+  const detectedSubcategory = initialProduct?.subcategory || initialSubFromSpecs || null
   const initialNorm = initialProduct
-    ? normalizeProductCategory(initialProduct.category, initialProduct.subcategory)
+    ? normalizeProductCategory(initialProduct.category, detectedSubcategory)
     : { category: 'ropa', subcategory: 'Playera' }
 
   // Form State initialized from 0
   const [title, setTitle] = useState(initialProduct?.title || '')
   const [description, setDescription] = useState(initialProduct?.description || '')
   const [category, setCategory] = useState<string>(initialNorm.category || 'ropa')
-  const [subcategory, setSubcategory] = useState<string>(initialNorm.subcategory || 'Playera')
+  const [subcategory, setSubcategory] = useState<string>(initialNorm.subcategory || detectedSubcategory || 'Playera')
   const [hasSizes, setHasSizes] = useState<boolean>(() => {
     return categoryHasSizes(initialNorm.category || 'ropa')
   })
@@ -102,7 +104,7 @@ export const ProductForm = ({
   const handleSaveNewBrand = () => {
     const clean = newBrandInput.trim()
     if (!clean) return
-    saveCustomBrand(clean)
+    saveCustomBrand(clean, category)
     saveBrand(clean).catch(() => {})
     setKnownBrands(getAllKnownBrands(products))
     setBrand(clean)
@@ -141,7 +143,8 @@ export const ProductForm = ({
   // Clothing Variants (all stock starts strictly from 0 or loads from specs)
   const [colorName, setColorName] = useState(() => {
     if (initialProduct?.specs) {
-      const first = initialProduct.specs.split('/')[0].trim()
+      const clean = initialProduct.specs.replace(/\[sub:[^\]]+\]\s*/g, '')
+      const first = clean.split('/')[0].trim()
       if (first) return first
     }
     return 'Negro'
@@ -343,9 +346,12 @@ export const ProductForm = ({
 
   const handlePublish = async (newStatus: 'borrador' | 'publicado' = 'publicado') => {
     setIsSubmitting(true)
+    const cleanSub = subcategory ? subcategory.trim() : ''
+    const subTag = cleanSub ? `[sub:${cleanSub}] ` : ''
+
     const specsComputed = isCap
-      ? `${colorName} / Unitalla Ajustable`
-      : `${colorName} / Tallas: ${variants
+      ? `${subTag}${colorName} / Unitalla Ajustable`
+      : `${subTag}${colorName} / Tallas: ${variants
           .map((v) => `${v.size} (${Math.max(0, Number(v.stock) || 0)})`)
           .join(', ')}`
 
@@ -358,7 +364,7 @@ export const ProductForm = ({
         initialProduct?.slug ||
         (title ? title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : `prenda-${Date.now()}`),
       category,
-      subcategory: subcategory ? subcategory.trim() : null,
+      subcategory: cleanSub || null,
       brand: brand || '',
       price: Number(price) || 0,
       currency: 'MXN',
@@ -379,10 +385,10 @@ export const ProductForm = ({
     setIsSubmitting(false)
     if (ok) {
       if (brand && brand.trim()) {
-        saveCustomBrand(brand.trim())
+        saveCustomBrand(brand.trim(), category)
       }
-      if (subcategory && subcategory.trim()) {
-        saveCustomSubcategory(category, subcategory.trim())
+      if (cleanSub) {
+        saveCustomSubcategory(category, cleanSub)
       }
       setStatus(newStatus)
       setSavedSuccess(true)

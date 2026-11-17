@@ -54,10 +54,30 @@ export async function fetchProducts(category?: string): Promise<Product[]> {
       if (error) throw error
       if (data && data.length > 0) {
         productsList = data.map((row: any) => {
-          const norm = normalizeProductCategory(
-            row.category,
-            row.subcategory || getProductSubcategory(row.id)
-          )
+          let cleanSpecs = row.specs || ''
+          let parsedSub = row.subcategory || null
+
+          // Recuperar subcategoría si fue guardada dentro de specs (ej. [sub:Short])
+          if (cleanSpecs.includes('[sub:')) {
+            const match = cleanSpecs.match(/\[sub:([^\]]+)\]/)
+            if (match && match[1]) {
+              if (!parsedSub) {
+                parsedSub = match[1].trim()
+              }
+              cleanSpecs = cleanSpecs.replace(/\[sub:[^\]]+\]\s*/g, '')
+            }
+          }
+
+          if (!parsedSub) {
+            parsedSub = getProductSubcategory(row.id) || getProductSubcategory(row.slug)
+          }
+
+          if (parsedSub && row.id) {
+            saveProductSubcategory(row.id, parsedSub)
+          }
+
+          const norm = normalizeProductCategory(row.category, parsedSub)
+
           return {
             id: row.id,
             slug: row.slug,
@@ -70,7 +90,7 @@ export async function fetchProducts(category?: string): Promise<Product[]> {
             tag: row.tag || null,
             tag_type: row.tag_type || 'white',
             description: row.description || '',
-            specs: row.specs || '',
+            specs: cleanSpecs,
             colors: Array.isArray(row.colors) ? row.colors : [],
             image_url: row.image_url,
             images: Array.isArray(row.images) && row.images.length > 0
@@ -162,16 +182,18 @@ export async function createProduct(
   productData: Partial<Product>
 ): Promise<{ success: boolean; data?: Product; message?: string }> {
   const id = productData.id || `prod-${Date.now()}`
+  const cleanSub = productData.subcategory ? productData.subcategory.trim() : null
   const newProduct: Product = {
     id,
     slug: productData.slug || `prod-${Date.now()}`,
     title: productData.title || 'Nueva Prenda',
-    category: productData.category || 'playeras',
+    category: productData.category || 'ropa',
+    subcategory: cleanSub,
     brand: productData.brand || 'GJ',
     price: productData.price || 0,
     currency: productData.currency || 'MXN',
     tag: productData.tag || null,
-    tag_type: productData.tag_type || 'white',
+    tag_type: productData.tag_type || 'lime',
     description: productData.description || null,
     specs: productData.specs || null,
     colors: productData.colors || [],
@@ -180,6 +202,11 @@ export async function createProduct(
     stock: productData.stock ?? 15,
     is_featured: productData.is_featured ?? true,
     created_at: productData.created_at || new Date().toISOString(),
+  }
+
+  if (cleanSub) {
+    saveProductSubcategory(id, cleanSub)
+    if (newProduct.slug) saveProductSubcategory(newProduct.slug, cleanSub)
   }
 
   if (isSupabaseConfigured && supabase) {
@@ -204,7 +231,7 @@ export async function createProduct(
       }
 
       if (newProduct.brand) {
-        saveCustomBrand(newProduct.brand)
+        saveCustomBrand(newProduct.brand, newProduct.category)
         saveProductBrand(newProduct.id, newProduct.brand)
       }
       if (newProduct.subcategory) {

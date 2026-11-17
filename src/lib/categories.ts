@@ -156,13 +156,27 @@ export function normalizeProductCategory(category: string, existingSubcategory?:
   subcategory?: string | null
 } {
   const catLower = (category || '').toLowerCase().trim()
+  const cleanSub = existingSubcategory ? existingSubcategory.trim() : null
+
+  // Si ya tiene una subcategoría explícita (ej. 'Short'), respetarla SIEMPRE
+  if (cleanSub) {
+    if (catLower === 'playeras' || catLower === 'hoodies' || catLower === 'ropa') {
+      return { category: 'ropa', subcategory: cleanSub }
+    }
+    return { category: catLower || 'ropa', subcategory: cleanSub }
+  }
+
+  // Si no tiene subcategoría aún, inferir según categoría legacy de Supabase
   if (catLower === 'playeras') {
-    return { category: 'ropa', subcategory: existingSubcategory || 'Playera' }
+    return { category: 'ropa', subcategory: 'Playera' }
   }
   if (catLower === 'hoodies') {
-    return { category: 'ropa', subcategory: existingSubcategory || 'Hoodie / Sudadera' }
+    return { category: 'ropa', subcategory: 'Hoodie / Sudadera' }
   }
-  return { category: catLower || 'ropa', subcategory: existingSubcategory || null }
+  if (catLower.includes('short')) {
+    return { category: 'ropa', subcategory: 'Short' }
+  }
+  return { category: catLower || 'ropa', subcategory: null }
 }
 
 /**

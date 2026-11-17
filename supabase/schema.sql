@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS public.products (
 
 -- Asegurar que columnas clave existan si la tabla ya había sido creada antes:
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS brand TEXT DEFAULT '';
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS subcategory TEXT;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS images JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT true;
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;

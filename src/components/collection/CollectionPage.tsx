@@ -8,7 +8,7 @@ import { CartDrawer } from '../CartDrawer'
 import type { Product, CartItem, Coupon } from '../../types/database.types'
 import { getCapBrands } from '../../lib/brands'
 import { isProductSoldOut } from '../../lib/stock'
-import { categoryHasSizes, getKnownCategories } from '../../lib/categories'
+import { categoryHasSizes } from '../../lib/categories'
 import { ProductCard } from '../ProductCard'
 
 interface CollectionPageProps {
@@ -72,19 +72,32 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
     })),
   ]
 
-  // Dynamic clothing sub-types (Toda la ropa, Playeras, Shorts, Hoodies...)
-  const ropaOptions = [
-    { id: 'ropa', label: 'Toda la ropa' },
-    { id: 'playeras', label: 'Playeras' },
-    { id: 'shorts', label: 'Shorts' },
-    { id: 'hoodies', label: 'Hoodies' },
-    ...getKnownCategories()
-      .filter((c) => c.hasSizes && c.id !== 'playeras' && c.id !== 'hoodies' && c.id !== 'ropa')
-      .map((c) => ({
-        id: c.id,
-        label: c.name,
-      })),
-  ]
+  // Dynamic clothing sub-types (Toda la ropa, Playeras, Shorts, Hoodies...) sin duplicados
+  const ropaOptions = React.useMemo(() => {
+    const list: { id: string; label: string }[] = [
+      { id: 'ropa', label: 'Toda la ropa' },
+      { id: 'playeras', label: 'Playeras' },
+      { id: 'shorts', label: 'Shorts' },
+      { id: 'hoodies', label: 'Hoodies' },
+    ]
+    const seen = new Set<string>(['ropa', 'playeras', 'playera', 'shorts', 'short', 'hoodies', 'hoodie'])
+
+    const catalog = allProducts.length > 0 ? allProducts : products
+    for (const p of catalog) {
+      if (p.subcategory && p.subcategory.trim()) {
+        const clean = p.subcategory.trim()
+        const rawId = clean.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+        const baseKey = rawId.replace(/s$/, '')
+        if (!seen.has(baseKey)) {
+          seen.add(baseKey)
+          seen.add(rawId)
+          list.push({ id: rawId, label: clean })
+        }
+      }
+    }
+
+    return list
+  }, [allProducts, products])
 
   // Determine Title & Subtitle
   let collectionTitle = 'CATÁLOGO'

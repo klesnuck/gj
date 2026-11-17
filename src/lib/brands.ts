@@ -9,14 +9,15 @@ export interface BrandOption {
 export const DEFAULT_CAP_BRANDS: BrandOption[] = []
 
 /**
- * Retorna las marcas de gorras dinámicamente basadas en los productos del catálogo y marcas creadas.
+ * Retorna las marcas de gorras dinámicamente basadas ÚNICAMENTE en productos que sean GORRAS
+ * o marcas guardadas específicamente para gorras (evita que marcas de shorts o ropa aparezcan aquí).
  */
 export function getCapBrands(products: Product[]): BrandOption[] {
   const brandMap = new Map<string, string>()
 
-  // 1. Marcas personalizadas guardadas por el admin
+  // 1. Marcas registradas específicamente para la categoría de GORRAS
   try {
-    const stored = JSON.parse(localStorage.getItem('gj_custom_brands') || '[]')
+    const stored = JSON.parse(localStorage.getItem('gj_custom_cap_brands') || '[]')
     if (Array.isArray(stored)) {
       for (const name of stored) {
         if (typeof name === 'string' && name.trim()) {
@@ -29,9 +30,9 @@ export function getCapBrands(products: Product[]): BrandOption[] {
     console.warn(e)
   }
 
-  // 2. Marcas de los productos registrados en el catálogo
+  // 2. Marcas ÚNICAMENTE de productos cuya categoría sea 'gorras'
   for (const p of products) {
-    if (p.brand && p.brand.trim()) {
+    if (p.category === 'gorras' && p.brand && p.brand.trim()) {
       const clean = p.brand.trim()
       brandMap.set(clean.toLowerCase(), clean)
     }
@@ -54,7 +55,6 @@ export function getAllKnownBrands(products: Product[]): string[] {
     if (Array.isArray(stored)) {
       for (const name of stored) {
         if (typeof name === 'string' && name.trim()) {
-          // Filtrar las marcas fijas que el usuario pidió eliminar si quedaron en localStorage
           const clean = name.trim()
           if (!['new era', 'mitchell & ness', '47 brand', 'mitchell'].includes(clean.toLowerCase())) {
             brandSet.add(clean)
@@ -76,17 +76,27 @@ export function getAllKnownBrands(products: Product[]): string[] {
 }
 
 /**
- * Guarda una nueva marca personalizada para recordarla en futuros productos y filtros.
+ * Guarda una nueva marca personalizada. Si la categoría es 'gorras', la asocia
+ * exclusivamente a gorras para que no contamine ni sea listada por error en ropa.
  */
-export function saveCustomBrand(brandName: string): void {
+export function saveCustomBrand(brandName: string, category?: string): void {
   try {
     const clean = brandName.trim()
     if (!clean || clean.length < 2) return
 
+    // Guardar en el catálogo global de marcas para el selector del admin
     const stored = JSON.parse(localStorage.getItem('gj_custom_brands') || '[]')
     const set = new Set<string>(Array.isArray(stored) ? stored : [])
     set.add(clean)
     localStorage.setItem('gj_custom_brands', JSON.stringify(Array.from(set)))
+
+    // Si es una gorra, registrarla también en la lista específica de marcas de gorras
+    if (category === 'gorras') {
+      const capStored = JSON.parse(localStorage.getItem('gj_custom_cap_brands') || '[]')
+      const capSet = new Set<string>(Array.isArray(capStored) ? capStored : [])
+      capSet.add(clean)
+      localStorage.setItem('gj_custom_cap_brands', JSON.stringify(Array.from(capSet)))
+    }
   } catch (e) {
     console.warn(e)
   }
@@ -160,23 +170,25 @@ export function filterProductsByCategory(products: Product[], category?: string)
   }
 
   // Subcategorías de ropa específicas (Playeras, Hoodies, Shorts, Pantalones...)
-  if (catLower === 'playeras') {
+  if (catLower === 'playeras' || catLower === 'playera') {
     return products.filter(
       (p) =>
         p.category === 'playeras' ||
-        p.subcategory?.toLowerCase().includes('playera')
+        (p.subcategory && p.subcategory.toLowerCase().includes('playera'))
     )
   }
-  if (catLower === 'hoodies') {
+  if (catLower === 'hoodies' || catLower === 'hoodie') {
     return products.filter(
       (p) =>
         p.category === 'hoodies' ||
-        p.subcategory?.toLowerCase().includes('hoodie')
+        (p.subcategory && (p.subcategory.toLowerCase().includes('hoodie') || p.subcategory.toLowerCase().includes('sudadera')))
     )
   }
   if (catLower === 'shorts' || catLower === 'short') {
     return products.filter(
-      (p) => p.subcategory?.toLowerCase().includes('short')
+      (p) =>
+        p.category.toLowerCase().includes('short') ||
+        (p.subcategory && p.subcategory.toLowerCase().includes('short'))
     )
   }
 
