@@ -65,7 +65,11 @@ export const ProductForm = ({
   const [title, setTitle] = useState(initialProduct?.title || '')
   const [description, setDescription] = useState(initialProduct?.description || '')
   const [category, setCategory] = useState<string>(initialNorm.category || 'ropa')
-  const [subcategory, setSubcategory] = useState<string>(initialNorm.subcategory || detectedSubcategory || 'Playera')
+  const [subcategory, setSubcategory] = useState<string>(
+    (initialNorm.category || 'ropa').toLowerCase() === 'gorras'
+      ? ''
+      : initialNorm.subcategory || detectedSubcategory || 'Playera'
+  )
   const [hasSizes, setHasSizes] = useState<boolean>(() => {
     return categoryHasSizes(initialNorm.category || 'ropa')
   })
@@ -78,13 +82,22 @@ export const ProductForm = ({
 
   // Subcategorías dinámicas para la categoría activa
   const [availableSubcategories, setAvailableSubcategories] = useState<string[]>(() =>
-    getSubcategoriesForCategory(initialNorm.category || 'ropa')
+    (initialNorm.category || 'ropa').toLowerCase() === 'gorras'
+      ? []
+      : getSubcategoriesForCategory(initialNorm.category || 'ropa')
   )
 
   const handleCategorySelect = (newCat: string) => {
     setCategory(newCat)
     const catSizes = categoryHasSizes(newCat)
     setHasSizes(catSizes)
+
+    // Las gorras se administran directamente por marca, no usan subcategoría
+    if (newCat.toLowerCase() === 'gorras') {
+      setAvailableSubcategories([])
+      setSubcategory('')
+      return
+    }
 
     // Cargar subcategorías de la nueva categoría
     const subs = getSubcategoriesForCategory(newCat)
@@ -161,23 +174,25 @@ export const ProductForm = ({
     }
   }
   const [variants, setVariants] = useState<VariantRow[]>(() => {
+    const baseSizes = ['XS', 'S', 'M', 'L', 'XL']
     if (initialProduct?.specs) {
       const parsed = parseSizeStocks(initialProduct.specs, initialProduct.stock)
       if (Object.keys(parsed).length > 0) {
-        return ['S', 'M', 'L', 'XL'].map((s) => ({
+        const extraSizes = Object.keys(parsed).filter((s) => !baseSizes.includes(s.toUpperCase()))
+        return [...baseSizes, ...extraSizes].map((s) => ({
           size: s,
           sku: '',
-          stock: parsed[s] ?? 0,
+          stock: parsed[s] ?? parsed[s.toUpperCase()] ?? 0,
           price: initialProduct.price || 0,
         }))
       }
     }
-    return [
-      { size: 'S', sku: '', stock: 0, price: price },
-      { size: 'M', sku: '', stock: 0, price: price },
-      { size: 'L', sku: '', stock: 0, price: price },
-      { size: 'XL', sku: '', stock: 0, price: price },
-    ]
+    return baseSizes.map((s) => ({
+      size: s,
+      sku: '',
+      stock: 0,
+      price: price,
+    }))
   })
 
   // Sync price changes to variants
@@ -346,7 +361,7 @@ export const ProductForm = ({
 
   const handlePublish = async (newStatus: 'borrador' | 'publicado' = 'publicado') => {
     setIsSubmitting(true)
-    const cleanSub = subcategory ? subcategory.trim() : ''
+    const cleanSub = category.toLowerCase() === 'gorras' ? '' : (subcategory ? subcategory.trim() : '')
     const subTag = cleanSub ? `[sub:${cleanSub}] ` : ''
 
     const specsComputed = isCap
@@ -804,65 +819,63 @@ export const ProductForm = ({
               {/* Subcategoría & Precio de venta */}
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 pt-1">
 
-                {/* Subcategoría (7 cols) */}
-                <div className="sm:col-span-7 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-mono text-gray-300 uppercase tracking-wider font-bold">
-                      Subcategoría *
-                    </label>
-                    <span className="text-[10px] font-mono text-gray-500">
-                      {category === 'ropa'
-                        ? 'Ej. Playera, Short, Pantalón...'
-                        : category === 'gorras'
-                        ? 'Ej. Snapback, Trucker...'
-                        : 'Ej. Calcetas, Llavero...'}
-                    </span>
-                  </div>
+                {/* Subcategoría (solo para Ropa y Accesorios; Gorras se administran por marca) */}
+                {category.toLowerCase() !== 'gorras' && (
+                  <div className="sm:col-span-7 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-mono text-gray-300 uppercase tracking-wider font-bold">
+                        Subcategoría *
+                      </label>
+                      <span className="text-[10px] font-mono text-gray-500">
+                        {category === 'ropa'
+                          ? 'Ej. Playera, Short, Pantalón...'
+                          : 'Ej. Calcetas, Llavero...'}
+                      </span>
+                    </div>
 
-                  {/* Input editable de subcategoría */}
-                  <input
-                    type="text"
-                    value={subcategory}
-                    onChange={(e) => setSubcategory(e.target.value)}
-                    placeholder={
-                      category === 'ropa'
-                        ? 'Ej. Playera, Short, Pantalón...'
-                        : category === 'gorras'
-                        ? 'Ej. Snapback, Fitted, Trucker, Curva...'
-                        : 'Ej. Calcetas, Llavero, Pin, Cadena...'
-                    }
-                    className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-sans text-white focus:outline-none"
-                  />
+                    {/* Input editable de subcategoría */}
+                    <input
+                      type="text"
+                      value={subcategory}
+                      onChange={(e) => setSubcategory(e.target.value)}
+                      placeholder={
+                        category === 'ropa'
+                          ? 'Ej. Playera, Short, Pantalón...'
+                          : 'Ej. Calcetas, Llavero, Pin, Cadena...'
+                      }
+                      className="w-full bg-[#141414] border border-[#282828] focus:border-[#D4FF00] px-4 py-2.5 text-sm font-sans text-white focus:outline-none"
+                    />
 
-                  {/* Quick Chips sugeridas para la categoría seleccionada */}
-                  <div className="space-y-1 pt-1">
-                    <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider block">
-                      Sugerencias rápidas (da clic para seleccionar):
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {availableSubcategories.map((subName) => {
-                        const isSubSelected = subcategory.trim().toLowerCase() === subName.trim().toLowerCase()
-                        return (
-                          <button
-                            key={subName}
-                            type="button"
-                            onClick={() => setSubcategory(subName)}
-                            className={`px-2.5 py-1 text-[11px] font-mono uppercase tracking-wider border transition-all cursor-pointer ${
-                              isSubSelected
-                                ? 'bg-[#D4FF00] text-black font-bold border-[#D4FF00]'
-                                : 'bg-[#101010] border-[#262626] text-gray-300 hover:text-white hover:border-gray-400'
-                            }`}
-                          >
-                            {subName}
-                          </button>
-                        )
-                      })}
+                    {/* Quick Chips sugeridas para la categoría seleccionada */}
+                    <div className="space-y-1 pt-1">
+                      <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider block">
+                        Sugerencias rápidas (da clic para seleccionar):
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {availableSubcategories.map((subName) => {
+                          const isSubSelected = subcategory.trim().toLowerCase() === subName.trim().toLowerCase()
+                          return (
+                            <button
+                              key={subName}
+                              type="button"
+                              onClick={() => setSubcategory(subName)}
+                              className={`px-2.5 py-1 text-[11px] font-mono uppercase tracking-wider border transition-all cursor-pointer ${
+                                isSubSelected
+                                  ? 'bg-[#D4FF00] text-black font-bold border-[#D4FF00]'
+                                  : 'bg-[#101010] border-[#262626] text-gray-300 hover:text-white hover:border-gray-400'
+                              }`}
+                            >
+                              {subName}
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* Precio de venta (5 cols) */}
-                <div className="sm:col-span-5 space-y-2">
+                {/* Precio de venta */}
+                <div className={`${category.toLowerCase() === 'gorras' ? 'sm:col-span-12' : 'sm:col-span-5'} space-y-2`}>
                   <label className="text-xs font-mono text-gray-300 uppercase tracking-wider font-bold block">
                     Precio de venta *
                   </label>
@@ -1307,7 +1320,7 @@ export const ProductForm = ({
                   className="inline-flex items-center gap-1.5 text-xs font-mono text-[#D4FF00] hover:underline cursor-pointer pt-1"
                 >
                   <Layers className="w-3.5 h-3.5" />
-                  <span>+ Añadir otra talla (ej. XXL, XS)</span>
+                  <span>+ Añadir otra talla (ej. XXL, 2XL)</span>
                 </button>
 
               </div>

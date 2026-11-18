@@ -61,7 +61,7 @@ export function decrementProductStock(
   const sizeStocks = parseSizeStocks(product.specs, currentTotalStock)
 
   // Standard sizes to maintain order
-  const standardOrder = ['S', 'M', 'L', 'XL', 'XXL']
+  const standardOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
   const allKnownSizes = Array.from(new Set([...standardOrder, ...Object.keys(sizeStocks)]))
 
   const cleanPurchasedSize = purchasedSize.toUpperCase().trim()

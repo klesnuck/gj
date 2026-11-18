@@ -26,8 +26,12 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     product.category === 'playeras' ||
     product.category === 'hoodies' ||
     (product.category as string) === 'ropa'
-  const allSizes = isClothing ? ['S', 'M', 'L', 'XL'] : ['UNITALLA / AJUSTABLE']
   const sizeStocks = parseSizeStocks(product.specs, product.stock ?? 0)
+  const baseSizes = ['XS', 'S', 'M', 'L', 'XL']
+  const extraSizes = Object.keys(sizeStocks).filter(
+    (s) => !baseSizes.includes(s.toUpperCase())
+  )
+  const allSizes = isClothing ? [...baseSizes, ...extraSizes] : ['UNITALLA / AJUSTABLE']
 
   const getStockForSize = (s: string): number => {
     if (!isClothing) return product.stock ?? 0
