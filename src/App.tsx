@@ -71,7 +71,18 @@ export function App() {
 
   // Store data from Supabase
   const [products, setProducts] = useState<Product[]>([])
-  const [activeCategory, setActiveCategory] = useState<string>('todos')
+  const [activeCategory, setActiveCategory] = useState<string>(() => {
+    const hash = window.location.hash
+    if (hash.startsWith('#coleccion/')) {
+      const raw = hash.replace('#coleccion/', '')
+      try {
+        return decodeURIComponent(raw) || 'todos'
+      } catch {
+        return raw || 'todos'
+      }
+    }
+    return 'todos'
+  })
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('gj_cart')
@@ -125,8 +136,14 @@ export function App() {
       } else if (hash.startsWith('#order-success')) {
         setCurrentView('order-success')
       } else if (hash.startsWith('#coleccion')) {
-        const cat = hash.replace('#coleccion/', '') || 'todos'
-        setActiveCategory(cat)
+        const rawCat = hash.replace('#coleccion/', '').replace('#coleccion', '') || 'todos'
+        let decodedCat = rawCat
+        try {
+          decodedCat = decodeURIComponent(rawCat)
+        } catch {
+          decodedCat = rawCat
+        }
+        setActiveCategory(decodedCat || 'todos')
         setCurrentView('collection')
       } else {
         setCurrentView((prev) => (prev === 'order-success' ? 'order-success' : 'store'))

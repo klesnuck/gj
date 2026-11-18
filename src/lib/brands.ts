@@ -157,7 +157,14 @@ export function filterProductsByCategory(products: Product[], category?: string)
     return products
   }
 
-  const catLower = category.toLowerCase().trim()
+  let decodedCategory = category
+  try {
+    decodedCategory = decodeURIComponent(category)
+  } catch {
+    decodedCategory = category
+  }
+
+  const catLower = decodedCategory.toLowerCase().trim()
 
   // 1. Ropa general: playeras, hoodies o cualquier categoría de ropa
   if (catLower === 'ropa') {
