@@ -61,15 +61,27 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     setIsLightboxOpen(false)
   }, [product.id, product.stock, product.specs, firstAvailable])
 
-  // Bloquear scroll del resto de la página mientras el modal está abierto
+  // Bloquear scroll del resto de la página mientras el modal está abierto (compatible con iOS Safari y Android)
   useEffect(() => {
-    const prevBodyOverflow = document.body.style.overflow
+    const scrollY = window.scrollY
+    const prevBodyStyle = {
+      position: document.body.style.position,
+      top: document.body.style.top,
+      left: document.body.style.left,
+      right: document.body.style.right,
+      width: document.body.style.width,
+      overflow: document.body.style.overflow,
+    }
     const prevHtmlOverflow = document.documentElement.style.overflow
-    const prevBodyTouchAction = document.body.style.touchAction
+    const prevScrollBehavior = document.documentElement.style.scrollBehavior
 
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.left = '0'
+    document.body.style.right = '0'
+    document.body.style.width = '100%'
     document.body.style.overflow = 'hidden'
     document.documentElement.style.overflow = 'hidden'
-    document.body.style.touchAction = 'none'
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -83,9 +95,16 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     window.addEventListener('keydown', handleKeyDown)
 
     return () => {
-      document.body.style.overflow = prevBodyOverflow
+      document.body.style.position = prevBodyStyle.position
+      document.body.style.top = prevBodyStyle.top
+      document.body.style.left = prevBodyStyle.left
+      document.body.style.right = prevBodyStyle.right
+      document.body.style.width = prevBodyStyle.width
+      document.body.style.overflow = prevBodyStyle.overflow
       document.documentElement.style.overflow = prevHtmlOverflow
-      document.body.style.touchAction = prevBodyTouchAction
+      document.documentElement.style.scrollBehavior = 'auto'
+      window.scrollTo(0, scrollY)
+      document.documentElement.style.scrollBehavior = prevScrollBehavior
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [onClose])
@@ -142,7 +161,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
       />
 
       {/* Modal Dialog */}
-      <div className="relative bg-[#0f0f0f] border border-[#262626] max-w-3xl w-full max-h-[92vh] overflow-y-auto overscroll-contain text-white shadow-2xl z-10 animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-[#0f0f0f] border border-[#262626] max-w-3xl w-full max-h-[90dvh] overflow-y-auto overscroll-contain touch-pan-y text-white shadow-2xl z-10 animate-in fade-in zoom-in-95 duration-200">
 
         {/* Close Button */}
         <button
