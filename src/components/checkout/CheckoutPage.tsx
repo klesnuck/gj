@@ -137,34 +137,67 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     }
   }
 
+  // Validación estricta de campos obligatorios antes de permitir confirmar el pedido
+  const missingFields: string[] = []
+  const emailTrimmed = email.trim()
+  const phoneDigits = phone.replace(/\D/g, '')
+  const zipDigits = zipCode.replace(/\D/g, '')
+
+  if (!emailTrimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+    missingFields.push('Correo electrónico válido')
+  }
+  if (phoneDigits.length < 10) {
+    missingFields.push('Teléfono (10 dígitos)')
+  }
+  if (firstName.trim().length < 2) {
+    missingFields.push('Nombre')
+  }
+  if (lastName.trim().length < 2) {
+    missingFields.push('Apellido')
+  }
+  if (street.trim().length < 3) {
+    missingFields.push('Calle y número')
+  }
+  if (colonia.trim().length < 2) {
+    missingFields.push('Colonia')
+  }
+  if (zipDigits.length !== 5) {
+    missingFields.push('Código Postal (5 dígitos)')
+  }
+  if (city.trim().length < 2) {
+    missingFields.push('Ciudad / Municipio')
+  }
+  if (state.trim().length < 2) {
+    missingFields.push('Estado')
+  }
+
+  if (paymentMethod === 'tarjeta') {
+    if (cardHolder.trim().length < 3) {
+      missingFields.push('Titular de la tarjeta')
+    }
+    const rawCardNum = cardNumber.replace(/\D/g, '')
+    if (rawCardNum.length < 15 || rawCardNum.length > 16) {
+      missingFields.push('Número de tarjeta (15-16 dígitos)')
+    }
+    const [m, y] = cardExpiry.split('/').map((s) => s.trim())
+    const monthNum = parseInt(m || '', 10)
+    if (!m || !y || m.length !== 2 || isNaN(monthNum) || monthNum < 1 || monthNum > 12 || (y.length !== 2 && y.length !== 4)) {
+      missingFields.push('Vencimiento de tarjeta (MM / AA)')
+    }
+    if (cardCvv.replace(/\D/g, '').length < 3) {
+      missingFields.push('CVV (3-4 dígitos)')
+    }
+  }
+
+  const isFormComplete = items.length > 0 && missingFields.length === 0
+
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMessage(null)
 
-    if (!email || !phone || !firstName || !lastName || !street || !colonia || !zipCode || !city) {
-      setErrorMessage('Por favor llena todos los campos obligatorios (*).')
+    if (!isFormComplete) {
+      setErrorMessage(`Completa la información obligatoria antes de pedir: ${missingFields.join(', ')}.`)
       return
-    }
-
-    if (paymentMethod === 'tarjeta') {
-      if (!cardHolder.trim()) {
-        setErrorMessage('Por favor ingresa el nombre del titular como aparece en la tarjeta.')
-        return
-      }
-      const rawNumber = cardNumber.replace(/\D/g, '')
-      if (rawNumber.length < 15 || rawNumber.length > 16) {
-        setErrorMessage('Por favor ingresa un número de tarjeta válido (15 o 16 dígitos).')
-        return
-      }
-      const [expMonth, expYear] = cardExpiry.split('/').map((s) => s.trim())
-      if (!expMonth || !expYear || expMonth.length !== 2 || (expYear.length !== 2 && expYear.length !== 4)) {
-        setErrorMessage('Por favor ingresa una fecha de vencimiento válida (MM / AA).')
-        return
-      }
-      if (cardCvv.trim().length < 3) {
-        setErrorMessage('Por favor ingresa un código de seguridad (CVV) válido de 3 o 4 dígitos.')
-        return
-      }
     }
 
     setIsProcessing(true)
@@ -996,8 +1029,19 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                             {item.selectedColor || 'Negro'} /{' '}
                             {isCap ? 'Ajustable' : `Talla ${item.selectedSize || 'Standard'}`}
                           </div>
-                          <div className="text-[10px] text-gray-500 font-mono">
-                            ${item.product.price.toLocaleString('es-MX')} / unidad
+                          <div className="text-[10px] text-gray-500 font-mono flex items-center gap-1.5">
+                            {item.product.original_price && item.product.original_price > item.product.price ? (
+                              <>
+                                <span className="line-through text-gray-600">
+                                  ${item.product.original_price.toLocaleString('es-MX')}
+                                </span>
+                                <span className="text-[#D4FF00] font-bold">
+                                  ${item.product.price.toLocaleString('es-MX')} / unidad
+                                </span>
+                              </>
+                            ) : (
+                              <span>${item.product.price.toLocaleString('es-MX')} / unidad</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1104,14 +1148,32 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 </div>
               </div>
 
+              {/* Missing Required Fields Notice */}
+              {!isFormComplete && (
+                <div className="p-3 bg-[#1a150b] border border-amber-500/40 text-amber-300 text-[11px] font-mono space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-amber-400">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Completa tus datos para continuar</span>
+                  </div>
+                  <p className="text-[10px] text-amber-200/80 leading-relaxed">
+                    Falta: {missingFields.join(', ')}.
+                  </p>
+                </div>
+              )}
+
               {/* Big CTA Button */}
               <button
                 type="submit"
-                disabled={isProcessing}
-                className="w-full inline-flex items-center justify-center gap-2 py-4 px-6 bg-[#D4FF00] hover:bg-[#bfe600] disabled:bg-gray-600 text-black font-mono font-black text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 transform hover:-translate-y-0.5 shadow-xl shadow-[#D4FF00]/20 cursor-pointer"
+                disabled={isProcessing || !isFormComplete}
+                className="w-full inline-flex items-center justify-center gap-2 py-4 px-6 bg-[#D4FF00] hover:bg-[#bfe600] disabled:bg-[#222222] disabled:text-gray-500 disabled:shadow-none disabled:hover:translate-y-0 disabled:cursor-not-allowed text-black font-mono font-black text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 transform hover:-translate-y-0.5 shadow-xl shadow-[#D4FF00]/20 cursor-pointer"
               >
                 {isProcessing ? (
                   <span>PROCESANDO...</span>
+                ) : !isFormComplete ? (
+                  <>
+                    <Lock className="w-4 h-4 stroke-[2.5]" />
+                    <span>COMPLETA TUS DATOS PARA PEDIR</span>
+                  </>
                 ) : paymentMethod === 'tarjeta' ? (
                   <>
                     <span>PAGAR ${finalTotal.toLocaleString('es-MX')} MXN</span>

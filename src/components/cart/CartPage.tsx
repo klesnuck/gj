@@ -274,8 +274,19 @@ export const CartPage: React.FC<CartPageProps> = ({
                               {item.selectedColor || 'Negro'} /{' '}
                               {isCap ? 'Ajustable' : `Talla ${item.selectedSize || 'Standard'}`}
                             </div>
-                            <div className="text-xs font-mono text-gray-400 pt-0.5">
-                              ${item.product.price.toLocaleString('es-MX')} MXN / unidad
+                            <div className="text-xs font-mono text-gray-400 pt-0.5 flex items-center gap-2">
+                              {item.product.original_price && item.product.original_price > item.product.price ? (
+                                <>
+                                  <span className="line-through text-gray-500">
+                                    ${item.product.original_price.toLocaleString('es-MX')}
+                                  </span>
+                                  <span className="text-[#D4FF00] font-bold">
+                                    ${item.product.price.toLocaleString('es-MX')} MXN / unidad
+                                  </span>
+                                </>
+                              ) : (
+                                <span>${item.product.price.toLocaleString('es-MX')} MXN / unidad</span>
+                              )}
                             </div>
                             <div className="flex items-center gap-1.5 text-[11px] font-mono text-[#D4FF00] font-semibold pt-0.5">
                               <Check className="w-3.5 h-3.5 stroke-[2.5]" />

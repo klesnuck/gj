@@ -197,7 +197,7 @@ export function App() {
           setProducts(pData)
           setOrders(oData || [])
           setCustomers(cData || [])
-          if (coupData && coupData.length > 0) setCoupons(coupData)
+          if (Array.isArray(coupData)) setCoupons(coupData)
         }
       } catch (err) {
         console.warn('Error cargando datos desde Supabase:', err)
@@ -219,6 +219,43 @@ export function App() {
   const activeSelectedProduct = selectedProduct
     ? products.find((p) => p.id === selectedProduct.id) || selectedProduct
     : null
+
+  // Sincronizar en tiempo real los productos del carrito con los precios y cupones activos más recientes
+  // Así si se activa o desactiva un cupón y el usuario ya está en el carrito o refresca la página, el descuento se refleja de inmediato
+  const syncedCartItems = useMemo(() => {
+    return cartItems.map((item) => {
+      const liveProduct = products.find((p) => p.id === item.product.id)
+      const baseProduct: Product = liveProduct
+        ? { ...liveProduct }
+        : {
+            ...item.product,
+            price: item.product.original_price ?? item.product.price,
+            original_price: undefined,
+          }
+      const effectiveProduct = getEffectiveProduct(baseProduct, coupons)
+      return {
+        ...item,
+        product: effectiveProduct,
+      }
+    })
+  }, [cartItems, products, coupons])
+
+  // Mantener appliedCoupon sincronizado si el admin desactiva, elimina o expira el cupón
+  useEffect(() => {
+    if (!appliedCoupon) return
+    const updated = coupons.find(
+      (c) => c.id === appliedCoupon.id || c.code.trim().toUpperCase() === appliedCoupon.code.trim().toUpperCase()
+    )
+    if (
+      !updated ||
+      !updated.isActive ||
+      (updated.expiresAt && new Date(updated.expiresAt).getTime() <= Date.now())
+    ) {
+      setAppliedCoupon(null)
+    } else if (updated !== appliedCoupon) {
+      setAppliedCoupon(updated)
+    }
+  }, [coupons])
 
   // Admin Handlers
   const handleSaveProduct = async (productData: Partial<Product>): Promise<boolean> => {
@@ -308,7 +345,7 @@ export function App() {
       return { success: false, message: 'Este cupón ha expirado.' }
     }
 
-    const subtotal = cartItems.reduce((acc, it) => acc + it.product.price * it.quantity, 0)
+    const subtotal = syncedCartItems.reduce((acc, it) => acc + it.product.price * it.quantity, 0)
     if (found.minPurchase && found.minPurchase > 0 && subtotal < found.minPurchase) {
       return {
         success: false,
@@ -317,11 +354,24 @@ export function App() {
     }
 
     if (found.appliesTo === 'specific' && Array.isArray(found.productIds) && found.productIds.length > 0) {
-      const hasItem = cartItems.some((it) => found.productIds!.includes(it.product.id))
+      const hasItem = syncedCartItems.some((it) => found.productIds!.includes(it.product.id))
       if (!hasItem) {
         return {
           success: false,
           message: 'Este cupón solo aplica a prendas seleccionadas que no están en tu carrito.',
+        }
+      }
+      // Si las prendas elegibles ya tienen aplicado automáticamente este descuento directo en su precio, avisar al usuario
+      const alreadyDiscounted = syncedCartItems.some(
+        (it) =>
+          found.productIds!.includes(it.product.id) &&
+          it.product.original_price &&
+          it.product.original_price > it.product.price
+      )
+      if (alreadyDiscounted) {
+        return {
+          success: true,
+          message: `El descuento de ${found.code} ya está aplicado directamente en el precio de tu prenda.`,
         }
       }
     }
@@ -352,7 +402,7 @@ export function App() {
     total: number
   }): Promise<Order> => {
     const newOrderNumber = Math.floor(1000 + Math.random() * 9000).toString()
-    const orderItems: OrderItem[] = cartItems.map((it) => ({
+    const orderItems: OrderItem[] = syncedCartItems.map((it) => ({
       title: it.product.title,
       color: it.selectedColor,
       size: it.selectedSize,
@@ -706,7 +756,7 @@ export function App() {
   if (currentView === 'cart') {
     return (
       <CartPage
-        items={cartItems}
+        items={syncedCartItems}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
         onContinueShopping={() => {
@@ -732,7 +782,7 @@ export function App() {
   if (currentView === 'checkout') {
     return (
       <CheckoutPage
-        items={cartItems}
+        items={syncedCartItems}
         appliedCoupon={appliedCoupon}
         onApplyCoupon={handleApplyCoupon}
         onRemoveCoupon={handleRemoveCoupon}
@@ -786,7 +836,7 @@ export function App() {
         onCloseProduct={() => setSelectedProduct(null)}
         isCartOpen={isCartOpen}
         onCloseCart={() => setIsCartOpen(false)}
-        cartItems={cartItems}
+        cartItems={syncedCartItems}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
         coupons={coupons}
@@ -850,7 +900,7 @@ export function App() {
       <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
-        items={cartItems}
+        items={syncedCartItems}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
         coupons={coupons}
