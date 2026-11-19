@@ -118,9 +118,10 @@ export async function applyStudioWhiteBackground(
     // Luminancia del fondo muestreado
     const bgLuminance = 0.299 * avgR + 0.587 * avgG + 0.114 * avgB
 
-    // Recortar fondos uniformes desde los bordes (oscuros/negros o claros/grises)
-    if (bgLuminance < 80 || bgLuminance > 145) {
-      // Matriz de visitados para flood fill conectado desde los bordes
+    // Recortar fondos uniformes desde los bordes (oscuros/negros o claros/blancos)
+    if (bgLuminance < 75 || bgLuminance > 155) {
+      // Guardar copia de los alfas originales por si el recorte invade el centro de la prenda
+      const mask = new Uint8Array(w * h)
       const visited = new Uint8Array(w * h)
       const queue: number[] = []
 
@@ -134,34 +135,43 @@ export async function applyStudioWhiteBackground(
         queue.push(y * w + (w - 1)) // borde derecho (x = w - 1)
       }
 
-      // Tolerancia ultra-precisa en fondos oscuros (12) para jamás recortar tela o sombras de prendas negras
-      const effectiveTol = bgLuminance < 80 ? Math.min(tolerance, 12) : tolerance
-      const tolSq = effectiveTol * effectiveTol * 3
+      // Tolerancia estricta por canal para NO invadir prendas blancas sobre fondo blanco ni negras sobre negro
+      const maxChannelDiff = bgLuminance < 75 ? 10 : Math.min(tolerance, 14)
 
-      // Distancia euclidiana respecto al color de fondo
       const isBgPixel = (idx: number): boolean => {
         const r = data[idx * 4]
         const g = data[idx * 4 + 1]
         const b = data[idx * 4 + 2]
-        const distSq = (r - avgR) ** 2 + (g - avgG) ** 2 + (b - avgB) ** 2
-        if (bgLuminance > 145) {
-          return distSq <= tolSq || (r > 238 && g > 238 && b > 238)
-        }
-        return distSq <= tolSq
+        return (
+          Math.abs(r - avgR) <= maxChannelDiff &&
+          Math.abs(g - avgG) <= maxChannelDiff &&
+          Math.abs(b - avgB) <= maxChannelDiff
+        )
       }
 
       let head = 0
+      let centerTotal = 0
+      let centerErased = 0
+      const cxMin = Math.floor(w * 0.3)
+      const cxMax = Math.floor(w * 0.7)
+      const cyMin = Math.floor(h * 0.3)
+      const cyMax = Math.floor(h * 0.7)
+      centerTotal = Math.max(1, (cxMax - cxMin) * (cyMax - cyMin))
+
       while (head < queue.length) {
         const pos = queue[head++]
         if (visited[pos]) continue
         visited[pos] = 1
 
         if (isBgPixel(pos)) {
-          // Marcar como transparente en el canvas recortado
-          data[pos * 4 + 3] = 0
+          mask[pos] = 1
 
           const x = pos % w
           const y = Math.floor(pos / w)
+
+          if (x >= cxMin && x < cxMax && y >= cyMin && y < cyMax) {
+            centerErased++
+          }
 
           // Vecinos (4-conectividad)
           if (x > 0 && !visited[pos - 1]) queue.push(pos - 1)
@@ -171,28 +181,38 @@ export async function applyStudioWhiteBackground(
         }
       }
 
-      // Suavizado de bordes (Feathering) en los límites de la máscara
-      if (feather > 0) {
-        for (let y = 1; y < h - 1; y++) {
-          for (let x = 1; x < w - 1; x++) {
-            const idx = y * w + x
-            if (data[idx * 4 + 3] > 0) {
-              // Si tiene vecinos transparentes, suavizar el alfa
-              const hasTranspNeighbor =
-                data[(idx - 1) * 4 + 3] === 0 ||
-                data[(idx + 1) * 4 + 3] === 0 ||
-                data[(idx - w) * 4 + 3] === 0 ||
-                data[(idx + w) * 4 + 3] === 0
-              if (hasTranspNeighbor) {
-                data[idx * 4 + 3] = Math.round(data[idx * 4 + 3] * 0.75)
+      // Protección inteligente: si el recorte se comió más del 35% del centro donde está la prenda
+      // (ej. hoodie blanca sobre fondo blanco puro), cancelar el recorte para no destruir la prenda.
+      const centerErasedRatio = centerErased / centerTotal
+      if (centerErasedRatio <= 0.35) {
+        for (let i = 0; i < w * h; i++) {
+          if (mask[i] === 1) {
+            data[i * 4 + 3] = 0
+          }
+        }
+
+        // Suavizado de bordes (Feathering) en los límites de la máscara
+        if (feather > 0) {
+          for (let y = 1; y < h - 1; y++) {
+            for (let x = 1; x < w - 1; x++) {
+              const idx = y * w + x
+              if (data[idx * 4 + 3] > 0) {
+                const hasTranspNeighbor =
+                  data[(idx - 1) * 4 + 3] === 0 ||
+                  data[(idx + 1) * 4 + 3] === 0 ||
+                  data[(idx - w) * 4 + 3] === 0 ||
+                  data[(idx + w) * 4 + 3] === 0
+                if (hasTranspNeighbor) {
+                  data[idx * 4 + 3] = Math.round(data[idx * 4 + 3] * 0.75)
+                }
               }
             }
           }
         }
-      }
 
-      // Aplicar máscara transparente
-      srcCtx.putImageData(imgData, 0, 0)
+        // Aplicar máscara transparente segura
+        srcCtx.putImageData(imgData, 0, 0)
+      }
     }
   }
 
