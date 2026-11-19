@@ -1,9 +1,9 @@
 /**
- * Utility: Streetwear White Studio Background Processor
+ * Utility: Streetwear Dark Gray Studio Background Processor
  * 
  * Permite transformar imágenes de catálogo (con fondo transparente, negro/oscuro o claro)
- * en imágenes con fondo blanco de estudio profesional (#ffffff - #ececec) con iluminación
- * suave tipo softbox y sombra ambiental sutil, al estilo de Farfetch, SSENSE y Essentials.
+ * en imágenes con fondo gris oscuro de estudio profesional (#383838 - #161616) con iluminación
+ * suave tipo softbox y sombra ambiental natural, ideal tanto para prendas negras como blancas.
  */
 
 export interface StudioOptions {
@@ -134,8 +134,8 @@ export async function applyStudioWhiteBackground(
         queue.push(y * w + (w - 1)) // borde derecho (x = w - 1)
       }
 
-      // Tolerancia más precisa en fondos oscuros para no recortar detalles de prendas negras
-      const effectiveTol = bgLuminance < 80 ? Math.min(tolerance, 24) : tolerance
+      // Tolerancia ultra-precisa en fondos oscuros (12) para jamás recortar tela o sombras de prendas negras
+      const effectiveTol = bgLuminance < 80 ? Math.min(tolerance, 12) : tolerance
       const tolSq = effectiveTol * effectiveTol * 3
 
       // Distancia euclidiana respecto al color de fondo
@@ -196,40 +196,40 @@ export async function applyStudioWhiteBackground(
     }
   }
 
-  // 3. Crear Canvas Final con Fondo Blanco de Estudio Profesional
+  // 3. Crear Canvas Final con Fondo Gris Oscuro de Estudio Profesional
   const finalCanvas = document.createElement('canvas')
   finalCanvas.width = targetWidth
   finalCanvas.height = targetHeight
   const finalCtx = finalCanvas.getContext('2d')
   if (!finalCtx) return imageSrc
 
-  // Fondo base blanco de estudio suave (#f5f5f5)
-  finalCtx.fillStyle = '#f5f5f5'
+  // Fondo base gris oscuro carbón de estudio (#242424)
+  finalCtx.fillStyle = '#242424'
   finalCtx.fillRect(0, 0, targetWidth, targetHeight)
 
-  // Iluminación radial suave tipo softbox de estudio fotográfico
+  // Iluminación radial suave tipo softbox de estudio (destaca prendas negras y blancas por igual)
   if (radialGlow) {
     const cx = targetWidth / 2
     const cy = targetHeight * 0.45
-    const rInner = Math.min(targetWidth, targetHeight) * 0.12
+    const rInner = Math.min(targetWidth, targetHeight) * 0.1
     const rOuter = Math.max(targetWidth, targetHeight) * 0.78
 
     const grad = finalCtx.createRadialGradient(cx, cy, rInner, cx, cy, rOuter)
-    grad.addColorStop(0, 'rgba(255, 255, 255, 1)')
-    grad.addColorStop(0.45, 'rgba(248, 248, 248, 1)')
-    grad.addColorStop(0.82, 'rgba(236, 236, 236, 1)')
-    grad.addColorStop(1, 'rgba(226, 226, 226, 1)')
+    grad.addColorStop(0, 'rgba(62, 62, 62, 1)')    // #3e3e3e centro iluminado
+    grad.addColorStop(0.45, 'rgba(42, 42, 42, 1)') // #2a2a2a tono medio
+    grad.addColorStop(0.82, 'rgba(28, 28, 28, 1)') // #1c1c1c borde suave
+    grad.addColorStop(1, 'rgba(20, 20, 20, 1)')    // #141414 viñeta sutil
 
     finalCtx.fillStyle = grad
     finalCtx.fillRect(0, 0, targetWidth, targetHeight)
   }
 
-  // Sombra ambiental sutil en la base de la prenda (contacto con piso de estudio)
+  // Sombra ambiental muy suave en la base de la prenda
   if (addFloorShadow) {
     const shadowCx = targetWidth / 2
-    const shadowCy = targetHeight * 0.88
+    const shadowCy = targetHeight * 0.87
     const shadowRx = targetWidth * 0.34
-    const shadowRy = targetHeight * 0.045
+    const shadowRy = targetHeight * 0.04
 
     finalCtx.save()
     finalCtx.beginPath()
@@ -238,18 +238,18 @@ export async function applyStudioWhiteBackground(
       shadowCx, shadowCy, 0,
       shadowCx, shadowCy, shadowRx
     )
-    shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.16)')
-    shadowGrad.addColorStop(0.55, 'rgba(0, 0, 0, 0.07)')
+    shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.38)')
+    shadowGrad.addColorStop(0.55, 'rgba(0, 0, 0, 0.16)')
     shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
     finalCtx.fillStyle = shadowGrad
     finalCtx.fill()
     finalCtx.restore()
   }
 
-  // Dibujar la prenda recortada con sutil sombra de profundidad 3D sobre fondo claro
+  // Dibujar la prenda recortada con sutil sombra de profundidad 3D
   finalCtx.save()
-  finalCtx.shadowColor = 'rgba(0, 0, 0, 0.18)'
-  finalCtx.shadowBlur = Math.round(targetWidth * 0.022)
+  finalCtx.shadowColor = 'rgba(0, 0, 0, 0.42)'
+  finalCtx.shadowBlur = Math.round(targetWidth * 0.025)
   finalCtx.shadowOffsetY = Math.round(targetHeight * 0.012)
   finalCtx.drawImage(cutoutCanvas, 0, 0)
   finalCtx.restore()
@@ -258,6 +258,7 @@ export async function applyStudioWhiteBackground(
   return finalCanvas.toDataURL('image/jpeg', 0.92)
 }
 
-// Alias de compatibilidad
+// Aliases de compatibilidad
+export const applyStudioGrayBackground = applyStudioWhiteBackground
 export const applyStudioBlackBackground = applyStudioWhiteBackground
 
