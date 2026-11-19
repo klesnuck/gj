@@ -4,9 +4,6 @@ import {
   ArrowRight,
   Trash2,
   Check,
-  Truck,
-  ShieldCheck,
-  RefreshCw,
   Lock,
   Plus,
   Minus,
@@ -456,53 +453,6 @@ export const CartPage: React.FC<CartPageProps> = ({
 
           </div>
         )}
-
-        {/* Bottom 3 Value Pillars */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-10 sm:pt-14 border-t border-[#181818]">
-
-          <div className="flex items-start space-x-3.5">
-            <div className="w-9 h-9 rounded-sm bg-[#121212] border border-[#262626] flex items-center justify-center text-[#D4FF00] shrink-0 mt-0.5">
-              <Truck className="w-4 h-4 stroke-[2]" />
-            </div>
-            <div>
-              <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white">
-                DE NUESTRA CALLE A LA TUYA
-              </h4>
-              <p className="text-xs text-gray-400 font-sans mt-0.5">
-                Envíos a todo México. Entregas locales y paquetería segura.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start space-x-3.5">
-            <div className="w-9 h-9 rounded-sm bg-[#121212] border border-[#262626] flex items-center justify-center text-[#D4FF00] shrink-0 mt-0.5">
-              <ShieldCheck className="w-4 h-4 stroke-[2]" />
-            </div>
-            <div>
-              <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white">
-                COMPRA CON CONFIANZA
-              </h4>
-              <p className="text-xs text-gray-400 font-sans mt-0.5">
-                Pagos seguros con tarjeta y Mercado Pago.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start space-x-3.5">
-            <div className="w-9 h-9 rounded-sm bg-[#121212] border border-[#262626] flex items-center justify-center text-[#D4FF00] shrink-0 mt-0.5">
-              <RefreshCw className="w-4 h-4 stroke-[2]" />
-            </div>
-            <div>
-              <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white">
-                EL FIT TIENE QUE SER TUYO
-              </h4>
-              <p className="text-xs text-gray-400 font-sans mt-0.5">
-                Cambios fáciles dentro de los primeros 15 días.
-              </p>
-            </div>
-          </div>
-
-        </div>
 
       </main>
 

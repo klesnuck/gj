@@ -416,12 +416,6 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     Datos de contacto
                   </h3>
                 </div>
-                <button
-                  type="button"
-                  className="text-xs font-mono text-gray-400 hover:text-[#D4FF00] transition-colors"
-                >
-                  ¿Ya tienes cuenta? Inicia sesión
-                </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -680,7 +674,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       <MapPin className="w-4 h-4 text-[#D4FF00] shrink-0 mt-0.5" />
                       <div>
                         <div className="font-sans text-sm font-bold text-white flex items-center gap-2">
-                          <span>📍 Entrega Local en Saltillo</span>
+                          <span>Entrega Local en Saltillo</span>
                           <span className="px-1.5 py-0.5 bg-[#D4FF00] text-black text-[9px] font-mono font-black uppercase">
                             SALTILLO LOCAL
                           </span>
@@ -1147,19 +1141,6 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                   <span>Envío asegurado con seguimiento directo.</span>
                 </div>
               </div>
-
-              {/* Missing Required Fields Notice */}
-              {!isFormComplete && (
-                <div className="p-3 bg-[#1a150b] border border-amber-500/40 text-amber-300 text-[11px] font-mono space-y-1">
-                  <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-amber-400">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>Completa tus datos para continuar</span>
-                  </div>
-                  <p className="text-[10px] text-amber-200/80 leading-relaxed">
-                    Falta: {missingFields.join(', ')}.
-                  </p>
-                </div>
-              )}
 
               {/* Big CTA Button */}
               <button
