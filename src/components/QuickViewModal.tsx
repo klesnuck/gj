@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Check, ShoppingBag, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, Check, ShoppingBag, ArrowUpRight, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react'
 import type { Product, Coupon } from '../types/database.types'
 import { resolveColorHex } from '../lib/colors'
 import { parseSizeStocks } from '../lib/stock'
@@ -51,13 +51,44 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     product.colors && product.colors[0] ? product.colors[0] : '#111111'
   )
   const [added, setAdded] = useState(false)
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
 
   // Reset variant selection whenever opened product changes or stock is updated
   useEffect(() => {
     setSelectedSize(firstAvailable)
     setSelectedColor(product.colors && product.colors[0] ? product.colors[0] : '#111111')
     setActiveImageIndex(0)
+    setIsLightboxOpen(false)
   }, [product.id, product.stock, product.specs, firstAvailable])
+
+  // Bloquear scroll del resto de la página mientras el modal está abierto
+  useEffect(() => {
+    const prevBodyOverflow = document.body.style.overflow
+    const prevHtmlOverflow = document.documentElement.style.overflow
+    const prevBodyTouchAction = document.body.style.touchAction
+
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.touchAction = 'none'
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsLightboxOpen((open) => {
+          if (open) return false
+          onClose()
+          return false
+        })
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow
+      document.documentElement.style.overflow = prevHtmlOverflow
+      document.body.style.touchAction = prevBodyTouchAction
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [onClose])
 
   // Multi-image gallery in QuickView
   const productImages =
@@ -103,20 +134,20 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-3 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 overscroll-contain">
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-black/85 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/85 backdrop-blur-sm transition-opacity touch-none"
       />
 
       {/* Modal Dialog */}
-      <div className="relative bg-[#0f0f0f] border border-[#262626] max-w-3xl w-full text-white shadow-2xl overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-[#0f0f0f] border border-[#262626] max-w-3xl w-full max-h-[92vh] overflow-y-auto overscroll-contain text-white shadow-2xl z-10 animate-in fade-in zoom-in-95 duration-200">
 
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 w-8 h-8 rounded-full bg-black/80 hover:bg-[#D4FF00] hover:text-black border border-white/20 flex items-center justify-center text-gray-300 transition-colors cursor-pointer"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-30 w-8 h-8 rounded-full bg-black/80 hover:bg-[#D4FF00] hover:text-black border border-white/20 flex items-center justify-center text-gray-300 transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
@@ -126,7 +157,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
           {/* Left: Product Image & Multi-Image Strip */}
           <div className="flex flex-col border-b md:border-b-0 md:border-r border-[#222222] bg-[#111111]">
             <div
-              className="relative w-full h-[250px] xs:h-[280px] sm:h-[330px] md:h-auto md:aspect-square overflow-hidden flex items-center justify-center bg-gradient-to-b from-[#161616] via-[#121212] to-[#0d0d0d] p-6 sm:p-8"
+              onClick={() => setIsLightboxOpen(true)}
+              className="relative w-full h-[300px] sm:h-[340px] md:h-auto md:aspect-square overflow-hidden flex items-center justify-center bg-gradient-to-b from-[#161616] via-[#121212] to-[#0d0d0d] p-3 sm:p-6 cursor-zoom-in"
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
             >
@@ -149,13 +181,27 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 </div>
               ) : null}
 
-              {/* Main Product Image centered with breathing room so it never touches borders */}
+              {/* Main Product Image centered with click-to-expand */}
               <img
                 key={currentImage}
                 src={currentImage}
                 alt={product.title}
                 className="max-h-full max-w-full w-auto h-auto object-contain object-center transition-all duration-300 filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.7)]"
               />
+
+              {/* Fullscreen / Zoom button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsLightboxOpen(true)
+                }}
+                aria-label="Ver imagen completa"
+                className="absolute bottom-2.5 left-2.5 z-20 inline-flex items-center gap-1.5 px-2.5 py-1 bg-black/80 hover:bg-[#D4FF00] text-white hover:text-black border border-white/20 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer backdrop-blur-xs shadow-md"
+              >
+                <Maximize2 className="w-3 h-3 stroke-[2.5]" />
+                <span>Ver completa</span>
+              </button>
 
               {/* Chevrons for multi-image navigation on preview */}
               {productImages.length > 1 && (
@@ -341,7 +387,9 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 ) : (
                   <>
                     <ShoppingBag className="w-4 h-4" />
-                    <span>AGREGAR A LA BOLSA · ${product.price.toLocaleString('es-MX')} MXN</span>
+                    <span>
+                      AGREGAR A LA BOLSA · ${(discountInfo ? discountInfo.discountedPrice : product.price).toLocaleString('es-MX')} MXN
+                    </span>
                     <ArrowUpRight className="w-4 h-4" />
                   </>
                 )}
@@ -353,6 +401,102 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
         </div>
 
       </div>
+
+      {/* Fullscreen Image Lightbox Viewer */}
+      {isLightboxOpen && (
+        <div
+          onClick={() => setIsLightboxOpen(false)}
+          className="fixed inset-0 z-[70] bg-black/95 backdrop-blur-md flex flex-col items-center justify-between p-3 sm:p-6 overscroll-contain touch-none animate-in fade-in duration-200"
+        >
+          {/* Top Bar */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-5xl flex items-center justify-between gap-3 py-1"
+          >
+            <div className="min-w-0">
+              <span className="font-display text-base sm:text-xl uppercase tracking-wide text-white font-bold truncate block">
+                {product.title}
+              </span>
+              {productImages.length > 1 && (
+                <span className="text-[11px] font-mono text-[#D4FF00]">
+                  Foto {activeImageIndex + 1} de {productImages.length} · Desliza para cambiar
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsLightboxOpen(false)}
+              aria-label="Cerrar imagen completa"
+              className="w-10 h-10 rounded-full bg-white/10 hover:bg-[#D4FF00] text-white hover:text-black border border-white/20 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            >
+              <X className="w-5 h-5 stroke-[2.5]" />
+            </button>
+          </div>
+
+          {/* Center Fullscreen Image */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            className="relative flex-1 w-full max-w-5xl flex items-center justify-center my-2 overflow-hidden"
+          >
+            <img
+              key={`lightbox-${currentImage}`}
+              src={currentImage}
+              alt={product.title}
+              className="max-w-full max-h-[76vh] w-auto h-auto object-contain object-center select-none"
+            />
+
+            {productImages.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={handlePrevImage}
+                  aria-label="Foto anterior"
+                  className="absolute left-1 sm:left-3 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/80 hover:bg-[#D4FF00] text-white hover:text-black border border-white/25 flex items-center justify-center transition-all cursor-pointer shadow-lg"
+                >
+                  <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleNextImage}
+                  aria-label="Foto siguiente"
+                  className="absolute right-1 sm:right-3 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/80 hover:bg-[#D4FF00] text-white hover:text-black border border-white/25 flex items-center justify-center transition-all cursor-pointer shadow-lg"
+                >
+                  <ChevronRight className="w-5 h-5 stroke-[2.5]" />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Bottom Thumbnails */}
+          {productImages.length > 1 ? (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-2 py-2 overflow-x-auto max-w-full scrollbar-none"
+            >
+              {productImages.map((img, i) => (
+                <button
+                  key={`lb-thumb-${i}`}
+                  type="button"
+                  onClick={() => setActiveImageIndex(i)}
+                  className={`w-12 h-12 sm:w-14 sm:h-14 shrink-0 border transition-all cursor-pointer overflow-hidden bg-[#111] ${
+                    activeImageIndex === i
+                      ? 'border-[#D4FF00] ring-1 ring-[#D4FF00]'
+                      : 'border-white/20 opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="h-4" />
+          )}
+        </div>
+      )}
     </div>
   )
 }
