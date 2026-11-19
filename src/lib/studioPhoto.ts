@@ -96,95 +96,158 @@ export async function applyStudioWhiteBackground(
     const w = targetWidth
     const h = targetHeight
 
-    // Muestrear las esquinas para determinar el color del fondo
-    const samplePoints = [
+    // Muestrear SOLO las 4 esquinas reales (nunca el centro superior, que suele tocar la prenda o modelo)
+    const cornerIndices = [
       0, // (0, 0)
       (w - 1) * 4, // (w-1, 0)
       ((h - 1) * w) * 4, // (0, h-1)
       ((h - 1) * w + (w - 1)) * 4, // (w-1, h-1)
-      Math.floor(w / 2) * 4, // centro arriba
     ]
 
-    let avgR = 0, avgG = 0, avgB = 0
-    for (const p of samplePoints) {
-      avgR += data[p]
-      avgG += data[p + 1]
-      avgB += data[p + 2]
-    }
-    avgR /= samplePoints.length
-    avgG /= samplePoints.length
-    avgB /= samplePoints.length
+    const rs = cornerIndices.map((p) => data[p]).sort((a, b) => a - b)
+    const gs = cornerIndices.map((p) => data[p + 1]).sort((a, b) => a - b)
+    const bs = cornerIndices.map((p) => data[p + 2]).sort((a, b) => a - b)
+    // Usar mediana de las 4 esquinas para que una esquina ocupada por una manga/zapatilla no arruine el muestreo
+    const avgR = (rs[1] + rs[2]) / 2
+    const avgG = (gs[1] + gs[2]) / 2
+    const avgB = (bs[1] + bs[2]) / 2
 
-    // Luminancia del fondo muestreado
+    // Luminancia y saturación del fondo muestreado
     const bgLuminance = 0.299 * avgR + 0.587 * avgG + 0.114 * avgB
+    const bgSaturation = Math.max(avgR, avgG, avgB) - Math.min(avgR, avgG, avgB)
 
-    // Recortar fondos uniformes desde los bordes (oscuros/negros o claros/blancos)
-    if (bgLuminance < 75 || bgLuminance > 155) {
-      // Guardar copia de los alfas originales por si el recorte invade el centro de la prenda
+    // Recortar fondos neutros/uniformes (blancos, grises de estudio o negros planos)
+    const isLightStudioBg = bgLuminance > 165 && bgSaturation <= 35
+    const isDarkStudioBg = bgLuminance < 65 && bgSaturation <= 30
+
+    if (isLightStudioBg || isDarkStudioBg) {
       const mask = new Uint8Array(w * h)
       const visited = new Uint8Array(w * h)
-      const queue: number[] = []
+      const queue = new Int32Array(w * h)
+      let head = 0
+      let tail = 0
 
-      // Iniciar flood fill desde todo el perímetro de la imagen
-      for (let x = 0; x < w; x++) {
-        queue.push(x) // borde superior (y = 0)
-        queue.push((h - 1) * w + x) // borde inferior (y = h - 1)
-      }
-      for (let y = 1; y < h - 1; y++) {
-        queue.push(y * w) // borde izquierdo (x = 0)
-        queue.push(y * w + (w - 1)) // borde derecho (x = w - 1)
-      }
-
-      // Tolerancia estricta por canal para NO invadir prendas blancas sobre fondo blanco ni negras sobre negro
-      const maxChannelDiff = bgLuminance < 75 ? 10 : Math.min(tolerance, 14)
-
-      const isBgPixel = (idx: number): boolean => {
+      // Función que verifica si un píxel pertenece al rango válido del fondo
+      const isPixelInBgBand = (idx: number): boolean => {
         const r = data[idx * 4]
         const g = data[idx * 4 + 1]
         const b = data[idx * 4 + 2]
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b
+        const sat = Math.max(r, g, b) - Math.min(r, g, b)
+
+        if (isLightStudioBg) {
+          // Acepta gradientes de estudio blanco -> gris claro sin tocar piel, colores ni tela oscura
+          return lum >= 195 && sat <= 24
+        }
+        // Para fondos negros planos, muy estricto para no comerse gorras/prendas negras
         return (
-          Math.abs(r - avgR) <= maxChannelDiff &&
-          Math.abs(g - avgG) <= maxChannelDiff &&
-          Math.abs(b - avgB) <= maxChannelDiff
+          Math.abs(r - avgR) <= 10 &&
+          Math.abs(g - avgG) <= 10 &&
+          Math.abs(b - avgB) <= 10 &&
+          lum <= 45
         )
       }
 
-      let head = 0
-      let centerTotal = 0
+      // Sembrar el flood fill SOLO desde píxeles del perímetro que coincidan con el fondo
+      const trySeed = (pos: number) => {
+        if (!visited[pos] && isPixelInBgBand(pos)) {
+          visited[pos] = 1
+          queue[tail++] = pos
+        }
+      }
+
+      for (let x = 0; x < w; x++) {
+        trySeed(x)
+        trySeed((h - 1) * w + x)
+      }
+      for (let y = 1; y < h - 1; y++) {
+        trySeed(y * w)
+        trySeed(y * w + (w - 1))
+      }
+
+      // Paso máximo permitido entre píxeles vecinos (sigue degradados suaves, se frena en bordes de tela)
+      const maxStepDiff = isLightStudioBg ? Math.min(tolerance, 16) : 8
+
       let centerErased = 0
       const cxMin = Math.floor(w * 0.3)
       const cxMax = Math.floor(w * 0.7)
       const cyMin = Math.floor(h * 0.3)
       const cyMax = Math.floor(h * 0.7)
-      centerTotal = Math.max(1, (cxMax - cxMin) * (cyMax - cyMin))
+      const centerTotal = Math.max(1, (cxMax - cxMin) * (cyMax - cyMin))
 
-      while (head < queue.length) {
+      while (head < tail) {
         const pos = queue[head++]
-        if (visited[pos]) continue
-        visited[pos] = 1
+        mask[pos] = 1
 
-        if (isBgPixel(pos)) {
-          mask[pos] = 1
+        const x = pos % w
+        const y = (pos - x) / w
 
-          const x = pos % w
-          const y = Math.floor(pos / w)
-
-          if (x >= cxMin && x < cxMax && y >= cyMin && y < cyMax) {
-            centerErased++
-          }
-
-          // Vecinos (4-conectividad)
-          if (x > 0 && !visited[pos - 1]) queue.push(pos - 1)
-          if (x < w - 1 && !visited[pos + 1]) queue.push(pos + 1)
-          if (y > 0 && !visited[pos - w]) queue.push(pos - w)
-          if (y < h - 1 && !visited[pos + w]) queue.push(pos + w)
+        if (x >= cxMin && x < cxMax && y >= cyMin && y < cyMax) {
+          centerErased++
         }
+
+        const pr = data[pos * 4]
+        const pg = data[pos * 4 + 1]
+        const pb = data[pos * 4 + 2]
+
+        const tryNeighbor = (nPos: number) => {
+          if (visited[nPos]) return
+          const nr = data[nPos * 4]
+          const ng = data[nPos * 4 + 1]
+          const nb = data[nPos * 4 + 2]
+          if (
+            Math.abs(nr - pr) <= maxStepDiff &&
+            Math.abs(ng - pg) <= maxStepDiff &&
+            Math.abs(nb - pb) <= maxStepDiff &&
+            isPixelInBgBand(nPos)
+          ) {
+            visited[nPos] = 1
+            queue[tail++] = nPos
+          }
+        }
+
+        if (x > 0) tryNeighbor(pos - 1)
+        if (x < w - 1) tryNeighbor(pos + 1)
+        if (y > 0) tryNeighbor(pos - w)
+        if (y < h - 1) tryNeighbor(pos + w)
       }
 
       // Protección inteligente: si el recorte se comió más del 35% del centro donde está la prenda
       // (ej. hoodie blanca sobre fondo blanco puro), cancelar el recorte para no destruir la prenda.
       const centerErasedRatio = centerErased / centerTotal
       if (centerErasedRatio <= 0.35) {
+        // Limpieza anti-halo (2 pasadas) para quitar el borde blanco residual alrededor de prendas oscuras
+        if (isLightStudioBg) {
+          for (let pass = 0; pass < 2; pass++) {
+            const toClean: number[] = []
+            for (let y = 1; y < h - 1; y++) {
+              for (let x = 1; x < w - 1; x++) {
+                const idx = y * w + x
+                if (mask[idx] === 0) {
+                  const touchesBg =
+                    mask[idx - 1] === 1 ||
+                    mask[idx + 1] === 1 ||
+                    mask[idx - w] === 1 ||
+                    mask[idx + w] === 1
+                  if (touchesBg) {
+                    const r = data[idx * 4]
+                    const g = data[idx * 4 + 1]
+                    const b = data[idx * 4 + 2]
+                    const lum = 0.299 * r + 0.587 * g + 0.114 * b
+                    const sat = Math.max(r, g, b) - Math.min(r, g, b)
+                    if (lum > 165 && sat <= 30) {
+                      toClean.push(idx)
+                    }
+                  }
+                }
+              }
+            }
+            for (let i = 0; i < toClean.length; i++) {
+              mask[toClean[i]] = 1
+            }
+          }
+        }
+
         for (let i = 0; i < w * h; i++) {
           if (mask[i] === 1) {
             data[i * 4 + 3] = 0
@@ -203,7 +266,7 @@ export async function applyStudioWhiteBackground(
                   data[(idx - w) * 4 + 3] === 0 ||
                   data[(idx + w) * 4 + 3] === 0
                 if (hasTranspNeighbor) {
-                  data[idx * 4 + 3] = Math.round(data[idx * 4 + 3] * 0.75)
+                  data[idx * 4 + 3] = Math.round(data[idx * 4 + 3] * 0.6)
                 }
               }
             }
