@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { X, Check, ShoppingBag, ArrowUpRight, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react'
 import type { Product, Coupon } from '../types/database.types'
 import { resolveColorHex } from '../lib/colors'
-import { parseSizeStocks } from '../lib/stock'
+import { parseSizeStocks, formatSpecsForCustomer } from '../lib/stock'
 import { getProductDiscount } from '../lib/discounts'
 
 interface QuickViewModalProps {
@@ -291,7 +291,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
               {product.specs && (
                 <div className="text-xs font-mono text-gray-400">
-                  {product.specs}
+                  {formatSpecsForCustomer(product.specs)}
                 </div>
               )}
 
@@ -345,7 +345,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                         type="button"
                         disabled={!isAvailable}
                         onClick={() => setSelectedSize(s)}
-                        title={isAvailable ? `Talla ${s} (${stock} piezas disponibles)` : `Talla ${s} agotada`}
+                        title={isAvailable ? `Talla ${s} disponible` : `Talla ${s} agotada`}
                         className={`px-3.5 py-1.5 text-xs font-mono uppercase tracking-wider border transition-all ${!isAvailable
                             ? 'opacity-30 border-[#222222] bg-[#0e0e0e] text-gray-600 line-through cursor-not-allowed'
                             : isSelected
@@ -354,9 +354,6 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                           }`}
                       >
                         <span>{s}</span>
-                        <span className={`text-[10px] ml-1.5 ${!isAvailable ? 'text-gray-600 no-underline' : 'text-gray-400 font-normal'}`}>
-                          ({stock})
-                        </span>
                       </button>
                     )
                   })}

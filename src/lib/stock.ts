@@ -111,3 +111,51 @@ export function isProductSoldOut(product: Product): boolean {
   return false
 }
 
+/**
+ * Formatea product.specs para mostrar al cliente SIN revelar cantidades exactas de inventario.
+ * Ej: "Negro / Tallas: XS (0), S (2), M (1), L (0)" -> "Negro / Tallas: S, M"
+ */
+export function formatSpecsForCustomer(specs?: string | null): string {
+  if (!specs) return ''
+
+  // Quitar etiqueta interna [sub:...] si existiera
+  const cleaned = specs.replace(/\[sub:[^\]]+\]\s*/g, '').trim()
+
+  if (!cleaned.includes('Tallas:')) {
+    return cleaned
+  }
+
+  const [prefixRaw, tallasRaw] = cleaned.split('Tallas:')
+  const prefix = prefixRaw.trim()
+  const parts = (tallasRaw || '').split(',').map((p) => p.trim()).filter(Boolean)
+
+  const availableSizes: string[] = []
+  let hadQuantities = false
+
+  for (const part of parts) {
+    const match = part.match(/^([A-Z0-9]+)\s*\((\d+)\)/i)
+    if (match) {
+      hadQuantities = true
+      const sizeName = match[1].toUpperCase()
+      const qty = parseInt(match[2], 10)
+      if (qty > 0) {
+        availableSizes.push(sizeName)
+      }
+    } else {
+      const cleanSize = part.replace(/\(.*?\)/g, '').trim().toUpperCase()
+      if (cleanSize) availableSizes.push(cleanSize)
+    }
+  }
+
+  if (hadQuantities) {
+    if (availableSizes.length === 0) {
+      return prefix ? `${prefix} Agotado` : 'Agotado'
+    }
+    return prefix
+      ? `${prefix} Tallas: ${availableSizes.join(', ')}`
+      : `Tallas: ${availableSizes.join(', ')}`
+  }
+
+  return cleaned
+}
+

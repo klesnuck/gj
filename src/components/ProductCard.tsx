@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Plus, Check, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Product, Coupon } from '../types/database.types'
 import { resolveColorHex } from '../lib/colors'
-import { isProductSoldOut } from '../lib/stock'
+import { isProductSoldOut, formatSpecsForCustomer } from '../lib/stock'
 import { getProductImages } from '../lib/brands'
 import { getProductDiscount } from '../lib/discounts'
 
@@ -293,7 +293,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
           {product.specs && (
             <p className="text-[10px] sm:text-xs text-gray-500 font-mono mt-0.5 line-clamp-1">
-              {product.specs}
+              {formatSpecsForCustomer(product.specs)}
             </p>
           )}
         </div>
