@@ -10,7 +10,7 @@ export const Hero: React.FC<HeroProps> = ({ onShopDrop }) => {
   return (
     <section className="relative w-full bg-[#090909] overflow-hidden pt-4 pb-8 sm:pt-10 sm:pb-16 md:py-16 lg:py-20 border-b border-[#1c1c1c]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Responsive Grid: Side-by-side both on mobile and desktop */}
         <div className="grid grid-cols-12 gap-2 xs:gap-3 sm:gap-6 md:gap-8 lg:gap-12 items-center">
 
@@ -50,7 +50,7 @@ export const Hero: React.FC<HeroProps> = ({ onShopDrop }) => {
             {/* Microcopy Tagline */}
             <div className="pt-0.5 sm:pt-1">
               <span className="text-[8px] xs:text-[9px] sm:text-[11px] font-mono uppercase tracking-widest text-gray-500">
-                PIEZAS LIMITADAS. ACTITUD ILIMITADA.
+                ESTAMOS DE VUELTA!!.
               </span>
             </div>
 
@@ -59,9 +59,9 @@ export const Hero: React.FC<HeroProps> = ({ onShopDrop }) => {
           {/* Right Column: Rick Mascot Stage (Always on the right, matching laptop composition) */}
           <div className="col-span-5 sm:col-span-5 md:col-span-5 w-full flex items-center justify-center lg:justify-end">
             <div className="relative group cursor-pointer flex flex-col items-center justify-center p-1 sm:p-5 select-none">
-              
+
               {/* Soft Vertical Neon Aura Gradient */}
-              <div 
+              <div
                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[160px] xs:w-[200px] sm:w-[300px] md:w-[340px] lg:w-[380px] h-[240px] xs:h-[300px] sm:h-[440px] md:h-[500px] lg:h-[560px] pointer-events-none opacity-60 group-hover:opacity-95 transition-opacity duration-500 ease-out"
                 style={{
                   background: 'radial-gradient(ellipse at center, rgba(212, 255, 0, 0.28) 0%, rgba(212, 255, 0, 0.08) 45%, transparent 72%)',
@@ -70,10 +70,10 @@ export const Hero: React.FC<HeroProps> = ({ onShopDrop }) => {
 
               {/* Hardware-Accelerated Floating Wrapper */}
               <div className="relative animate-smooth-float transform-gpu will-change-transform flex flex-col items-center">
-                
+
                 {/* Character Stage */}
                 <div className="relative h-[220px] xs:h-[260px] sm:h-[380px] md:h-[460px] lg:h-[520px] xl:h-[580px] flex items-end justify-center">
-                  
+
                   {/* Floating Streetwear Sticker Badge */}
                   <div className="absolute top-1 sm:top-3 -right-2 sm:-right-5 lg:-right-6 z-20 pointer-events-none">
                     <span className="inline-block px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-[#D4FF00] text-black font-mono font-black text-[9px] sm:text-xs uppercase tracking-wider shadow-lg rotate-6 select-none group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
