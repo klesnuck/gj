@@ -1,9 +1,9 @@
 /**
- * Utility: Streetwear Studio Background Processor
+ * Utility: Streetwear White Studio Background Processor
  * 
- * Permite transformar imágenes de catálogo (con fondo blanco, gris claro o transparente)
- * en imágenes con fondo de estudio streetwear negro (#090909 - #0e0e0e) con reflector
- * radial sutil y sombra ambiental, igualando la estética de marcas como Essentials y SSENSE.
+ * Permite transformar imágenes de catálogo (con fondo transparente, negro/oscuro o claro)
+ * en imágenes con fondo blanco de estudio profesional (#ffffff - #ececec) con iluminación
+ * suave tipo softbox y sombra ambiental sutil, al estilo de Farfetch, SSENSE y Essentials.
  */
 
 export interface StudioOptions {
@@ -45,14 +45,14 @@ function hasTransparency(ctx: CanvasRenderingContext2D, width: number, height: n
 }
 
 /**
- * Aplica el fondo negro de estudio a una imagen con fondo claro o transparente.
+ * Aplica el fondo blanco de estudio profesional a una imagen con fondo transparente, oscuro o uniforme.
  */
-export async function applyStudioBlackBackground(
+export async function applyStudioWhiteBackground(
   imageSrc: string,
   options: StudioOptions = {}
 ): Promise<string> {
   const {
-    tolerance = 38,
+    tolerance = 32,
     radialGlow = true,
     feather = 2,
     addFloorShadow = true,
@@ -118,9 +118,8 @@ export async function applyStudioBlackBackground(
     // Luminancia del fondo muestreado
     const bgLuminance = 0.299 * avgR + 0.587 * avgG + 0.114 * avgB
 
-    // Solo recortar si el fondo es claro (blanco, gris claro, crema)
-    // Si ya es negro u oscuro (luminancia < 60), no es necesario recortar
-    if (bgLuminance > 140) {
+    // Recortar fondos uniformes desde los bordes (oscuros/negros o claros/grises)
+    if (bgLuminance < 80 || bgLuminance > 145) {
       // Matriz de visitados para flood fill conectado desde los bordes
       const visited = new Uint8Array(w * h)
       const queue: number[] = []
@@ -135,7 +134,9 @@ export async function applyStudioBlackBackground(
         queue.push(y * w + (w - 1)) // borde derecho (x = w - 1)
       }
 
-      const tolSq = tolerance * tolerance * 3
+      // Tolerancia más precisa en fondos oscuros para no recortar detalles de prendas negras
+      const effectiveTol = bgLuminance < 80 ? Math.min(tolerance, 24) : tolerance
+      const tolSq = effectiveTol * effectiveTol * 3
 
       // Distancia euclidiana respecto al color de fondo
       const isBgPixel = (idx: number): boolean => {
@@ -143,7 +144,10 @@ export async function applyStudioBlackBackground(
         const g = data[idx * 4 + 1]
         const b = data[idx * 4 + 2]
         const distSq = (r - avgR) ** 2 + (g - avgG) ** 2 + (b - avgB) ** 2
-        return distSq <= tolSq || (r > 235 && g > 235 && b > 235)
+        if (bgLuminance > 145) {
+          return distSq <= tolSq || (r > 238 && g > 238 && b > 238)
+        }
+        return distSq <= tolSq
       }
 
       let head = 0
@@ -192,40 +196,40 @@ export async function applyStudioBlackBackground(
     }
   }
 
-  // 3. Crear Canvas Final con Fondo de Estudio Negro Streetwear
+  // 3. Crear Canvas Final con Fondo Blanco de Estudio Profesional
   const finalCanvas = document.createElement('canvas')
   finalCanvas.width = targetWidth
   finalCanvas.height = targetHeight
   const finalCtx = finalCanvas.getContext('2d')
   if (!finalCtx) return imageSrc
 
-  // Fondo base negro streetwear (#090909)
-  finalCtx.fillStyle = '#090909'
+  // Fondo base blanco de estudio suave (#f5f5f5)
+  finalCtx.fillStyle = '#f5f5f5'
   finalCtx.fillRect(0, 0, targetWidth, targetHeight)
 
-  // Reflector / Spotlight radial de estudio suave
+  // Iluminación radial suave tipo softbox de estudio fotográfico
   if (radialGlow) {
     const cx = targetWidth / 2
-    const cy = targetHeight * 0.48
-    const rInner = Math.min(targetWidth, targetHeight) * 0.15
-    const rOuter = Math.max(targetWidth, targetHeight) * 0.72
+    const cy = targetHeight * 0.45
+    const rInner = Math.min(targetWidth, targetHeight) * 0.12
+    const rOuter = Math.max(targetWidth, targetHeight) * 0.78
 
     const grad = finalCtx.createRadialGradient(cx, cy, rInner, cx, cy, rOuter)
-    grad.addColorStop(0, 'rgba(30, 30, 30, 1)')
-    grad.addColorStop(0.4, 'rgba(18, 18, 18, 1)')
-    grad.addColorStop(0.85, 'rgba(10, 10, 10, 1)')
-    grad.addColorStop(1, 'rgba(7, 7, 7, 1)')
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1)')
+    grad.addColorStop(0.45, 'rgba(248, 248, 248, 1)')
+    grad.addColorStop(0.82, 'rgba(236, 236, 236, 1)')
+    grad.addColorStop(1, 'rgba(226, 226, 226, 1)')
 
     finalCtx.fillStyle = grad
     finalCtx.fillRect(0, 0, targetWidth, targetHeight)
   }
 
-  // Sombra ambiental en la base de la prenda
+  // Sombra ambiental sutil en la base de la prenda (contacto con piso de estudio)
   if (addFloorShadow) {
     const shadowCx = targetWidth / 2
     const shadowCy = targetHeight * 0.88
-    const shadowRx = targetWidth * 0.36
-    const shadowRy = targetHeight * 0.05
+    const shadowRx = targetWidth * 0.34
+    const shadowRy = targetHeight * 0.045
 
     finalCtx.save()
     finalCtx.beginPath()
@@ -234,23 +238,26 @@ export async function applyStudioBlackBackground(
       shadowCx, shadowCy, 0,
       shadowCx, shadowCy, shadowRx
     )
-    shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.75)')
-    shadowGrad.addColorStop(0.6, 'rgba(0, 0, 0, 0.35)')
+    shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.16)')
+    shadowGrad.addColorStop(0.55, 'rgba(0, 0, 0, 0.07)')
     shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
     finalCtx.fillStyle = shadowGrad
     finalCtx.fill()
     finalCtx.restore()
   }
 
-  // Dibujar la prenda recortada con sutil sombra de profundidad 3D
+  // Dibujar la prenda recortada con sutil sombra de profundidad 3D sobre fondo claro
   finalCtx.save()
-  finalCtx.shadowColor = 'rgba(0, 0, 0, 0.65)'
-  finalCtx.shadowBlur = Math.round(targetWidth * 0.02)
-  finalCtx.shadowOffsetY = Math.round(targetHeight * 0.015)
+  finalCtx.shadowColor = 'rgba(0, 0, 0, 0.18)'
+  finalCtx.shadowBlur = Math.round(targetWidth * 0.022)
+  finalCtx.shadowOffsetY = Math.round(targetHeight * 0.012)
   finalCtx.drawImage(cutoutCanvas, 0, 0)
   finalCtx.restore()
 
   // Retornar en JPEG de alta calidad optimizado para web
-  return finalCanvas.toDataURL('image/jpeg', 0.90)
+  return finalCanvas.toDataURL('image/jpeg', 0.92)
 }
+
+// Alias de compatibilidad
+export const applyStudioBlackBackground = applyStudioWhiteBackground
 

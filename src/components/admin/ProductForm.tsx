@@ -22,7 +22,7 @@ import { getColorHexFromName } from '../../lib/colors'
 import { parseSizeStocks } from '../../lib/stock'
 import { getAllKnownBrands, saveCustomBrand } from '../../lib/brands'
 import { saveBrand } from '../../lib/supabase'
-import { applyStudioBlackBackground } from '../../lib/studioPhoto'
+import { applyStudioWhiteBackground } from '../../lib/studioPhoto'
 import {
   categoryHasSizes,
   getSubcategoriesForCategory,
@@ -294,7 +294,7 @@ export const ProductForm = ({
         readyImages = await Promise.all(
           readyImages.map(async (img) => {
             try {
-              return await applyStudioBlackBackground(img)
+              return await applyStudioWhiteBackground(img)
             } catch {
               return img
             }
@@ -313,7 +313,7 @@ export const ProductForm = ({
     if (!images[index]) return
     setProcessingIndex(index)
     try {
-      const processed = await applyStudioBlackBackground(images[index])
+      const processed = await applyStudioWhiteBackground(images[index])
       setImages((prev) => {
         const next = [...prev]
         next[index] = processed
@@ -333,7 +333,7 @@ export const ProductForm = ({
       const processedAll = await Promise.all(
         images.map(async (img) => {
           try {
-            return await applyStudioBlackBackground(img)
+            return await applyStudioWhiteBackground(img)
           } catch {
             return img
           }
@@ -546,14 +546,14 @@ export const ProductForm = ({
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-mono font-bold uppercase text-white tracking-wide">
-                        MODO ESTUDIO NEGRO
+                        MODO ESTUDIO BLANCO
                       </span>
                       <span className="text-[9px] font-mono px-1.5 py-0.5 bg-[#D4FF00] text-black font-black uppercase tracking-wider">
-                        ESTILO STREETWEAR
+                        ESTILO ESTUDIO
                       </span>
                     </div>
                     <p className="text-[11px] font-sans text-gray-400">
-                      Elimina fondos claros/blancos y monta la prenda sobre fondo negro mate con spotlight central.
+                      Monta la prenda sobre fondo blanco de estudio limpio con iluminación softbox y sombra ambiental sutil.
                     </p>
                   </div>
                 </div>
@@ -587,7 +587,7 @@ export const ProductForm = ({
               <div className="pt-2 border-t border-[#1e1e1e] flex items-start gap-2 text-[10px] font-mono text-gray-400 leading-relaxed">
                 <span className="text-[#D4FF00] font-bold shrink-0">PRO TIP:</span>
                 <span>
-                  Para fotos tomadas con celular en cama, pared o percha, recórtalas gratis en 3 segundos en <strong>PhotoRoom</strong> o <strong>Remove.bg</strong>. Al subirlas aquí en PNG transparente, la tienda les colocará este fondo negro automáticamente.
+                  Para fotos tomadas con celular en cama, pared o percha, recórtalas gratis en 3 segundos en <strong>PhotoRoom</strong> o <strong>Remove.bg</strong>. Al subirlas aquí en PNG transparente, la tienda les colocará este fondo blanco de estudio automáticamente.
                 </span>
               </div>
             </div>
@@ -636,10 +636,10 @@ export const ProductForm = ({
                       onClick={() => handleApplyStudioToSingleImage(idx)}
                       disabled={isItemProcessing || isProcessingStudio}
                       className="absolute bottom-1.5 left-1.5 z-10 px-1.5 py-0.5 bg-black/90 hover:bg-[#D4FF00] hover:text-black text-gray-300 text-[8px] font-mono uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border border-white/20 flex items-center gap-1 shadow-md"
-                      title="Quitar fondo claro y convertir a fondo negro de estudio"
+                      title="Aplicar fondo blanco de estudio"
                     >
                       <Wand2 className="w-2.5 h-2.5 text-[#D4FF00]" />
-                      <span>{isItemProcessing ? '...' : 'Fondo Negro'}</span>
+                      <span>{isItemProcessing ? '...' : 'Fondo Blanco'}</span>
                     </button>
 
                     {/* Delete Photo Button */}
