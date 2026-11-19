@@ -8,33 +8,22 @@ export interface BrandOption {
 // Marcas predeterminadas: Vacío por solicitud del usuario (sin marcas fijas hardcoded)
 export const DEFAULT_CAP_BRANDS: BrandOption[] = []
 
+const EXCLUDED_BRANDS = ['new era', 'mitchell & ness', '47 brand', 'mitchell', 'starhas']
+
 /**
- * Retorna las marcas de gorras dinámicamente basadas ÚNICAMENTE en productos que sean GORRAS
- * o marcas guardadas específicamente para gorras (evita que marcas de shorts o ropa aparezcan aquí).
+ * Retorna las marcas de gorras dinámicamente basadas ÚNICAMENTE en productos activos
+ * cuya categoría sea 'gorras' (así nunca aparecen marcas fantasma o errores de dedo sin productos).
  */
 export function getCapBrands(products: Product[]): BrandOption[] {
   const brandMap = new Map<string, string>()
 
-  // 1. Marcas registradas específicamente para la categoría de GORRAS
-  try {
-    const stored = JSON.parse(localStorage.getItem('gj_custom_cap_brands') || '[]')
-    if (Array.isArray(stored)) {
-      for (const name of stored) {
-        if (typeof name === 'string' && name.trim()) {
-          const clean = name.trim()
-          brandMap.set(clean.toLowerCase(), clean)
-        }
-      }
-    }
-  } catch (e) {
-    console.warn(e)
-  }
-
-  // 2. Marcas ÚNICAMENTE de productos cuya categoría sea 'gorras'
+  // Marcas ÚNICAMENTE de productos existentes cuya categoría sea 'gorras'
   for (const p of products) {
     if (p.category === 'gorras' && p.brand && p.brand.trim()) {
       const clean = p.brand.trim()
-      brandMap.set(clean.toLowerCase(), clean)
+      if (!EXCLUDED_BRANDS.includes(clean.toLowerCase())) {
+        brandMap.set(clean.toLowerCase(), clean)
+      }
     }
   }
 
@@ -56,7 +45,7 @@ export function getAllKnownBrands(products: Product[]): string[] {
       for (const name of stored) {
         if (typeof name === 'string' && name.trim()) {
           const clean = name.trim()
-          if (!['new era', 'mitchell & ness', '47 brand', 'mitchell'].includes(clean.toLowerCase())) {
+          if (!EXCLUDED_BRANDS.includes(clean.toLowerCase())) {
             brandSet.add(clean)
           }
         }
@@ -68,7 +57,10 @@ export function getAllKnownBrands(products: Product[]): string[] {
 
   for (const p of products) {
     if (p.brand && p.brand.trim()) {
-      brandSet.add(p.brand.trim())
+      const clean = p.brand.trim()
+      if (!EXCLUDED_BRANDS.includes(clean.toLowerCase())) {
+        brandSet.add(clean)
+      }
     }
   }
 
