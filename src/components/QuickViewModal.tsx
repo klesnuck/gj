@@ -19,6 +19,31 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   onAddToCart,
 }) => {
   if (!product) return null
+  return (
+    <QuickViewModalContent
+      product={product}
+      coupons={coupons}
+      onClose={onClose}
+      onAddToCart={onAddToCart}
+    />
+  )
+}
+
+interface QuickViewModalContentProps {
+  product: Product
+  coupons?: Coupon[]
+  onClose: () => void
+  onAddToCart: (product: Product, color?: string, size?: string) => void
+}
+
+const QuickViewModalContent: React.FC<QuickViewModalContentProps> = ({
+  product,
+  coupons,
+  onClose,
+  onAddToCart,
+}) => {
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   const discountInfo = getProductDiscount(product, coupons)
 
@@ -61,18 +86,10 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     setIsLightboxOpen(false)
   }, [product.id, product.stock, product.specs, firstAvailable])
 
-  // Bloquear scroll del resto de la página mientras el modal está abierto (compatible con iOS Safari y Android)
+  // Bloquear scroll del resto de la página mientras el modal está montado (iOS Safari y Android)
+  // Se ejecuta una sola vez al montar y SIEMPRE limpia al desmontar, evitando pantallas congeladas.
   useEffect(() => {
     const scrollY = window.scrollY
-    const prevBodyStyle = {
-      position: document.body.style.position,
-      top: document.body.style.top,
-      left: document.body.style.left,
-      right: document.body.style.right,
-      width: document.body.style.width,
-      overflow: document.body.style.overflow,
-    }
-    const prevHtmlOverflow = document.documentElement.style.overflow
     const prevScrollBehavior = document.documentElement.style.scrollBehavior
 
     document.body.style.position = 'fixed'
@@ -87,7 +104,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
       if (e.key === 'Escape') {
         setIsLightboxOpen((open) => {
           if (open) return false
-          onClose()
+          onCloseRef.current()
           return false
         })
       }
@@ -95,19 +112,19 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     window.addEventListener('keydown', handleKeyDown)
 
     return () => {
-      document.body.style.position = prevBodyStyle.position
-      document.body.style.top = prevBodyStyle.top
-      document.body.style.left = prevBodyStyle.left
-      document.body.style.right = prevBodyStyle.right
-      document.body.style.width = prevBodyStyle.width
-      document.body.style.overflow = prevBodyStyle.overflow
-      document.documentElement.style.overflow = prevHtmlOverflow
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.right = ''
+      document.body.style.width = ''
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
       document.documentElement.style.scrollBehavior = 'auto'
       window.scrollTo(0, scrollY)
       document.documentElement.style.scrollBehavior = prevScrollBehavior
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [onClose])
+  }, [])
 
   // Multi-image gallery in QuickView
   const productImages =
@@ -144,12 +161,9 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
   const handleAdd = () => {
     if (isOutOfStock || !isSizeAvailable(selectedSize)) return
-    onAddToCart(product, selectedColor, selectedSize)
     setAdded(true)
-    setTimeout(() => {
-      setAdded(false)
-      onClose()
-    }, 900)
+    onClose()
+    onAddToCart(product, selectedColor, selectedSize)
   }
 
   return (
