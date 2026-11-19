@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { ArrowUpRight } from 'lucide-react'
 
 interface CategoriesBannerProps {
@@ -6,6 +6,57 @@ interface CategoriesBannerProps {
 }
 
 export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCategory }) => {
+  const clothingCardRef = useRef<HTMLDivElement | null>(null)
+  const capsCardRef = useRef<HTMLDivElement | null>(null)
+  const [clothingInView, setClothingInView] = useState(false)
+  const [capsInView, setCapsInView] = useState(false)
+
+  // En celular/pantallas táctiles, activar la animación 3D automáticamente al deslizar hacia abajo
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(hover: none), (max-width: 767px)')
+    let observer: IntersectionObserver | null = null
+
+    const setupObserver = () => {
+      if (observer) {
+        observer.disconnect()
+        observer = null
+      }
+
+      if (!mediaQuery.matches) {
+        setClothingInView(false)
+        setCapsInView(false)
+        return
+      }
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.target === clothingCardRef.current) {
+              setClothingInView(entry.isIntersecting)
+            } else if (entry.target === capsCardRef.current) {
+              setCapsInView(entry.isIntersecting)
+            }
+          })
+        },
+        {
+          threshold: 0.55,
+          rootMargin: '-10% 0px -10% 0px',
+        }
+      )
+
+      if (clothingCardRef.current) observer.observe(clothingCardRef.current)
+      if (capsCardRef.current) observer.observe(capsCardRef.current)
+    }
+
+    setupObserver()
+    mediaQuery.addEventListener('change', setupObserver)
+
+    return () => {
+      mediaQuery.removeEventListener('change', setupObserver)
+      if (observer) observer.disconnect()
+    }
+  }, [])
+
   return (
     <section className="w-full bg-[#090909] py-16 sm:py-24 border-b border-[#1c1c1c]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -35,6 +86,7 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
 
           {/* Card 1: CLOTHING */}
           <div
+            ref={clothingCardRef}
             onClick={() => onSelectCategory('ropa')}
             className="group relative h-[380px] sm:h-[420px] lg:h-[460px] bg-[#121212] border border-[#202020] overflow-hidden cursor-pointer"
           >
@@ -49,7 +101,11 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
             <img
               src="/images/clothing-essentials.jpg"
               alt="Colección Ropa Streetwear"
-              className="w-full h-full object-cover object-center grayscale contrast-120 brightness-90 group-hover:brightness-40 group-hover:scale-102 transition-all duration-700 ease-out"
+              className={`w-full h-full object-cover object-center grayscale contrast-120 transition-all duration-700 ease-out ${
+                clothingInView
+                  ? 'brightness-40 scale-102'
+                  : 'brightness-90 group-hover:brightness-40 group-hover:scale-102'
+              }`}
               onError={(e) => {
                 (e.target as HTMLImageElement).src =
                   '/images/category-clothing.jpg'
@@ -63,13 +119,21 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
             <img
               src="/images/clothing-silhouette.png"
               alt="Silueta Persona Streetwear"
-              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none opacity-0 group-hover:opacity-100 group-hover:scale-110 group-hover:-translate-y-2 group-hover:contrast-115 group-hover:brightness-105 transition-all duration-700 ease-out z-10 [filter:drop-shadow(0_20px_30px_rgba(0,0,0,0.95))_drop-shadow(0_0_25px_rgba(212,255,0,0.35))]"
+              className={`absolute inset-0 w-full h-full object-cover object-center pointer-events-none transition-all duration-700 ease-out z-10 [filter:drop-shadow(0_20px_30px_rgba(0,0,0,0.95))_drop-shadow(0_0_25px_rgba(212,255,0,0.35))] ${
+                clothingInView
+                  ? 'opacity-100 scale-110 -translate-y-2 contrast-115 brightness-105'
+                  : 'opacity-0 group-hover:opacity-100 group-hover:scale-110 group-hover:-translate-y-2 group-hover:contrast-115 group-hover:brightness-105'
+              }`}
             />
 
             {/* Bottom Content */}
             <div className="absolute bottom-6 left-6 right-6 z-20 flex items-end justify-between">
               <div>
-                <h3 className="font-display text-5xl sm:text-6xl lg:text-7xl uppercase text-white font-black tracking-tight leading-none group-hover:text-[#D4FF00] transition-colors">
+                <h3
+                  className={`font-display text-5xl sm:text-6xl lg:text-7xl uppercase font-black tracking-tight leading-none transition-colors ${
+                    clothingInView ? 'text-[#D4FF00]' : 'text-white group-hover:text-[#D4FF00]'
+                  }`}
+                >
                   CLOTHING
                 </h3>
                 <p className="text-gray-300 text-xs sm:text-sm font-sans mt-1">
@@ -77,7 +141,13 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
                 </p>
               </div>
 
-              <div className="w-11 h-11 rounded-full bg-black/70 group-hover:bg-[#D4FF00] text-white group-hover:text-black border border-white/20 group-hover:border-[#D4FF00] flex items-center justify-center transition-all duration-300 group-hover:rotate-45 shrink-0 ml-4">
+              <div
+                className={`w-11 h-11 rounded-full border flex items-center justify-center transition-all duration-300 shrink-0 ml-4 ${
+                  clothingInView
+                    ? 'bg-[#D4FF00] text-black border-[#D4FF00] rotate-45'
+                    : 'bg-black/70 group-hover:bg-[#D4FF00] text-white group-hover:text-black border-white/20 group-hover:border-[#D4FF00] group-hover:rotate-45'
+                }`}
+              >
                 <ArrowUpRight className="w-5 h-5 stroke-[2.2]" />
               </div>
             </div>
@@ -85,6 +155,7 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
 
           {/* Card 2: CAPS */}
           <div
+            ref={capsCardRef}
             onClick={() => onSelectCategory('gorras')}
             className="group relative h-[380px] sm:h-[420px] lg:h-[460px] bg-[#121212] border border-[#202020] overflow-hidden cursor-pointer"
           >
@@ -99,7 +170,11 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
             <img
               src="/images/caps-showcase.jpg"
               alt="Colección Gorras Streetwear"
-              className="w-full h-full object-cover object-center grayscale contrast-120 brightness-90 group-hover:brightness-40 group-hover:scale-102 transition-all duration-700 ease-out"
+              className={`w-full h-full object-cover object-center grayscale contrast-120 transition-all duration-700 ease-out ${
+                capsInView
+                  ? 'brightness-40 scale-102'
+                  : 'brightness-90 group-hover:brightness-40 group-hover:scale-102'
+              }`}
               onError={(e) => {
                 (e.target as HTMLImageElement).src =
                   '/images/category-caps.jpg'
@@ -113,13 +188,21 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
             <img
               src="/images/caps-silhouette.png"
               alt="Silueta Gorra Streetwear"
-              className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none opacity-0 group-hover:opacity-100 group-hover:scale-110 group-hover:-translate-y-2 group-hover:contrast-115 group-hover:brightness-105 transition-all duration-700 ease-out z-10 [filter:drop-shadow(0_20px_30px_rgba(0,0,0,0.95))_drop-shadow(0_0_25px_rgba(212,255,0,0.35))]"
+              className={`absolute inset-0 w-full h-full object-cover object-center pointer-events-none transition-all duration-700 ease-out z-10 [filter:drop-shadow(0_20px_30px_rgba(0,0,0,0.95))_drop-shadow(0_0_25px_rgba(212,255,0,0.35))] ${
+                capsInView
+                  ? 'opacity-100 scale-110 -translate-y-2 contrast-115 brightness-105'
+                  : 'opacity-0 group-hover:opacity-100 group-hover:scale-110 group-hover:-translate-y-2 group-hover:contrast-115 group-hover:brightness-105'
+              }`}
             />
 
             {/* Bottom Content */}
             <div className="absolute bottom-6 left-6 right-6 z-20 flex items-end justify-between">
               <div>
-                <h3 className="font-display text-5xl sm:text-6xl lg:text-7xl uppercase text-white font-black tracking-tight leading-none group-hover:text-[#D4FF00] transition-colors">
+                <h3
+                  className={`font-display text-5xl sm:text-6xl lg:text-7xl uppercase font-black tracking-tight leading-none transition-colors ${
+                    capsInView ? 'text-[#D4FF00]' : 'text-white group-hover:text-[#D4FF00]'
+                  }`}
+                >
                   CAPS
                 </h3>
                 <p className="text-gray-300 text-xs sm:text-sm font-sans mt-1">
@@ -127,7 +210,13 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
                 </p>
               </div>
 
-              <div className="w-11 h-11 rounded-full bg-black/70 group-hover:bg-[#D4FF00] text-white group-hover:text-black border border-white/20 group-hover:border-[#D4FF00] flex items-center justify-center transition-all duration-300 group-hover:rotate-45 shrink-0 ml-4">
+              <div
+                className={`w-11 h-11 rounded-full border flex items-center justify-center transition-all duration-300 shrink-0 ml-4 ${
+                  capsInView
+                    ? 'bg-[#D4FF00] text-black border-[#D4FF00] rotate-45'
+                    : 'bg-black/70 group-hover:bg-[#D4FF00] text-white group-hover:text-black border-white/20 group-hover:border-[#D4FF00] group-hover:rotate-45'
+                }`}
+              >
                 <ArrowUpRight className="w-5 h-5 stroke-[2.2]" />
               </div>
             </div>
