@@ -65,9 +65,6 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
             <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-white font-extrabold leading-none">
               LOS MÁS BUSCADOS
             </h2>
-            <p className="text-xs sm:text-sm font-sans text-gray-400 max-w-lg pt-1">
-              Las prendas y siluetas con mayor demanda de GJ.
-            </p>
           </div>
         </div>
 

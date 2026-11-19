@@ -71,14 +71,6 @@ export const CategoriesBanner: React.FC<CategoriesBannerProps> = ({ onSelectCate
               ELIGE TU CÓDIGO
             </h2>
           </div>
-
-          <button
-            onClick={() => onSelectCategory('todos')}
-            className="group inline-flex items-center gap-1.5 text-xs sm:text-sm font-mono tracking-wider text-gray-400 hover:text-[#D4FF00] uppercase mt-4 md:mt-0 transition-colors cursor-pointer"
-          >
-            <span>EXPLORAR LA TIENDA</span>
-            <ArrowUpRight className="w-4 h-4 stroke-[2.2] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-          </button>
         </div>
 
         {/* 2-Column Visual Cards */}
