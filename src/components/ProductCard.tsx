@@ -29,11 +29,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const discountInfo = getProductDiscount(product, coupons)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
+  const [isMobileDevice, setIsMobileDevice] = useState(false)
   const [isInView, setIsInView] = useState(false)
   const cardRef = useRef<HTMLDivElement | null>(null)
   const touchStartXRef = useRef<number | null>(null)
 
-  // En celular/pantallas táctiles, resaltar y elevar el producto automáticamente al deslizar
+  // En celular/pantallas táctiles, resaltar y adelantar la fila que cruza el centro de la pantalla
   useEffect(() => {
     if (isSoldOut) return
     const mediaQuery = window.matchMedia('(hover: none), (max-width: 767px)')
@@ -44,6 +45,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         observer.disconnect()
         observer = null
       }
+
+      setIsMobileDevice(mediaQuery.matches)
 
       if (!mediaQuery.matches) {
         setIsInView(false)
@@ -59,8 +62,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           })
         },
         {
-          threshold: 0.65,
-          rootMargin: '-12% 0px -12% 0px',
+          threshold: 0.2,
+          rootMargin: '-30% 0px -30% 0px',
         }
       )
 
@@ -151,21 +154,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       onClick={() => !isSoldOut && onSelectProduct(product)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`group flex flex-col transition-all duration-500 ease-out transform-gpu ${
+      className={`group relative flex flex-col transition-all duration-500 ease-out transform-gpu will-change-transform ${
         isSoldOut
           ? 'cursor-not-allowed opacity-75'
           : isHighlighted
-          ? 'cursor-pointer -translate-y-1.5 scale-[1.02] active:scale-[0.98]'
-          : 'cursor-pointer hover:-translate-y-1.5 active:scale-[0.98]'
+          ? 'cursor-pointer -translate-y-2.5 scale-[1.04] z-20 opacity-100 active:scale-[0.98]'
+          : isMobileDevice
+          ? 'cursor-pointer scale-[0.96] opacity-80 active:scale-[0.95]'
+          : 'cursor-pointer hover:-translate-y-3 hover:scale-[1.04] hover:z-20 active:scale-[0.98]'
       }`}
       aria-disabled={isSoldOut}
     >
       {/* Product Image Box */}
       <div
-        className={`relative w-full aspect-square bg-[#141414] overflow-hidden border transition-all duration-500 ease-out ${
+        className={`relative w-full aspect-square bg-[#141414] overflow-hidden border-2 transition-all duration-500 ease-out ${
           isHighlighted
-            ? 'border-[#D4FF00]/70 shadow-[0_16px_32px_rgba(0,0,0,0.85),0_0_24px_rgba(212,255,0,0.22)]'
-            : 'border-[#202020] group-hover:border-[#D4FF00]/60 group-hover:shadow-[0_16px_32px_rgba(0,0,0,0.85),0_0_24px_rgba(212,255,0,0.2)]'
+            ? 'border-[#D4FF00] shadow-[0_22px_45px_rgba(0,0,0,0.95),0_0_28px_rgba(212,255,0,0.35)]'
+            : 'border-[#202020] group-hover:border-[#D4FF00] group-hover:shadow-[0_24px_48px_rgba(0,0,0,0.95),0_0_32px_rgba(212,255,0,0.35)]'
         }`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -226,8 +231,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             isSoldOut
               ? 'grayscale opacity-50'
               : isHighlighted
-              ? 'scale-108 brightness-105 contrast-105'
-              : 'group-hover:scale-108 group-hover:brightness-105 group-hover:contrast-105'
+              ? 'scale-[1.10] brightness-110 contrast-105'
+              : 'group-hover:scale-[1.10] group-hover:brightness-110 group-hover:contrast-105'
           }`}
           onError={(e) => {
             (e.target as HTMLImageElement).src = '/images/product-cap-black.jpg'
