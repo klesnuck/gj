@@ -29,7 +29,54 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const discountInfo = getProductDiscount(product, coupons)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
+  const [isInView, setIsInView] = useState(false)
+  const cardRef = useRef<HTMLDivElement | null>(null)
   const touchStartXRef = useRef<number | null>(null)
+
+  // En celular/pantallas táctiles, resaltar y elevar el producto automáticamente al deslizar
+  useEffect(() => {
+    if (isSoldOut) return
+    const mediaQuery = window.matchMedia('(hover: none), (max-width: 767px)')
+    let observer: IntersectionObserver | null = null
+
+    const setupObserver = () => {
+      if (observer) {
+        observer.disconnect()
+        observer = null
+      }
+
+      if (!mediaQuery.matches) {
+        setIsInView(false)
+        return
+      }
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.target === cardRef.current) {
+              setIsInView(entry.isIntersecting)
+            }
+          })
+        },
+        {
+          threshold: 0.65,
+          rootMargin: '-12% 0px -12% 0px',
+        }
+      )
+
+      if (cardRef.current) observer.observe(cardRef.current)
+    }
+
+    setupObserver()
+    mediaQuery.addEventListener('change', setupObserver)
+
+    return () => {
+      mediaQuery.removeEventListener('change', setupObserver)
+      if (observer) observer.disconnect()
+    }
+  }, [isSoldOut])
+
+  const isHighlighted = !isSoldOut && isInView
 
   // Recolectar todas las fotos disponibles de la prenda sin duplicados
   const allImages = React.useMemo(() => {
@@ -100,17 +147,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <div
+      ref={cardRef}
       onClick={() => !isSoldOut && onSelectProduct(product)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`group flex flex-col transition-all duration-300 ${
-        isSoldOut ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'
+      className={`group flex flex-col transition-all duration-500 ease-out transform-gpu ${
+        isSoldOut
+          ? 'cursor-not-allowed opacity-75'
+          : isHighlighted
+          ? 'cursor-pointer -translate-y-1.5 scale-[1.02] active:scale-[0.98]'
+          : 'cursor-pointer hover:-translate-y-1.5 active:scale-[0.98]'
       }`}
       aria-disabled={isSoldOut}
     >
       {/* Product Image Box */}
       <div
-        className="relative w-full aspect-square bg-[#141414] overflow-hidden border border-[#202020] group-hover:border-[#383838] transition-colors"
+        className={`relative w-full aspect-square bg-[#141414] overflow-hidden border transition-all duration-500 ease-out ${
+          isHighlighted
+            ? 'border-[#D4FF00]/70 shadow-[0_16px_32px_rgba(0,0,0,0.85),0_0_24px_rgba(212,255,0,0.22)]'
+            : 'border-[#202020] group-hover:border-[#D4FF00]/60 group-hover:shadow-[0_16px_32px_rgba(0,0,0,0.85),0_0_24px_rgba(212,255,0,0.2)]'
+        }`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -161,13 +217,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         )}
 
-        {/* Main Product Image with uniform square cover */}
+        {/* Main Product Image with uniform square cover & 3D pop-forward highlight */}
         <img
           key={activeSrc}
           src={activeSrc}
           alt={product.title}
-          className={`w-full h-full object-cover object-center transition-all duration-300 ${
-            isSoldOut ? 'grayscale opacity-50' : 'group-hover:scale-105'
+          className={`w-full h-full object-cover object-center transition-all duration-500 ease-out transform-gpu ${
+            isSoldOut
+              ? 'grayscale opacity-50'
+              : isHighlighted
+              ? 'scale-108 brightness-105 contrast-105'
+              : 'group-hover:scale-108 group-hover:brightness-105 group-hover:contrast-105'
           }`}
           onError={(e) => {
             (e.target as HTMLImageElement).src = '/images/product-cap-black.jpg'
@@ -245,7 +305,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         )}
 
         {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+        <div
+          className={`absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent transition-opacity duration-500 pointer-events-none ${
+            isHighlighted ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}
+        />
       </div>
 
       {/* Product Meta */}
@@ -253,8 +317,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div>
           <div className="flex justify-between items-start gap-1 sm:gap-2">
             <h3
-              className={`font-sans font-bold text-xs sm:text-base transition-colors leading-snug line-clamp-2 ${
-                isSoldOut ? 'text-gray-400' : 'text-white group-hover:text-[#D4FF00]'
+              className={`font-sans font-bold text-xs sm:text-base transition-colors duration-300 leading-snug line-clamp-2 ${
+                isSoldOut
+                  ? 'text-gray-400'
+                  : isHighlighted
+                  ? 'text-[#D4FF00]'
+                  : 'text-white group-hover:text-[#D4FF00]'
               }`}
             >
               {product.title}
