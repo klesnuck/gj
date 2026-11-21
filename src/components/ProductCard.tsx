@@ -154,27 +154,42 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       onClick={() => !isSoldOut && onSelectProduct(product)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`group relative flex flex-col transition-all duration-500 ease-out transform-gpu will-change-transform ${
+      className={`group relative flex flex-col transition-all duration-500 ease-out transform-gpu ${
         isSoldOut
           ? 'cursor-not-allowed opacity-75'
           : isHighlighted
-          ? 'cursor-pointer -translate-y-2.5 scale-[1.04] z-20 opacity-100 active:scale-[0.98]'
+          ? 'cursor-pointer z-30 opacity-100'
           : isMobileDevice
-          ? 'cursor-pointer scale-[0.96] opacity-80 active:scale-[0.95]'
-          : 'cursor-pointer hover:-translate-y-3 hover:scale-[1.04] hover:z-20 active:scale-[0.98]'
+          ? 'cursor-pointer z-0 opacity-85'
+          : 'cursor-pointer hover:z-30'
       }`}
       aria-disabled={isSoldOut}
     >
-      {/* Product Image Box */}
+      {/* Product Image Stage (overflow-visible para que la imagen salga literalmente del marco) */}
       <div
-        className={`relative w-full aspect-square bg-[#141414] overflow-hidden border-2 transition-all duration-500 ease-out ${
-          isHighlighted
-            ? 'border-[#D4FF00] shadow-[0_22px_45px_rgba(0,0,0,0.95),0_0_28px_rgba(212,255,0,0.35)]'
-            : 'border-[#202020] group-hover:border-[#D4FF00] group-hover:shadow-[0_24px_48px_rgba(0,0,0,0.95),0_0_32px_rgba(212,255,0,0.35)]'
-        }`}
+        className="relative w-full aspect-square overflow-visible"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
+        {/* Marco base anclado (queda detrás mientras el producto sobresale hacia arriba y afuera) */}
+        <div
+          className={`absolute inset-0 bg-[#111111] border-2 transition-all duration-500 ease-out pointer-events-none ${
+            isHighlighted
+              ? 'border-[#D4FF00] bg-[#182109]/40 shadow-[0_0_28px_rgba(212,255,0,0.28)]'
+              : 'border-[#222222] group-hover:border-[#D4FF00] group-hover:bg-[#182109]/35 group-hover:shadow-[0_0_28px_rgba(212,255,0,0.28)]'
+          }`}
+        />
+
+        {/* Capa flotante del producto: SALE LITERALMENTE DE LA CARTA hacia adelante y arriba */}
+        <div
+          className={`relative w-full h-full z-10 overflow-hidden bg-[#141414] transition-all duration-500 ease-out transform-gpu will-change-transform ${
+            isSoldOut
+              ? ''
+              : isHighlighted
+              ? '-translate-y-4 sm:-translate-y-5 scale-[1.10] shadow-[0_26px_48px_rgba(0,0,0,0.95),0_0_26px_rgba(212,255,0,0.32)] ring-1 ring-[#D4FF00]/80'
+              : 'group-hover:-translate-y-4 sm:group-hover:-translate-y-5 group-hover:scale-[1.10] group-hover:shadow-[0_26px_48px_rgba(0,0,0,0.95),0_0_26px_rgba(212,255,0,0.32)] group-hover:ring-1 group-hover:ring-[#D4FF00]/80'
+          }`}
+        >
         {/* Badge: Agotado, En Descuento o Tag Destacado */}
         {isSoldOut ? (
           <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-30">
@@ -222,7 +237,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         )}
 
-        {/* Main Product Image with uniform square cover & 3D pop-forward highlight */}
+        {/* Main Product Image */}
         <img
           key={activeSrc}
           src={activeSrc}
@@ -231,8 +246,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             isSoldOut
               ? 'grayscale opacity-50'
               : isHighlighted
-              ? 'scale-[1.10] brightness-110 contrast-105'
-              : 'group-hover:scale-[1.10] group-hover:brightness-110 group-hover:contrast-105'
+              ? 'scale-[1.04] brightness-105 contrast-105'
+              : 'group-hover:scale-[1.04] group-hover:brightness-105 group-hover:contrast-105'
           }`}
           onError={(e) => {
             (e.target as HTMLImageElement).src = '/images/product-cap-black.jpg'
@@ -315,6 +330,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             isHighlighted ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           }`}
         />
+        </div>
       </div>
 
       {/* Product Meta */}
