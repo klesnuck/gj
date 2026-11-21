@@ -15,14 +15,12 @@ import {
   AlertTriangle,
   Plus,
   X,
-  Wand2,
 } from 'lucide-react'
 import type { Product } from '../../types/database.types'
 import { getColorHexFromName } from '../../lib/colors'
 import { parseSizeStocks } from '../../lib/stock'
 import { getAllKnownBrands, saveCustomBrand } from '../../lib/brands'
 import { saveBrand } from '../../lib/supabase'
-import { applyStudioWhiteBackground } from '../../lib/studioPhoto'
 import {
   categoryHasSizes,
   getSubcategoriesForCategory,
@@ -136,9 +134,6 @@ export const ProductForm = ({
     return []
   })
   const [coverIndex, setCoverIndex] = useState<number>(0)
-  const [autoStudioMode, setAutoStudioMode] = useState<boolean>(true)
-  const [isProcessingStudio, setIsProcessingStudio] = useState<boolean>(false)
-  const [processingIndex, setProcessingIndex] = useState<number | null>(null)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
@@ -273,7 +268,7 @@ export const ProductForm = ({
     })
   }
 
-  // Multi-file upload handler: reads, optionally applies studio background, and saves up to 6 images
+  // Multi-file upload handler: reads and saves up to 6 images exactly as uploaded
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files
     if (!fileList || fileList.length === 0) return
@@ -283,65 +278,15 @@ export const ProductForm = ({
     if (availableSlots <= 0) return
 
     const filesToRead = filesArray.slice(0, availableSlots)
-    setIsProcessingStudio(true)
 
     try {
       const readPromises = filesToRead.map((file) => compressImage(file))
       const newBase64Images = await Promise.all(readPromises)
-      let readyImages = newBase64Images.filter(Boolean)
-
-      if (autoStudioMode) {
-        readyImages = await Promise.all(
-          readyImages.map(async (img) => {
-            try {
-              return await applyStudioWhiteBackground(img)
-            } catch {
-              return img
-            }
-          })
-        )
-      }
+      const readyImages = newBase64Images.filter(Boolean)
 
       setImages((prev) => [...prev, ...readyImages].slice(0, 6))
     } finally {
-      setIsProcessingStudio(false)
       e.target.value = ''
-    }
-  }
-
-  const handleApplyStudioToSingleImage = async (index: number) => {
-    if (!images[index]) return
-    setProcessingIndex(index)
-    try {
-      const processed = await applyStudioWhiteBackground(images[index])
-      setImages((prev) => {
-        const next = [...prev]
-        next[index] = processed
-        return next
-      })
-    } catch (err) {
-      console.warn('Error aplicando fondo de estudio:', err)
-    } finally {
-      setProcessingIndex(null)
-    }
-  }
-
-  const handleApplyStudioToAll = async () => {
-    if (images.length === 0) return
-    setIsProcessingStudio(true)
-    try {
-      const processedAll = await Promise.all(
-        images.map(async (img) => {
-          try {
-            return await applyStudioWhiteBackground(img)
-          } catch {
-            return img
-          }
-        })
-      )
-      setImages(processedAll)
-    } finally {
-      setIsProcessingStudio(false)
     }
   }
 
@@ -536,67 +481,10 @@ export const ProductForm = ({
               </span>
             </div>
 
-            {/* Streetwear Studio Mode Controls */}
-            <div className="p-3.5 bg-[#141414] border border-[#262626] space-y-2.5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-full bg-[#D4FF00]/15 flex items-center justify-center text-[#D4FF00] shrink-0 border border-[#D4FF00]/30">
-                    <Wand2 className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono font-bold uppercase text-white tracking-wide">
-                        MODO ESTUDIO GRIS
-                      </span>
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 bg-[#D4FF00] text-black font-black uppercase tracking-wider">
-                        ESTILO ESTUDIO
-                      </span>
-                    </div>
-                    <p className="text-[11px] font-sans text-gray-400">
-                      Monta la prenda sobre fondo gris oscuro de estudio con spotlight suave y sombra natural (resalta ropa negra y blanca).
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0">
-                  <label className="flex items-center gap-2 text-xs font-mono text-gray-300 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={autoStudioMode}
-                      onChange={(e) => setAutoStudioMode(e.target.checked)}
-                      className="accent-[#D4FF00] w-4 h-4 cursor-pointer"
-                    />
-                    <span>Auto en cada subida</span>
-                  </label>
-
-                  {images.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={handleApplyStudioToAll}
-                      disabled={isProcessingStudio}
-                      className="px-3 py-1.5 bg-[#1f1f1f] hover:bg-[#D4FF00] text-gray-200 hover:text-black border border-[#333] hover:border-transparent font-mono text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
-                    >
-                      <Sparkles className="w-3 h-3 text-[#D4FF00] group-hover:text-black" />
-                      <span>{isProcessingStudio ? 'Procesando...' : `Aplicar a las ${images.length}`}</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Informative Pro Tip */}
-              <div className="pt-2 border-t border-[#1e1e1e] flex items-start gap-2 text-[10px] font-mono text-gray-400 leading-relaxed">
-                <span className="text-[#D4FF00] font-bold shrink-0">PRO TIP:</span>
-                <span>
-                  Para fotos tomadas con celular en cama, pared o percha, recórtalas gratis en 3 segundos en <strong>PhotoRoom</strong> o <strong>Remove.bg</strong>. Al subirlas aquí en PNG transparente, la tienda les colocará este fondo gris oscuro de estudio automáticamente.
-                </span>
-              </div>
-            </div>
-
             {/* Gallery Grid (Shows all up to 6 images) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
               {images.map((img, idx) => {
                 const isCover = idx === coverIndex
-                const isItemProcessing = processingIndex === idx
                 return (
                   <div
                     key={idx}
@@ -625,22 +513,8 @@ export const ProductForm = ({
                     <img
                       src={img}
                       alt={`Foto producto ${idx + 1}`}
-                      className={`w-full h-full object-cover object-center transition-all ${
-                        isItemProcessing ? 'opacity-40 blur-xs' : ''
-                      }`}
+                      className="w-full h-full object-cover object-center transition-all"
                     />
-
-                    {/* Studio Background Magic Button */}
-                    <button
-                      type="button"
-                      onClick={() => handleApplyStudioToSingleImage(idx)}
-                      disabled={isItemProcessing || isProcessingStudio}
-                      className="absolute bottom-1.5 left-1.5 z-10 px-1.5 py-0.5 bg-black/90 hover:bg-[#D4FF00] hover:text-black text-gray-300 text-[8px] font-mono uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border border-white/20 flex items-center gap-1 shadow-md"
-                      title="Aplicar fondo gris oscuro de estudio"
-                    >
-                      <Wand2 className="w-2.5 h-2.5 text-[#D4FF00]" />
-                      <span>{isItemProcessing ? '...' : 'Fondo Gris'}</span>
-                    </button>
 
                     {/* Delete Photo Button */}
                     {images.length > 0 && (
