@@ -29,57 +29,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const discountInfo = getProductDiscount(product, coupons)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
-  const [isMobileDevice, setIsMobileDevice] = useState(false)
-  const [isInView, setIsInView] = useState(false)
-  const cardRef = useRef<HTMLDivElement | null>(null)
+  const [isTouched, setIsTouched] = useState(false)
   const touchStartXRef = useRef<number | null>(null)
 
-  // En celular/pantallas táctiles, resaltar y adelantar la fila que cruza el centro de la pantalla
-  useEffect(() => {
-    if (isSoldOut) return
-    const mediaQuery = window.matchMedia('(hover: none), (max-width: 767px)')
-    let observer: IntersectionObserver | null = null
-
-    const setupObserver = () => {
-      if (observer) {
-        observer.disconnect()
-        observer = null
-      }
-
-      setIsMobileDevice(mediaQuery.matches)
-
-      if (!mediaQuery.matches) {
-        setIsInView(false)
-        return
-      }
-
-      observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.target === cardRef.current) {
-              setIsInView(entry.isIntersecting)
-            }
-          })
-        },
-        {
-          threshold: 0.2,
-          rootMargin: '-30% 0px -30% 0px',
-        }
-      )
-
-      if (cardRef.current) observer.observe(cardRef.current)
-    }
-
-    setupObserver()
-    mediaQuery.addEventListener('change', setupObserver)
-
-    return () => {
-      mediaQuery.removeEventListener('change', setupObserver)
-      if (observer) observer.disconnect()
-    }
-  }, [isSoldOut])
-
-  const isHighlighted = !isSoldOut && isInView
+  const isHighlighted = !isSoldOut && isTouched
 
   // Recolectar todas las fotos disponibles de la prenda sin duplicados
   const allImages = React.useMemo(() => {
@@ -150,17 +103,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <div
-      ref={cardRef}
       onClick={() => !isSoldOut && onSelectProduct(product)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`group relative flex flex-col transition-all duration-500 ease-out transform-gpu ${
+      onTouchStart={() => !isSoldOut && setIsTouched(true)}
+      onTouchEnd={() => setIsTouched(false)}
+      onTouchCancel={() => setIsTouched(false)}
+      className={`group relative flex flex-col transition-all duration-300 ease-out transform-gpu ${
         isSoldOut
           ? 'cursor-not-allowed opacity-75'
           : isHighlighted
-          ? 'cursor-pointer z-30 opacity-100'
-          : isMobileDevice
-          ? 'cursor-pointer z-0 opacity-85'
+          ? 'cursor-pointer z-30'
           : 'cursor-pointer hover:z-30'
       }`}
       aria-disabled={isSoldOut}
