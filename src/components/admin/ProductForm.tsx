@@ -15,6 +15,8 @@ import {
   AlertTriangle,
   Plus,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import type { Product } from '../../types/database.types'
 import { getColorHexFromName } from '../../lib/colors'
@@ -134,6 +136,8 @@ export const ProductForm = ({
     return []
   })
   const [coverIndex, setCoverIndex] = useState<number>(0)
+  const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
@@ -302,6 +306,29 @@ export const ProductForm = ({
 
   const handleSetCover = (index: number) => {
     setCoverIndex(index)
+  }
+
+  const handleMoveImage = (fromIndex: number, toIndex: number) => {
+    if (
+      fromIndex === toIndex ||
+      fromIndex < 0 ||
+      toIndex < 0 ||
+      fromIndex >= images.length ||
+      toIndex >= images.length
+    ) {
+      return
+    }
+    const coverUrl = images[coverIndex]
+    const nextImages = [...images]
+    const [moved] = nextImages.splice(fromIndex, 1)
+    nextImages.splice(toIndex, 0, moved)
+    setImages(nextImages)
+
+    // Mantener la misma foto como portada después de reordenar
+    if (coverUrl) {
+      const newCoverIdx = nextImages.indexOf(coverUrl)
+      if (newCoverIdx !== -1) setCoverIndex(newCoverIdx)
+    }
   }
 
   const handlePublish = async (newStatus: 'borrador' | 'publicado' = 'publicado') => {
@@ -481,17 +508,47 @@ export const ProductForm = ({
               </span>
             </div>
 
-            {/* Gallery Grid (Shows all up to 6 images) */}
+            {/* Gallery Grid (Shows all up to 6 images, draggable & reorderable) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
               {images.map((img, idx) => {
                 const isCover = idx === coverIndex
+                const isDragging = draggedImageIndex === idx
+                const isDragOver = dragOverIndex === idx && draggedImageIndex !== idx
                 return (
                   <div
-                    key={idx}
-                    className={`relative aspect-[4/5] bg-[#161616] border transition-all group overflow-hidden ${isCover
+                    key={`${idx}-${img.slice(0, 24)}`}
+                    draggable={images.length > 1}
+                    onDragStart={() => setDraggedImageIndex(idx)}
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      if (dragOverIndex !== idx) setDragOverIndex(idx)
+                    }}
+                    onDragLeave={() => {
+                      if (dragOverIndex === idx) setDragOverIndex(null)
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      if (draggedImageIndex !== null) {
+                        handleMoveImage(draggedImageIndex, idx)
+                      }
+                      setDraggedImageIndex(null)
+                      setDragOverIndex(null)
+                    }}
+                    onDragEnd={() => {
+                      setDraggedImageIndex(null)
+                      setDragOverIndex(null)
+                    }}
+                    className={`relative aspect-[4/5] bg-[#161616] border transition-all group overflow-hidden ${
+                      images.length > 1 ? 'cursor-grab active:cursor-grabbing' : ''
+                    } ${
+                      isDragging
+                        ? 'opacity-40 scale-95 border-[#D4FF00]'
+                        : isDragOver
+                        ? 'border-[#D4FF00] ring-2 ring-[#D4FF00] scale-[1.03]'
+                        : isCover
                         ? 'border-[#D4FF00] shadow-[0_0_15px_rgba(212,255,0,0.25)] ring-1 ring-[#D4FF00]'
                         : 'border-[#262626] hover:border-gray-500'
-                      }`}
+                    }`}
                   >
                     {/* Badge / Button: Portada */}
                     {isCover ? (
@@ -513,8 +570,39 @@ export const ProductForm = ({
                     <img
                       src={img}
                       alt={`Foto producto ${idx + 1}`}
-                      className="w-full h-full object-cover object-center transition-all"
+                      draggable={false}
+                      className="w-full h-full object-cover object-center transition-all select-none"
                     />
+
+                    {/* Reorder Arrows (Left / Right) */}
+                    {images.length > 1 && (
+                      <div className="absolute bottom-1.5 left-1.5 z-10 flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleMoveImage(idx, idx - 1)
+                          }}
+                          title="Mover a la izquierda"
+                          className="p-1 bg-black/85 hover:bg-[#D4FF00] text-gray-200 hover:text-black disabled:opacity-30 disabled:hover:bg-black/85 disabled:hover:text-gray-200 disabled:cursor-not-allowed transition-colors cursor-pointer rounded-sm border border-white/15"
+                        >
+                          <ChevronLeft className="w-3 h-3 stroke-[2.5]" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === images.length - 1}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleMoveImage(idx, idx + 1)
+                          }}
+                          title="Mover a la derecha"
+                          className="p-1 bg-black/85 hover:bg-[#D4FF00] text-gray-200 hover:text-black disabled:opacity-30 disabled:hover:bg-black/85 disabled:hover:text-gray-200 disabled:cursor-not-allowed transition-colors cursor-pointer rounded-sm border border-white/15"
+                        >
+                          <ChevronRight className="w-3 h-3 stroke-[2.5]" />
+                        </button>
+                      </div>
+                    )}
 
                     {/* Delete Photo Button */}
                     {images.length > 0 && (
