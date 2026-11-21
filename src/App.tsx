@@ -69,8 +69,29 @@ export function App() {
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null)
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null)
 
-  // Store data from Supabase
-  const [products, setProducts] = useState<Product[]>([])
+  // Store data from Supabase (con caché instantánea en sessionStorage para evitar flash vacío al recargar)
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const cached = sessionStorage.getItem('gj_products_cache')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch {
+      // Ignorar si sessionStorage no está disponible
+    }
+    return []
+  })
+  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(() => {
+    try {
+      const cached = sessionStorage.getItem('gj_products_cache')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return false
+      }
+    } catch {}
+    return true
+  })
   const [activeCategory, setActiveCategory] = useState<string>(() => {
     const hash = window.location.hash
     if (hash.startsWith('#coleccion/')) {
@@ -177,33 +198,57 @@ export function App() {
   }, [coupons])
 
   // Load live data from Supabase
+  const saveProductsCache = (list: Product[]) => {
+    try {
+      sessionStorage.setItem('gj_products_cache', JSON.stringify(list))
+    } catch {
+      // Si las imágenes exceden la cuota de sessionStorage, simplemente omitir caché sin error
+    }
+  }
+
   const reloadProducts = async () => {
     const data = await fetchProducts('todos')
     setProducts(data)
+    saveProductsCache(data)
   }
 
   useEffect(() => {
     let isMounted = true
-    const loadData = async () => {
+
+    // 1. Cargar productos INMEDIATAMENTE sin esperar pedidos, clientes ni cupones
+    fetchProducts('todos')
+      .then((pData) => {
+        if (isMounted) {
+          setProducts(pData)
+          saveProductsCache(pData)
+          setIsLoadingProducts(false)
+        }
+      })
+      .catch((err) => {
+        console.warn('Error cargando productos desde Supabase:', err)
+        if (isMounted) setIsLoadingProducts(false)
+      })
+
+    // 2. Cargar el resto de datos en paralelo en segundo plano
+    const loadSecondaryData = async () => {
       try {
-        const oData = await fetchOrders()
-        const [pData, cData, coupData] = await Promise.all([
-          fetchProducts('todos'),
-          fetchCustomers(oData),
+        const [oData, coupData] = await Promise.all([
+          fetchOrders(),
           fetchCoupons(),
           fetchBrands(),
         ])
+        const cData = await fetchCustomers(oData)
         if (isMounted) {
-          setProducts(pData)
           setOrders(oData || [])
           setCustomers(cData || [])
           if (Array.isArray(coupData)) setCoupons(coupData)
         }
       } catch (err) {
-        console.warn('Error cargando datos desde Supabase:', err)
+        console.warn('Error cargando datos secundarios desde Supabase:', err)
       }
     }
-    loadData()
+    loadSecondaryData()
+
     return () => {
       isMounted = false
     }
@@ -694,6 +739,7 @@ export function App() {
             ) : (
               <ProductList
                 products={products}
+                isLoading={isLoadingProducts}
                 onAddNew={() => {
                   setEditingProduct(null)
                   setIsCreatingProduct(true)
@@ -815,6 +861,7 @@ export function App() {
       <CollectionPage
         products={filteredProducts}
         allProducts={products}
+        isLoading={isLoadingProducts}
         activeCategory={activeCategory}
         onSelectCategory={handleOpenCategory}
         onAddToCart={(product, color, size) => handleAddToCart(product, color, size)}
@@ -881,6 +928,7 @@ export function App() {
         <FeaturedProducts
           products={products}
           coupons={coupons}
+          isLoading={isLoadingProducts}
           onOpenCollection={handleOpenCategory}
           onAddToCart={(product, color) => handleAddToCart(product, color)}
           onSelectProduct={(product) => setSelectedProduct(product)}

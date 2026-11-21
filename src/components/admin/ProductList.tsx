@@ -16,6 +16,7 @@ import { getKnownCategories } from '../../lib/categories'
 
 interface ProductListProps {
   products: Product[]
+  isLoading?: boolean
   onAddNew: () => void
   onEditProduct?: (product: Product) => void
   onDeleteProduct?: (productId: string) => void
@@ -25,6 +26,7 @@ interface ProductListProps {
 
 export const ProductList = ({
   products,
+  isLoading = false,
   onAddNew,
   onEditProduct,
   onDeleteProduct,
@@ -141,7 +143,21 @@ export const ProductList = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1b1b1b]">
-              {filtered.length === 0 ? (
+              {isLoading && filtered.length === 0 ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={`adm-skel-${i}`} className="animate-pulse">
+                    <td colSpan={7} className="py-4 px-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-11 h-11 bg-[#1a1a1a] border border-[#242424] shrink-0" />
+                        <div className="space-y-2 flex-1">
+                          <div className="h-3.5 w-1/3 bg-[#1a1a1a]" />
+                          <div className="h-2.5 w-1/5 bg-[#151515]" />
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-gray-500">
                     <Package className="w-8 h-8 mx-auto mb-2 opacity-40" />

@@ -6,6 +6,7 @@ import { ProductCard } from './ProductCard'
 interface FeaturedProductsProps {
   products: Product[]
   coupons?: Coupon[]
+  isLoading?: boolean
   onOpenCollection?: (category: string) => void
   onAddToCart: (product: Product, selectedColor?: string) => void
   onSelectProduct: (product: Product) => void
@@ -14,6 +15,7 @@ interface FeaturedProductsProps {
 export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
   products,
   coupons,
+  isLoading = false,
   onAddToCart,
   onSelectProduct,
 }) => {
@@ -70,7 +72,15 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
 
         {/* Curated Product Grid: 2 columns on mobile, 4 on desktop */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-          {displayProducts.length === 0 ? (
+          {isLoading && displayProducts.length === 0 ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={`skel-${i}`} className="flex flex-col space-y-3 animate-pulse">
+                <div className="w-full aspect-square bg-[#141414] border border-[#1f1f1f]" />
+                <div className="h-4 w-3/4 bg-[#181818]" />
+                <div className="h-3 w-1/2 bg-[#141414]" />
+              </div>
+            ))
+          ) : displayProducts.length === 0 ? (
             <div className="col-span-full py-16 text-center border border-dashed border-[#242424] bg-[#0c0c0c] p-8 space-y-3">
               <span className="font-display text-2xl uppercase tracking-wider text-gray-400">
                 PRÓXIMAMENTE NUEVAS PRENDAS

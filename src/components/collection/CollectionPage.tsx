@@ -14,6 +14,7 @@ import { ProductCard } from '../ProductCard'
 interface CollectionPageProps {
   products: Product[]
   allProducts?: Product[]
+  isLoading?: boolean
   activeCategory: string
   onSelectCategory: (category: string) => void
   onAddToCart: (product: Product, selectedColor?: string, selectedSize?: string) => void
@@ -35,6 +36,7 @@ interface CollectionPageProps {
 export const CollectionPage: React.FC<CollectionPageProps> = ({
   products,
   allProducts = [],
+  isLoading = false,
   activeCategory,
   onSelectCategory,
   onAddToCart,
@@ -269,7 +271,17 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({
         )}
 
         {/* Product Grid */}
-        {products.length === 0 ? (
+        {isLoading && products.length === 0 ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={`col-skel-${i}`} className="flex flex-col space-y-3 animate-pulse">
+                <div className="w-full aspect-square bg-[#141414] border border-[#1f1f1f]" />
+                <div className="h-4 w-3/4 bg-[#181818]" />
+                <div className="h-3 w-1/2 bg-[#141414]" />
+              </div>
+            ))}
+          </div>
+        ) : products.length === 0 ? (
           <div className="bg-[#0f0f0f] border border-[#1f1f1f] p-16 text-center space-y-4">
             <p className="font-display text-3xl uppercase tracking-wider text-white">
               NO HAY PIEZAS EN ESTA SELECCIÓN
