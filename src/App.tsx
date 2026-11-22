@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { AnnouncementBar } from './components/AnnouncementBar'
 import { Navbar } from './components/Navbar'
 import { Hero } from './components/Hero'
-import { MarqueeTicker } from './components/MarqueeTicker'
 import { FeaturedProducts } from './components/FeaturedProducts'
 import { CategoriesBanner } from './components/CategoriesBanner'
 import { Footer } from './components/Footer'
@@ -916,8 +915,7 @@ export function App() {
           onShopDrop={handleShopDrop}
         />
 
-        {/* 4. Marquee Endless Ticker */}
-        <MarqueeTicker />
+        {/* 4. Marquee Endless Ticker: ahora vive dentro del Hero (barra inferior de la portada) */}
 
         {/* 5. 01 / ENCUENTRA TU ESENCIA - ELIGE TU CÓDIGO (Clothing, Caps & Accesorios) */}
         <CategoriesBanner

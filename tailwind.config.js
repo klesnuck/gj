@@ -25,7 +25,8 @@ export default {
         display: ['"Bebas Neue"', '"Syne"', 'Impact', 'sans-serif'],
         condensed: ['"Anton"', '"Bebas Neue"', 'sans-serif'],
         sans: ['"Inter"', 'system-ui', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'monospace']
+        mono: ['"JetBrains Mono"', 'monospace'],
+        blackletter: ['"UnifrakturMaguntia"', 'serif']
       },
       animation: {
         'marquee': 'marquee 22s linear infinite',
